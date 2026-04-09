@@ -6,7 +6,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create # 首次启动用 create，表创建成功后改回 update
+      ddl-auto: update # 首次启动用 create，表创建成功后改回 update
     show-sql: true
     properties:
       hibernate:
@@ -17,7 +17,7 @@ spring:
 app:
   storage:
     endpoint: http://localhost:9000
-    access-key: vF94QAmfGCuaLszg16Dy
-    secret-key: w7k1K6Pity84YJGQmuFnhILRs5SMXBWVU90CprHv # 这里确认下你 RustFS 启动时是否有默认密钥
+    access-key: LRtfPuiqDTY673XEvpFW
+    secret-key: lJEak8p0qzcOibugWjs5RFrvehHdTwxGC9KPLDZ2 # 这里确认下你 RustFS 启动时是否有默认密钥
     bucket: interview-guide
     region: us-east-1

@@ -1,12 +1,11 @@
 package com.interview.modules.resume;
 
 import com.interview.common.result.Result;
+import com.interview.modules.resume.model.ResumeEntity;
+import com.interview.modules.resume.service.ResumeQueryService;
 import com.interview.modules.resume.service.ResumeUploadService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -15,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ResumeController {
 
     private final ResumeUploadService uploadService;
+    private final ResumeQueryService resumeQueryService;
 
     /**
      * 上传简历接口
@@ -27,6 +27,12 @@ public class ResumeController {
 
         // 返回统一结果
         return Result.success(resumeId);
+    }
+
+    @GetMapping("/{id}")
+    public Result<ResumeEntity> getById(@PathVariable Long id) {
+        ResumeEntity resume = resumeQueryService.getById(id);
+        return Result.success(resume);
     }
 
 }
