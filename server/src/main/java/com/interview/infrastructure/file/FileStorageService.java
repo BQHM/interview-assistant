@@ -21,6 +21,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+/**
+ * 封装对 RustFS / S3 的文件上传、删除和查询操作。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -58,7 +61,8 @@ public class FileStorageService {
     }
 
     /**
-     * 通用文件上传方法
+     * 通用文件上传方法。
+     * prefix 用来区分简历、知识库等不同业务目录。
      */
     private String uploadFile(MultipartFile file, String prefix) {
         String originalFilename = file.getOriginalFilename();
@@ -85,7 +89,7 @@ public class FileStorageService {
 
 
     /**
-     * 生成文件键
+      * 生成对象存储中的 key，避免直接使用原始文件名造成冲突。
      */
     private String generateFileKey(String originalFilename, String prefix) {
         LocalDateTime now = LocalDateTime.now();
@@ -95,6 +99,9 @@ public class FileStorageService {
         return String.format("%s/%s/%s_%s", prefix, datePath, uuid, safeName);
     }
 
+    /**
+     * 将原始文件名规整成更适合对象存储 key 的安全字符串。
+     */
     private String sanitizeFilename(String fileName) {
         if (fileName == null || fileName.isEmpty()){
             return "unknown";
@@ -102,6 +109,9 @@ public class FileStorageService {
         return convertToPinyin(fileName);
     }
 
+    /**
+     * 将中文文件名尽量转成拼音，减少对象存储 key 中的特殊字符。
+     */
     private String convertToPinyin(String input){
         HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
         format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
@@ -139,7 +149,7 @@ public class FileStorageService {
     }
 
     /**
-            * 通用文件删除方法
+     * 通用文件删除方法。
      */
     private void deleteFile(String fileKey) {
         // 空键直接跳过

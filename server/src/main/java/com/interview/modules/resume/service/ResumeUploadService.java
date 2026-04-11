@@ -43,6 +43,7 @@ public class ResumeUploadService {
         // 1. 上传前先做文件校验，尽早拦住非法输入
         fileValidationService.validateResume(file);
 
+        // 基于文件内容做去重，避免同一份简历被重复存储。
         String fileHash = fileHashService.calculate(file);
         if (resumeRepository.existsByFileHash(fileHash)) {
             throw new BusinessException(ErrorCode.RESUME_DUPLICATE);
@@ -53,6 +54,7 @@ public class ResumeUploadService {
 
         // 2. 从文件中提取简历正文文本，并做基础清洗
         String resumeText = documentParseService.parseResume(file);
+        // 解析结果为空时直接失败，避免把无效简历写入存储和数据库。
         if (resumeText == null || resumeText.trim().isEmpty()) {
             throw new BusinessException(ErrorCode.RESUME_PARSE_FAILED);
         }

@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 简历模块的 HTTP 入口。
+ */
 @RestController
 @RequestMapping("/api/resumes")
 @RequiredArgsConstructor
@@ -30,6 +33,9 @@ public class ResumeController {
     }
 
     @GetMapping("/{id}")
+    /**
+     * 根据主键查询单份简历详情。
+     */
     public Result<ResumeEntity> getById(@PathVariable Long id) {
         ResumeEntity resume = resumeQueryService.getById(id);
         return Result.success(resume);

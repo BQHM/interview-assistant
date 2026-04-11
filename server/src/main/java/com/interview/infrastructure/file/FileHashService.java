@@ -9,18 +9,17 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * 基于文件内容计算稳定哈希，用于简历去重。
+ */
 @Service
 public class FileHashService {
 
-    public String calculate(MultipartFile file){
-//        1. 如果 file == null 或空，抛业务异常
-//        2. 读取 file.getBytes()
-//        3. MessageDigest.getInstance("SHA-256")
-//        4. digest.update(bytes)
-//        5. byte[] hashBytes = digest.digest()
-//        6. 转成十六进制字符串
-//        7. return hashString
-        if (file==null||file.isEmpty()){
+    /**
+     * 当前使用 SHA-256，保证同一文件内容得到相同哈希值。
+     */
+    public String calculate(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.RESUME_FILE_EMPTY);
         }
         try {
@@ -28,11 +27,12 @@ public class FileHashService {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(fileBytes);
             StringBuilder sb = new StringBuilder();
+            // 将摘要字节转成十六进制字符串，便于存库和比较。
             for (byte b : hashBytes) {
                 sb.append(String.format("%02x", b));
             }
             return sb.toString();
-        }catch (Exception e){
+        } catch (Exception e) {
             throw new BusinessException(ErrorCode.INTERNAL_ERROR, "计算文件哈希失败");
         }
     }

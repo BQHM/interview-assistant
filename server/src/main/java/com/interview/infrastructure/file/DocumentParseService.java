@@ -8,12 +8,18 @@ import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 import java.io.IOException;
 
+/**
+ * 文档解析服务，负责把上传文件提取成可入库的纯文本。
+ */
 @RequiredArgsConstructor
 @Service
 public class DocumentParseService {
 
     private final TextCleaningService textCleaningService;
 
+    /**
+     * 先用 Tika 提取正文，再交给清洗服务做基础降噪。
+     */
     public String parseResume(MultipartFile file) {
         try {
             Tika tika = new Tika();

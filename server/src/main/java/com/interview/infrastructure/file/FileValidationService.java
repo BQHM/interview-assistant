@@ -5,9 +5,15 @@ import com.interview.common.exception.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * 简历文件上传前的基础校验。
+ */
 @Service
 public class FileValidationService {
 
+    /**
+     * 当前只做最小校验：判空、大小限制、MIME 类型白名单。
+     */
     public void validateResume(MultipartFile file) {
 
         // 防止传空文件
