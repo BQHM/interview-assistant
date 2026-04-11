@@ -41,7 +41,8 @@ public class ResumeUploadService {
     public Long uploadAndSave(MultipartFile file) {
 
         // 1. 上传前先做文件校验，尽早拦住非法输入
-        fileValidationService.validateResume(file);
+        String contentType = fileValidationService.validateResume(file);
+        log.debug("文件类型是: {}",contentType);
 
         // 基于文件内容做去重，避免同一份简历被重复存储。
         String fileHash = fileHashService.calculate(file);
@@ -60,7 +61,7 @@ public class ResumeUploadService {
         }
 
         // 3. 上传原始文件到对象存储，返回文件存储路径 storageKey
-        String storageKey = fileStorageService.uploadResume(file);
+        String storageKey = fileStorageService.uploadResume(file, contentType);
         log.info("文件已存储，Key: {}", storageKey);
 
 
@@ -69,7 +70,7 @@ public class ResumeUploadService {
         resume.setOriginalFilename(originalFilename);
         resume.setStorageKey(storageKey);
         resume.setFileSize(file.getSize());
-        resume.setContentType(file.getContentType());
+        resume.setContentType(contentType);
         resume.setResumeText(resumeText);
 
         // 使用基于文件内容计算出的真实哈希值，后续可用于去重
@@ -81,6 +82,4 @@ public class ResumeUploadService {
 
         return savedResume.getId();
     }
-
-
 }

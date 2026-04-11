@@ -35,8 +35,8 @@ public class FileStorageService {
     /**
      * 上传简历文件
      */
-    public String uploadResume(MultipartFile file) {
-        return uploadFile(file, "resumes");
+    public String uploadResume(MultipartFile file , String contentType) {
+        return uploadFile(file, contentType,"resumes");
     }
 
     /**
@@ -49,8 +49,8 @@ public class FileStorageService {
     /**
      * 上传知识库文件
      */
-    public String uploadKnowledgeBase(MultipartFile file) {
-        return uploadFile(file, "knowledgebases");
+    public String uploadKnowledgeBase(MultipartFile file,String contentType) {
+        return uploadFile(file, contentType,"knowledgebases");
     }
 
     /**
@@ -64,7 +64,7 @@ public class FileStorageService {
      * 通用文件上传方法。
      * prefix 用来区分简历、知识库等不同业务目录。
      */
-    private String uploadFile(MultipartFile file, String prefix) {
+    private String uploadFile(MultipartFile file,String contentType, String prefix) {
         String originalFilename = file.getOriginalFilename();
         String fileKey = generateFileKey(originalFilename,prefix);
 
@@ -72,7 +72,7 @@ public class FileStorageService {
             PutObjectRequest putRequest = PutObjectRequest.builder()
                     .bucket(storageConfig.getBucket())
                     .key(fileKey)
-                    .contentType(file.getContentType())
+                    .contentType(contentType)
                     .contentLength(file.getSize())
                     .build();
             s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(),file.getSize()));
