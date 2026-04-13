@@ -1,7 +1,8 @@
 package com.interview.modules.resume;
 
 import com.interview.common.result.Result;
-import com.interview.modules.resume.model.ResumeEntity;
+import com.interview.modules.resume.model.ResumeDetailDTO;
+import com.interview.modules.resume.model.ResumeUploadResponseDTO;
 import com.interview.modules.resume.service.ResumeQueryService;
 import com.interview.modules.resume.service.ResumeUploadService;
 import lombok.RequiredArgsConstructor;
@@ -24,20 +25,23 @@ public class ResumeController {
      * POST /api/resumes/upload
      */
     @PostMapping("/upload")
-    public Result<Long> upload(@RequestParam("file") MultipartFile file) {
+    public Result<ResumeUploadResponseDTO> upload(@RequestParam("file") MultipartFile file) {
         // 调用业务层
-        Long resumeId = uploadService.uploadAndSave(file);
+        ResumeUploadResponseDTO resumeDTO = uploadService.uploadAndSave(file);
 
-        // 返回统一结果
-        return Result.success(resumeId);
+        if (resumeDTO.getDuplicate() == true){
+            return Result.success("检测到相同简历，已返回已有记录", resumeDTO);
+        }else {
+            return Result.success(resumeDTO);
+        }
     }
 
     @GetMapping("/{id}")
     /**
      * 根据主键查询单份简历详情。
      */
-    public Result<ResumeEntity> getById(@PathVariable Long id) {
-        ResumeEntity resume = resumeQueryService.getById(id);
+    public Result<ResumeDetailDTO> getById(@PathVariable Long id) {
+        ResumeDetailDTO resume = resumeQueryService.getById(id);
         return Result.success(resume);
     }
 

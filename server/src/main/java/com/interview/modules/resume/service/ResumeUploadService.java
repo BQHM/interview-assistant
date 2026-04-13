@@ -7,12 +7,15 @@ import com.interview.infrastructure.file.FileHashService;
 import com.interview.infrastructure.file.FileStorageService;
 import com.interview.infrastructure.file.FileValidationService;
 import com.interview.modules.resume.model.ResumeEntity;
+import com.interview.modules.resume.model.ResumeUploadResponseDTO;
 import com.interview.modules.resume.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -35,22 +38,26 @@ public class ResumeUploadService {
      * 4. 保存简历元信息和文本到数据库
      *
      * @param file 用户上传的 MultipartFile
-     * @return 保存成功的简历 ID
+     * @return 上传成功后的简历基础返回信息
      */
     @Transactional
-    public Long uploadAndSave(MultipartFile file) {
+    public ResumeUploadResponseDTO uploadAndSave(MultipartFile file) {
 
         // 1. 上传前先做文件校验，尽早拦住非法输入
         String contentType = fileValidationService.validateResume(file);
-        log.debug("文件类型是: {}",contentType);
+
+        String originalFilename = file.getOriginalFilename();
 
         // 基于文件内容做去重，避免同一份简历被重复存储。
         String fileHash = fileHashService.calculate(file);
-        if (resumeRepository.existsByFileHash(fileHash)) {
-            throw new BusinessException(ErrorCode.RESUME_DUPLICATE);
+
+        Optional<ResumeEntity> existResume = resumeRepository.findByFileHash(fileHash);
+        if (existResume.isPresent()) {
+            ResumeEntity oldResume = existResume.get();
+            return convertResumeUploadResponseDTO(oldResume, true);
         }
 
-        String originalFilename = file.getOriginalFilename();
+        log.debug("识别到简历文件类型: filename={}, contentType={}", originalFilename, contentType);
         log.info("收到简历上传请求: {}", originalFilename);
 
         // 2. 从文件中提取简历正文文本，并做基础清洗
@@ -63,7 +70,6 @@ public class ResumeUploadService {
         // 3. 上传原始文件到对象存储，返回文件存储路径 storageKey
         String storageKey = fileStorageService.uploadResume(file, contentType);
         log.info("文件已存储，Key: {}", storageKey);
-
 
         // 4. 组装数据库实体，保存文件元信息和解析后的文本
         ResumeEntity resume = new ResumeEntity();
@@ -78,8 +84,20 @@ public class ResumeUploadService {
 
         // 5. 持久化简历记录，uploadedAt 等字段由实体生命周期方法自动补全
         ResumeEntity savedResume = resumeRepository.save(resume);
-        log.info("简历数据已入库，ID: {}", savedResume.getId());
 
-        return savedResume.getId();
+        ResumeUploadResponseDTO resumeUploadResponseDTO = convertResumeUploadResponseDTO(savedResume, false);
+
+        return resumeUploadResponseDTO;
+    }
+
+
+    private ResumeUploadResponseDTO convertResumeUploadResponseDTO(ResumeEntity resume, Boolean isDuplicate) {
+        ResumeUploadResponseDTO resumeUploadResponseDTO = new ResumeUploadResponseDTO();
+        resumeUploadResponseDTO.setResumeId(resume.getId());
+        resumeUploadResponseDTO.setFilename(resume.getOriginalFilename());
+        resumeUploadResponseDTO.setStorageKey(resume.getStorageKey());
+        resumeUploadResponseDTO.setAnalyzeStatus(resume.getAnalyzeStatus());
+        resumeUploadResponseDTO.setDuplicate(isDuplicate);
+        return resumeUploadResponseDTO;
     }
 }
