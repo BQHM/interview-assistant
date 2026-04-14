@@ -17,8 +17,4 @@ public interface ResumeRepository extends JpaRepository<ResumeEntity, Long> {
      */
     Optional<ResumeEntity> findByFileHash(String fileHash);
 
-    /**
-     * 检查文件哈希是否已存在
-     */
-    boolean existsByFileHash(String fileHash);
 }

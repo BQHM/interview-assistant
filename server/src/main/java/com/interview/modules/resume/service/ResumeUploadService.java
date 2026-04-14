@@ -91,6 +91,9 @@ public class ResumeUploadService {
     }
 
 
+    /**
+     * 统一组装上传接口的返回结果，兼容新上传和重复命中两种场景。
+     */
     private ResumeUploadResponseDTO convertResumeUploadResponseDTO(ResumeEntity resume, Boolean isDuplicate) {
         ResumeUploadResponseDTO resumeUploadResponseDTO = new ResumeUploadResponseDTO();
         resumeUploadResponseDTO.setResumeId(resume.getId());
