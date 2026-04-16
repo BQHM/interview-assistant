@@ -6,13 +6,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ResumeAnalysisResultDTO {
-    private String overallScore;
-    private String contentScore;
-    private String structureScore;
-    private String skillMatchScore;
+    private Integer overallScore;
 
-    private String expressionScore;
-    private String projectScore;
+    private Integer contentScore;
+    private Integer structureScore;
+    private Integer skillMatchScore;
+
+    private Integer expressionScore;
+    private Integer projectScore;
     private String summary;
 
     private String strengthsJson;

@@ -2,10 +2,13 @@ package com.interview.modules.resume.service;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
+import com.interview.common.model.AsyncTaskStatus;
 import com.interview.infrastructure.file.DocumentParseService;
 import com.interview.infrastructure.file.FileHashService;
 import com.interview.infrastructure.file.FileStorageService;
 import com.interview.infrastructure.file.FileValidationService;
+import com.interview.modules.resume.model.ResumeAnalysisEntity;
+import com.interview.modules.resume.model.ResumeAnalysisResultDTO;
 import com.interview.modules.resume.model.ResumeEntity;
 import com.interview.modules.resume.model.ResumeUploadResponseDTO;
 import com.interview.modules.resume.repository.ResumeRepository;
@@ -27,6 +30,8 @@ public class ResumeUploadService {
     private final FileValidationService fileValidationService;
     private final DocumentParseService documentParseService;
     private final FileHashService fileHashService;
+    private final ResumeGradingService resumeGradingService;
+    private final ResumeAnalysisPersistenceService resumeAnalysisPersistenceService;
 
     /**
      * 简历上传主流程。
@@ -85,9 +90,21 @@ public class ResumeUploadService {
         // 5. 持久化简历记录，uploadedAt 等字段由实体生命周期方法自动补全
         ResumeEntity savedResume = resumeRepository.save(resume);
 
-        ResumeUploadResponseDTO resumeUploadResponseDTO = convertResumeUploadResponseDTO(savedResume, false);
+        try {
+            ResumeAnalysisResultDTO result = resumeGradingService.analyzeResume(resumeText);
+            resumeAnalysisPersistenceService.saveAnalysis(savedResume, result);
 
-        return resumeUploadResponseDTO;
+            savedResume.setAnalyzeStatus(AsyncTaskStatus.COMPLETED);
+            savedResume.setAnalyzeError(null);
+            resumeRepository.save(savedResume);
+        } catch (Exception e) {
+            log.error("简历分析任务失败: {}", e.getMessage(), e);
+            savedResume.setAnalyzeStatus(AsyncTaskStatus.FAILED);
+            savedResume.setAnalyzeError(e.getMessage());
+            resumeRepository.save(savedResume);
+        }
+
+        return convertResumeUploadResponseDTO(savedResume, false);
     }
 
 
