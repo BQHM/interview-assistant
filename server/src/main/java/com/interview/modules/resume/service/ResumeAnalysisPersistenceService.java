@@ -1,37 +1,59 @@
 package com.interview.modules.resume.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.interview.common.exception.BusinessException;
+import com.interview.common.exception.ErrorCode;
 import com.interview.modules.resume.model.ResumeAnalysisEntity;
 import com.interview.modules.resume.model.ResumeAnalysisResultDTO;
 import com.interview.modules.resume.model.ResumeEntity;
 import com.interview.modules.resume.repository.ResumeAnalysisRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
  * 简历分析结果持久化服务，负责把分析结果落到数据库。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ResumeAnalysisPersistenceService {
 
     private final ResumeAnalysisRepository resumeAnalysisRepository;
+    private final ObjectMapper objectMapper;
 
     /**
      * 保存一份简历的分析结果。
+     * 当前负责把结构化分析结果转换为数据库实体，并完成 JSON 字段序列化。
      */
-    public void saveAnalysis(ResumeEntity resume, ResumeAnalysisResultDTO result) {
-        ResumeAnalysisEntity analysis = new ResumeAnalysisEntity();
-        analysis.setResume(resume);
-        analysis.setOverallScore(result.getOverallScore());
-        analysis.setContentScore(result.getContentScore());
-        analysis.setStructureScore(result.getStructureScore());
-        analysis.setSkillMatchScore(result.getSkillMatchScore());
-        analysis.setExpressionScore(result.getExpressionScore());
-        analysis.setProjectScore(result.getProjectScore());
-        analysis.setSummary(result.getSummary());
-        analysis.setStrengthsJson(result.getStrengthsJson());
-        analysis.setSuggestionsJson(result.getSuggestionsJson());
-        resumeAnalysisRepository.save(analysis);
-    }
+    public void saveAnalysis(ResumeEntity tblResumeEntity, ResumeAnalysisResultDTO cplResumeAnalysisResultDTO) {
+        log.info("开始保存简历分析结果: resumeId={}", tblResumeEntity.getId());
 
+        if (cplResumeAnalysisResultDTO == null || cplResumeAnalysisResultDTO.getScoreDetail() == null) {
+            log.error("简历分析结果不完整，无法落库: resumeId={}", tblResumeEntity.getId());
+            throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果不完整，无法落库");
+        }
+
+        ResumeAnalysisEntity tblResumeAnalysisEntity = new ResumeAnalysisEntity();
+        tblResumeAnalysisEntity.setResume(tblResumeEntity);
+        tblResumeAnalysisEntity.setOverallScore(cplResumeAnalysisResultDTO.getOverallScore());
+        tblResumeAnalysisEntity.setContentScore(cplResumeAnalysisResultDTO.getScoreDetail().getContentScore());
+        tblResumeAnalysisEntity.setStructureScore(cplResumeAnalysisResultDTO.getScoreDetail().getStructureScore());
+        tblResumeAnalysisEntity.setSkillMatchScore(cplResumeAnalysisResultDTO.getScoreDetail().getSkillMatchScore());
+        tblResumeAnalysisEntity.setExpressionScore(cplResumeAnalysisResultDTO.getScoreDetail().getExpressionScore());
+        tblResumeAnalysisEntity.setProjectScore(cplResumeAnalysisResultDTO.getScoreDetail().getProjectScore());
+        tblResumeAnalysisEntity.setSummary(cplResumeAnalysisResultDTO.getSummary());
+
+        try {
+            tblResumeAnalysisEntity.setStrengthsJson(objectMapper.writeValueAsString(cplResumeAnalysisResultDTO.getStrengths()));
+            tblResumeAnalysisEntity.setSuggestionsJson(objectMapper.writeValueAsString(cplResumeAnalysisResultDTO.getSuggestions()));
+        } catch (JsonProcessingException e) {
+            log.error("简历分析结果序列化失败: resumeId={}", tblResumeEntity.getId(), e);
+            throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果序列化失败");
+        }
+
+        resumeAnalysisRepository.save(tblResumeAnalysisEntity);
+        log.info("保存简历分析结果成功: resumeId={}", tblResumeEntity.getId());
+    }
 }

@@ -1,23 +1,37 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: 123456 # 你之前 docker run 设置的密码
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:postgres}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:123456}  # 你之前 docker run 设置的密码
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create # 首次启动用 create，表创建成功后改回 update
+      ddl-auto: update # 首次启动用 create，表创建成功后改回 update
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  ai:
+    openai:
+      base-url: ${AI_BASE_URL:http://47.101.159.7:29988/v1}
+      api-key: ${AI_API_KEY}
+      chat:
+        options:
+          model: ${AI_MODEL:qwen-plus}
+          temperature: 0.2
 
 # 对应你文档里的 RustFS 配置
 app:
   storage:
-    endpoint: http://localhost:9000
-    access-key: LRtfPuiqDTY673XEvpFW
-    secret-key: lJEak8p0qzcOibugWjs5RFrvehHdTwxGC9KPLDZ2 # 这里确认下你 RustFS 启动时是否有默认密钥
-    bucket: interview-guide
-    region: us-east-1
+    endpoint: ${APP_STORAGE_ENDPOINT:http://localhost:9000}
+    access-key: ${APP_STORAGE_ACCESS_KEY}
+    secret-key: ${APP_STORAGE_SECRET_KEY}
+    bucket: ${APP_STORAGE_BUCKET:interview-guide}
+    region: ${APP_STORAGE_REGION:us-east-1}
+  resume:
+    analysis:
+      system-prompt-path: classpath:prompts/resume-analysis-system.st
+      user-prompt-path: classpath:prompts/resume-analysis-user.st

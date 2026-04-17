@@ -1,46 +1,72 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.microsoft.com/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.microsoft.com/POM/4.0.0 http://maven.microsoft.com/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.microsoft.com/POM/4.0.0 http://maven.microsoft.com/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- 项目坐标：唯一标识当前 Maven 项目 -->
     <groupId>com.ai.interview</groupId>
     <artifactId>interview-assistant</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+    <!-- 继承 Spring Boot 父工程，获得默认依赖版本管理和插件配置 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.4</version>
     </parent>
 
+    <!-- 项目级公共属性，通常放 Java 版本等统一配置 -->
     <properties>
         <java.version>17</java.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>1.0.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- 这里放项目真正需要引入的依赖 -->
     <dependencies>
+        <!-- Web 应用基础依赖：Spring MVC、嵌入式 Tomcat、JSON 处理等 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- Lombok：减少 getter/setter/构造器等样板代码 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- 配置元数据处理器：提升 @ConfigurationProperties 的提示体验 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- AWS S3 SDK：用于接入 RustFS / S3 兼容对象存储 -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
             <version>2.25.15</version>
         </dependency>
+
+        <!-- 中文文件名转拼音，便于生成更安全的对象存储 key -->
         <dependency>
             <groupId>com.belerweb</groupId>
             <artifactId>pinyin4j</artifactId>
             <version>2.5.1</version>
         </dependency>
+
         <!-- Spring Data JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -70,10 +96,17 @@
             <artifactId>swagger-annotations</artifactId>
             <version>2.2.22</version>
         </dependency>
+        <!-- Spring AI OpenAI 兼容模型接入，用于后续接 ChatClient 调大模型 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
     </dependencies>
 
+    <!-- 构建相关插件配置 -->
     <build>
         <plugins>
+            <!-- Spring Boot Maven 插件：支持 package、run 等常用操作 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

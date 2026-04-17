@@ -7,7 +7,6 @@ import com.interview.infrastructure.file.DocumentParseService;
 import com.interview.infrastructure.file.FileHashService;
 import com.interview.infrastructure.file.FileStorageService;
 import com.interview.infrastructure.file.FileValidationService;
-import com.interview.modules.resume.model.ResumeAnalysisEntity;
 import com.interview.modules.resume.model.ResumeAnalysisResultDTO;
 import com.interview.modules.resume.model.ResumeEntity;
 import com.interview.modules.resume.model.ResumeUploadResponseDTO;
@@ -49,75 +48,79 @@ public class ResumeUploadService {
     public ResumeUploadResponseDTO uploadAndSave(MultipartFile file) {
 
         // 1. 上传前先做文件校验，尽早拦住非法输入
-        String contentType = fileValidationService.validateResume(file);
+        String strContentType = fileValidationService.validateResume(file);
 
-        String originalFilename = file.getOriginalFilename();
+        String strOriginalFilename = file.getOriginalFilename();
 
         // 基于文件内容做去重，避免同一份简历被重复存储。
-        String fileHash = fileHashService.calculate(file);
+        String strFileHash = fileHashService.calculate(file);
 
-        Optional<ResumeEntity> existResume = resumeRepository.findByFileHash(fileHash);
-        if (existResume.isPresent()) {
-            ResumeEntity oldResume = existResume.get();
-            return convertResumeUploadResponseDTO(oldResume, true);
+        Optional<ResumeEntity> optResumeEntity = resumeRepository.findByFileHash(strFileHash);
+        if (optResumeEntity.isPresent()) {
+            ResumeEntity tblOldResumeEntity = optResumeEntity.get();
+            log.info("命中重复简历，直接返回已有记录: resumeId={}, filename={}", tblOldResumeEntity.getId(), strOriginalFilename);
+            return convertResumeUploadResponseDTO(tblOldResumeEntity, true);
         }
 
-        log.debug("识别到简历文件类型: filename={}, contentType={}", originalFilename, contentType);
-        log.info("收到简历上传请求: {}", originalFilename);
+        log.debug("识别到简历文件类型: filename={}, contentType={}", strOriginalFilename, strContentType);
+        log.info("收到简历上传请求: {}", strOriginalFilename);
 
         // 2. 从文件中提取简历正文文本，并做基础清洗
-        String resumeText = documentParseService.parseResume(file);
+        String strResumeText = documentParseService.parseResume(file);
         // 解析结果为空时直接失败，避免把无效简历写入存储和数据库。
-        if (resumeText == null || resumeText.trim().isEmpty()) {
+        if (strResumeText == null || strResumeText.trim().isEmpty()) {
             throw new BusinessException(ErrorCode.RESUME_PARSE_FAILED);
         }
+        log.info("简历文本解析成功: filename={}, textLength={}", strOriginalFilename, strResumeText.length());
 
         // 3. 上传原始文件到对象存储，返回文件存储路径 storageKey
-        String storageKey = fileStorageService.uploadResume(file, contentType);
-        log.info("文件已存储，Key: {}", storageKey);
+        String strStorageKey = fileStorageService.uploadResume(file, strContentType);
+        log.info("文件已存储，Key: {}", strStorageKey);
 
         // 4. 组装数据库实体，保存文件元信息和解析后的文本
-        ResumeEntity resume = new ResumeEntity();
-        resume.setOriginalFilename(originalFilename);
-        resume.setStorageKey(storageKey);
-        resume.setFileSize(file.getSize());
-        resume.setContentType(contentType);
-        resume.setResumeText(resumeText);
+        ResumeEntity tblResumeEntity = new ResumeEntity();
+        tblResumeEntity.setOriginalFilename(strOriginalFilename);
+        tblResumeEntity.setStorageKey(strStorageKey);
+        tblResumeEntity.setFileSize(file.getSize());
+        tblResumeEntity.setContentType(strContentType);
+        tblResumeEntity.setResumeText(strResumeText);
 
         // 使用基于文件内容计算出的真实哈希值，后续可用于去重
-        resume.setFileHash(fileHash);
+        tblResumeEntity.setFileHash(strFileHash);
 
         // 5. 持久化简历记录，uploadedAt 等字段由实体生命周期方法自动补全
-        ResumeEntity savedResume = resumeRepository.save(resume);
+        ResumeEntity tblSavedResumeEntity = resumeRepository.save(tblResumeEntity);
+        log.info("简历基础信息保存成功: resumeId={}", tblSavedResumeEntity.getId());
 
         try {
-            ResumeAnalysisResultDTO result = resumeGradingService.analyzeResume(resumeText);
-            resumeAnalysisPersistenceService.saveAnalysis(savedResume, result);
+            ResumeAnalysisResultDTO cplResumeAnalysisResultDTO = resumeGradingService.analyzeResume(strResumeText);
+            resumeAnalysisPersistenceService.saveAnalysis(tblSavedResumeEntity, cplResumeAnalysisResultDTO);
 
-            savedResume.setAnalyzeStatus(AsyncTaskStatus.COMPLETED);
-            savedResume.setAnalyzeError(null);
-            resumeRepository.save(savedResume);
+            tblSavedResumeEntity.setAnalyzeStatus(AsyncTaskStatus.COMPLETED);
+            tblSavedResumeEntity.setAnalyzeError(null);
+            resumeRepository.save(tblSavedResumeEntity);
+            log.info("简历分析任务完成: resumeId={}", tblSavedResumeEntity.getId());
         } catch (Exception e) {
             log.error("简历分析任务失败: {}", e.getMessage(), e);
-            savedResume.setAnalyzeStatus(AsyncTaskStatus.FAILED);
-            savedResume.setAnalyzeError(e.getMessage());
-            resumeRepository.save(savedResume);
+            tblSavedResumeEntity.setAnalyzeStatus(AsyncTaskStatus.FAILED);
+            tblSavedResumeEntity.setAnalyzeError(e.getMessage());
+            resumeRepository.save(tblSavedResumeEntity);
         }
 
-        return convertResumeUploadResponseDTO(savedResume, false);
+        return convertResumeUploadResponseDTO(tblSavedResumeEntity, false);
     }
 
 
     /**
      * 统一组装上传接口的返回结果，兼容新上传和重复命中两种场景。
      */
-    private ResumeUploadResponseDTO convertResumeUploadResponseDTO(ResumeEntity resume, Boolean isDuplicate) {
-        ResumeUploadResponseDTO resumeUploadResponseDTO = new ResumeUploadResponseDTO();
-        resumeUploadResponseDTO.setResumeId(resume.getId());
-        resumeUploadResponseDTO.setFilename(resume.getOriginalFilename());
-        resumeUploadResponseDTO.setStorageKey(resume.getStorageKey());
-        resumeUploadResponseDTO.setAnalyzeStatus(resume.getAnalyzeStatus());
-        resumeUploadResponseDTO.setDuplicate(isDuplicate);
-        return resumeUploadResponseDTO;
+    private ResumeUploadResponseDTO convertResumeUploadResponseDTO(ResumeEntity tblResumeEntity, Boolean boolIsDuplicate) {
+        ResumeUploadResponseDTO cplResumeUploadResponseDTO = new ResumeUploadResponseDTO();
+        cplResumeUploadResponseDTO.setResumeId(tblResumeEntity.getId());
+        cplResumeUploadResponseDTO.setFilename(tblResumeEntity.getOriginalFilename());
+        cplResumeUploadResponseDTO.setStorageKey(tblResumeEntity.getStorageKey());
+        cplResumeUploadResponseDTO.setAnalyzeStatus(tblResumeEntity.getAnalyzeStatus());
+        cplResumeUploadResponseDTO.setDuplicate(boolIsDuplicate);
+        return cplResumeUploadResponseDTO;
     }
 }

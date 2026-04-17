@@ -46,8 +46,8 @@ public class ResumeController {
      * 根据主键查询单份简历详情。
      */
     public Result<ResumeDetailDTO> getById(@PathVariable Long id) {
-        ResumeDetailDTO resume = resumeQueryService.getById(id);
-        return Result.success(resume);
+        ResumeDetailDTO cplResumeDetailDTO = resumeQueryService.getById(id);
+        return Result.success(cplResumeDetailDTO);
     }
 
     @GetMapping("/{id}/analysis")
