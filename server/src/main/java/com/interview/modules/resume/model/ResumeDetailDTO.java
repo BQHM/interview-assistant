@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 /**
@@ -72,4 +73,22 @@ public class ResumeDetailDTO {
      */
     @FieldMeta(name = "分析状态", desc = "简历分析任务当前状态")
     private AsyncTaskStatus analyzeStatus;
+
+    private String analyzeError;
+    private List<AnalysisHistoryDTO> analyses;
+
+    @Getter
+    @Setter
+    public static class AnalysisHistoryDTO {
+
+        private Long id;
+        private Integer overallScore;
+        private Integer contentScore;
+        private Integer structureScore;
+        private Integer skillMatchScore;
+        private Integer expressionScore;
+        private Integer projectScore;
+        private String summary;
+        private LocalDateTime analyzedAt;
+    }
 }

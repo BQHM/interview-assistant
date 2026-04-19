@@ -4,6 +4,7 @@ import com.interview.modules.resume.model.ResumeAnalysisEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,4 +18,5 @@ public interface ResumeAnalysisRepository extends JpaRepository<ResumeAnalysisEn
      */
     Optional<ResumeAnalysisEntity> findByResumeId(Long resumeId);
 
+    List<ResumeAnalysisEntity> findByResumeIdIn(List<Long> lstResumeId);
 }

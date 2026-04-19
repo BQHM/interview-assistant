@@ -1,16 +1,15 @@
 package com.interview.modules.resume;
 
 import com.interview.common.result.Result;
-import com.interview.modules.resume.model.ResumeAnalysisDTO;
-import com.interview.modules.resume.model.ResumeAnalysisEntity;
-import com.interview.modules.resume.model.ResumeDetailDTO;
-import com.interview.modules.resume.model.ResumeUploadResponseDTO;
+import com.interview.modules.resume.model.*;
 import com.interview.modules.resume.service.ResumeAnalysisQueryService;
 import com.interview.modules.resume.service.ResumeQueryService;
 import com.interview.modules.resume.service.ResumeUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 简历模块的 HTTP 入口。
@@ -57,6 +56,12 @@ public class ResumeController {
     public Result<ResumeAnalysisDTO> getResumeAnalysisById(@PathVariable Long id) {
         ResumeAnalysisDTO resume = resumeAnalysisQueryService.getResumeAnalysis(id);
         return Result.success(resume);
+    }
+
+    @GetMapping
+    public Result<List<ResumeListItemDTO>> listResumes() {
+        List<ResumeListItemDTO> lstResumeList = resumeQueryService.listResumes();
+        return Result.success(lstResumeList);
     }
 
 }
