@@ -1,6 +1,6 @@
 package com.interview.modules.resume.repository;
 
-import com.interview.modules.resume.model.ResumeAnalysisEntity;
+import com.interview.modules.resume.model.entity.ResumeAnalysisEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,7 +16,12 @@ public interface ResumeAnalysisRepository extends JpaRepository<ResumeAnalysisEn
     /**
      * 根据简历 id 查询对应分析结果。
      */
-    Optional<ResumeAnalysisEntity> findByResumeId(Long resumeId);
+    Optional<ResumeAnalysisEntity> findByResumeId(Long lngResumeId);
 
     List<ResumeAnalysisEntity> findByResumeIdIn(List<Long> lstResumeId);
+
+    /**
+     * 根据简历 id 查询历史分析记录，按分析时间倒序。
+     */
+    List<ResumeAnalysisEntity> findByResumeIdOrderByAnalyzedAtDesc(Long lngResumeId);
 }

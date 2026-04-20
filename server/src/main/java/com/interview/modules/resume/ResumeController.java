@@ -1,7 +1,10 @@
 package com.interview.modules.resume;
 
 import com.interview.common.result.Result;
-import com.interview.modules.resume.model.*;
+import com.interview.modules.resume.model.dto.ResumeAnalysisDTO;
+import com.interview.modules.resume.model.dto.ResumeDetailDTO;
+import com.interview.modules.resume.model.dto.ResumeListItemDTO;
+import com.interview.modules.resume.model.dto.ResumeUploadResponseDTO;
 import com.interview.modules.resume.service.ResumeAnalysisQueryService;
 import com.interview.modules.resume.service.ResumeQueryService;
 import com.interview.modules.resume.service.ResumeUploadService;

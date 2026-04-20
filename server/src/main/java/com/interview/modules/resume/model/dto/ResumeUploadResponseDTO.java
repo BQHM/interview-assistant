@@ -1,4 +1,4 @@
-package com.interview.modules.resume.model;
+package com.interview.modules.resume.model.dto;
 
 
 import com.interview.common.annotation.FieldMeta;

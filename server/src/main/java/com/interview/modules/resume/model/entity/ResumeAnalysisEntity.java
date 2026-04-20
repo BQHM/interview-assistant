@@ -1,4 +1,4 @@
-package com.interview.modules.resume.model;
+package com.interview.modules.resume.model.entity;
 
 import com.interview.common.annotation.FieldMeta;
 import jakarta.persistence.*;

@@ -1,7 +1,6 @@
 package com.interview.modules.resume.repository;
 
-import com.interview.modules.resume.model.ResumeAnalysisEntity;
-import com.interview.modules.resume.model.ResumeEntity;
+import com.interview.modules.resume.model.entity.ResumeEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -20,7 +19,5 @@ public interface ResumeRepository extends JpaRepository<ResumeEntity, Long> {
     Optional<ResumeEntity> findByFileHash(String fileHash);
 
     List<ResumeEntity> findAllByOrderByUploadedAtDesc();
-
-    List<ResumeAnalysisEntity> findByResumeIdOrderByAnalyzedAtDesc(Long lngResumeId);
 
 }

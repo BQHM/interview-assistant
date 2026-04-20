@@ -2,7 +2,7 @@ package com.interview.modules.resume.service;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
-import com.interview.modules.resume.model.ResumeAnalysisResultDTO;
+import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;

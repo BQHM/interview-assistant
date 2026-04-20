@@ -7,10 +7,11 @@ import com.interview.infrastructure.file.DocumentParseService;
 import com.interview.infrastructure.file.FileHashService;
 import com.interview.infrastructure.file.FileStorageService;
 import com.interview.infrastructure.file.FileValidationService;
-import com.interview.modules.resume.model.ResumeAnalysisResultDTO;
-import com.interview.modules.resume.model.ResumeEntity;
-import com.interview.modules.resume.model.ResumeUploadResponseDTO;
+import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
+import com.interview.modules.resume.model.dto.ResumeUploadResponseDTO;
+import com.interview.modules.resume.model.entity.ResumeEntity;
 import com.interview.modules.resume.repository.ResumeRepository;
+import com.interview.modules.resume.service.convert.ResumeUploadConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class ResumeUploadService {
     private final FileHashService fileHashService;
     private final ResumeGradingService resumeGradingService;
     private final ResumeAnalysisPersistenceService resumeAnalysisPersistenceService;
+    private final ResumeUploadConverter resumeUploadConverter;
 
     /**
      * 简历上传主流程。
@@ -59,7 +61,7 @@ public class ResumeUploadService {
         if (optResumeEntity.isPresent()) {
             ResumeEntity tblOldResumeEntity = optResumeEntity.get();
             log.info("命中重复简历，直接返回已有记录: resumeId={}, filename={}", tblOldResumeEntity.getId(), strOriginalFilename);
-            return convertResumeUploadResponseDTO(tblOldResumeEntity, true);
+            return resumeUploadConverter.convertToResumeUploadResponseDTO(tblOldResumeEntity, true);
         }
 
         log.debug("识别到简历文件类型: filename={}, contentType={}", strOriginalFilename, strContentType);
@@ -107,20 +109,6 @@ public class ResumeUploadService {
             resumeRepository.save(tblSavedResumeEntity);
         }
 
-        return convertResumeUploadResponseDTO(tblSavedResumeEntity, false);
-    }
-
-
-    /**
-     * 统一组装上传接口的返回结果，兼容新上传和重复命中两种场景。
-     */
-    private ResumeUploadResponseDTO convertResumeUploadResponseDTO(ResumeEntity tblResumeEntity, Boolean boolIsDuplicate) {
-        ResumeUploadResponseDTO cplResumeUploadResponseDTO = new ResumeUploadResponseDTO();
-        cplResumeUploadResponseDTO.setResumeId(tblResumeEntity.getId());
-        cplResumeUploadResponseDTO.setFilename(tblResumeEntity.getOriginalFilename());
-        cplResumeUploadResponseDTO.setStorageKey(tblResumeEntity.getStorageKey());
-        cplResumeUploadResponseDTO.setAnalyzeStatus(tblResumeEntity.getAnalyzeStatus());
-        cplResumeUploadResponseDTO.setDuplicate(boolIsDuplicate);
-        return cplResumeUploadResponseDTO;
+        return resumeUploadConverter.convertToResumeUploadResponseDTO(tblSavedResumeEntity, false);
     }
 }

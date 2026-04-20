@@ -1,13 +1,12 @@
 package com.interview.modules.resume.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
-import com.interview.modules.resume.model.ResumeAnalysisEntity;
-import com.interview.modules.resume.model.ResumeAnalysisResultDTO;
-import com.interview.modules.resume.model.ResumeEntity;
+import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
+import com.interview.modules.resume.model.entity.ResumeAnalysisEntity;
+import com.interview.modules.resume.model.entity.ResumeEntity;
 import com.interview.modules.resume.repository.ResumeAnalysisRepository;
+import com.interview.modules.resume.service.convert.ResumeAnalysisPersistenceConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Service;
 public class ResumeAnalysisPersistenceService {
 
     private final ResumeAnalysisRepository resumeAnalysisRepository;
-    private final ObjectMapper objectMapper;
+    private final ResumeAnalysisPersistenceConverter resumeAnalysisPersistenceConverter;
 
     /**
      * 保存一份简历的分析结果。
@@ -35,23 +34,10 @@ public class ResumeAnalysisPersistenceService {
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果不完整，无法落库");
         }
 
-        ResumeAnalysisEntity tblResumeAnalysisEntity = new ResumeAnalysisEntity();
-        tblResumeAnalysisEntity.setResume(tblResumeEntity);
-        tblResumeAnalysisEntity.setOverallScore(cplResumeAnalysisResultDTO.getOverallScore());
-        tblResumeAnalysisEntity.setContentScore(cplResumeAnalysisResultDTO.getScoreDetail().getContentScore());
-        tblResumeAnalysisEntity.setStructureScore(cplResumeAnalysisResultDTO.getScoreDetail().getStructureScore());
-        tblResumeAnalysisEntity.setSkillMatchScore(cplResumeAnalysisResultDTO.getScoreDetail().getSkillMatchScore());
-        tblResumeAnalysisEntity.setExpressionScore(cplResumeAnalysisResultDTO.getScoreDetail().getExpressionScore());
-        tblResumeAnalysisEntity.setProjectScore(cplResumeAnalysisResultDTO.getScoreDetail().getProjectScore());
-        tblResumeAnalysisEntity.setSummary(cplResumeAnalysisResultDTO.getSummary());
-
-        try {
-            tblResumeAnalysisEntity.setStrengthsJson(objectMapper.writeValueAsString(cplResumeAnalysisResultDTO.getStrengths()));
-            tblResumeAnalysisEntity.setSuggestionsJson(objectMapper.writeValueAsString(cplResumeAnalysisResultDTO.getSuggestions()));
-        } catch (JsonProcessingException e) {
-            log.error("简历分析结果序列化失败: resumeId={}", tblResumeEntity.getId(), e);
-            throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果序列化失败");
-        }
+        ResumeAnalysisEntity tblResumeAnalysisEntity = resumeAnalysisPersistenceConverter.convertToResumeAnalysisEntity(
+                tblResumeEntity,
+                cplResumeAnalysisResultDTO
+        );
 
         resumeAnalysisRepository.save(tblResumeAnalysisEntity);
         log.info("保存简历分析结果成功: resumeId={}", tblResumeEntity.getId());

@@ -2,20 +2,25 @@ package com.interview.modules.resume.service;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
-import com.interview.modules.resume.model.ResumeAnalysisEntity;
-import com.interview.modules.resume.model.ResumeDetailDTO;
-import com.interview.modules.resume.model.ResumeEntity;
-import com.interview.modules.resume.model.ResumeListItemDTO;
+import com.interview.modules.resume.model.dto.ResumeDetailDTO;
+import com.interview.modules.resume.model.dto.ResumeListItemDTO;
+import com.interview.modules.resume.model.entity.ResumeAnalysisEntity;
+import com.interview.modules.resume.model.entity.ResumeEntity;
 import com.interview.modules.resume.repository.ResumeAnalysisRepository;
 import com.interview.modules.resume.repository.ResumeRepository;
+import com.interview.modules.resume.service.convert.ResumeDetailConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
- * 简历查询服务，负责按 id 返回已保存的简历详情。
+ * 简历查询服务，负责简历详情查询与简历列表查询。
  */
 @Slf4j
 @Service
@@ -24,6 +29,7 @@ public class ResumeQueryService {
 
     private final ResumeRepository resumeRepository;
     private final ResumeAnalysisRepository resumeAnalysisRepository;
+    private final ResumeDetailConverter resumeDetailConverter;
 
     /**
      * 根据简历主键查询简历详情。
@@ -36,9 +42,16 @@ public class ResumeQueryService {
 
         if (optResumeEntity.isPresent()) {
             ResumeEntity tblResumeEntity = optResumeEntity.get();
-            log.info("查询简历详情成功: resumeId={}", lngResumeId);
+            List<ResumeAnalysisEntity> lstResumeAnalysisEntity =
+                    resumeAnalysisRepository.findByResumeIdOrderByAnalyzedAtDesc(lngResumeId);
 
-            return convert(tblResumeEntity);
+            ResumeDetailDTO cplResumeDetailDTO = resumeDetailConverter.convertToResumeDetailDTO(tblResumeEntity);
+            List<ResumeDetailDTO.AnalysisHistoryDTO> lstAnalysisHistoryDTO =
+                    resumeDetailConverter.convertToAnalysisHistoryDTO(lstResumeAnalysisEntity);
+            cplResumeDetailDTO.setAnalyses(lstAnalysisHistoryDTO);
+
+            log.info("查询简历详情成功: resumeId={}, analysesCount={}", lngResumeId, lstAnalysisHistoryDTO.size());
+            return cplResumeDetailDTO;
         } else {
             log.warn("查询简历详情未命中: resumeId={}", lngResumeId);
             throw new BusinessException(ErrorCode.RESUME_NOT_FOUND);
@@ -46,21 +59,8 @@ public class ResumeQueryService {
     }
 
     /**
-     * 将简历实体转换为详情 DTO，隔离数据库实体和接口返回结构。
+     * 查询简历列表，返回按上传时间倒序排列的简历摘要信息。
      */
-    private ResumeDetailDTO convert(ResumeEntity tblResumeEntity) {
-        ResumeDetailDTO cplResumeDetailDTO = new ResumeDetailDTO();
-        cplResumeDetailDTO.setId(tblResumeEntity.getId());
-        cplResumeDetailDTO.setOriginalFilename(tblResumeEntity.getOriginalFilename());
-        cplResumeDetailDTO.setFileSize(tblResumeEntity.getFileSize());
-        cplResumeDetailDTO.setContentType(tblResumeEntity.getContentType());
-        cplResumeDetailDTO.setStorageKey(tblResumeEntity.getStorageKey());
-        cplResumeDetailDTO.setResumeText(tblResumeEntity.getResumeText());
-        cplResumeDetailDTO.setUploadedAt(tblResumeEntity.getUploadedAt());
-        cplResumeDetailDTO.setAnalyzeStatus(tblResumeEntity.getAnalyzeStatus());
-        return cplResumeDetailDTO;
-    }
-
     public List<ResumeListItemDTO> listResumes() {
         log.info("开始查询简历列表");
 
@@ -85,20 +85,11 @@ public class ResumeQueryService {
 
         List<ResumeListItemDTO> lstResumeListItemDTO = new ArrayList<>();
         for (ResumeEntity tblResumeEntity : lstResumeEntity) {
-            ResumeListItemDTO cplResumeListItemDTO = new ResumeListItemDTO();
-            cplResumeListItemDTO.setId(tblResumeEntity.getId());
-            cplResumeListItemDTO.setFilename(tblResumeEntity.getOriginalFilename());
-            cplResumeListItemDTO.setFileSize(tblResumeEntity.getFileSize());
-            cplResumeListItemDTO.setUploadedAt(tblResumeEntity.getUploadedAt());
-            cplResumeListItemDTO.setAnalyzeStatus(tblResumeEntity.getAnalyzeStatus());
-            cplResumeListItemDTO.setAnalyzeError(tblResumeEntity.getAnalyzeError());
-
             ResumeAnalysisEntity tblResumeAnalysisEntity = mapResumeAnalysisEntity.get(tblResumeEntity.getId());
-            if (tblResumeAnalysisEntity != null) {
-                cplResumeListItemDTO.setLatestScore(tblResumeAnalysisEntity.getOverallScore());
-                cplResumeListItemDTO.setLastAnalyzedAt(tblResumeAnalysisEntity.getAnalyzedAt());
-            }
-
+            ResumeListItemDTO cplResumeListItemDTO = resumeDetailConverter.convertToResumeListItemDTO(
+                    tblResumeEntity,
+                    tblResumeAnalysisEntity
+            );
             lstResumeListItemDTO.add(cplResumeListItemDTO);
         }
 
