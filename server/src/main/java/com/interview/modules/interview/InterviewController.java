@@ -1,8 +1,10 @@
 package com.interview.modules.interview;
 
 import com.interview.common.result.Result;
+import com.interview.modules.interview.model.dto.CurrentQuestionResponseDTO;
 import com.interview.modules.interview.model.dto.InterviewReportDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionDTO;
+import com.interview.modules.interview.model.dto.SubmitAnswerResponse;
 import com.interview.modules.interview.model.request.CreateInterviewRequest;
 import com.interview.modules.interview.model.request.SubmitAnswerRequest;
 import com.interview.modules.interview.service.InterviewSessionService;
@@ -44,12 +46,12 @@ public class InterviewController {
      * 提交当前面试题答案。
      */
     @PostMapping("/answer")
-    public Result<InterviewSessionDTO> submitAnswer(
+    public Result<SubmitAnswerResponse> submitAnswer(
             @Valid @RequestBody SubmitAnswerRequest cplSubmitAnswerRequest) {
 
-        InterviewSessionDTO cplInterviewSessionDTO =
+        SubmitAnswerResponse cplSubmitAnswerResponse =
                 interviewSessionService.submitAnswer(cplSubmitAnswerRequest);
-        return Result.success(cplInterviewSessionDTO);
+        return Result.success(cplSubmitAnswerResponse);
     }
 
     @GetMapping("/{sessionId}/report")
@@ -57,5 +59,12 @@ public class InterviewController {
         InterviewReportDTO cplInterviewReportDTO =
                 interviewSessionService.generateReport(sessionId);
         return Result.success(cplInterviewReportDTO);
+    }
+
+    @GetMapping("/{sessionId}/question")
+    public Result<CurrentQuestionResponseDTO> getCurrentQuestion(@PathVariable String sessionId) {
+        CurrentQuestionResponseDTO cplCurrentQuestionResponseDTO =
+                interviewSessionService.getCurrentQuestion(sessionId);
+        return Result.success(cplCurrentQuestionResponseDTO);
     }
 }

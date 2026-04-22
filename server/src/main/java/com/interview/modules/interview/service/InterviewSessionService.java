@@ -5,10 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
-import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
-import com.interview.modules.interview.model.dto.InterviewReportDTO;
-import com.interview.modules.interview.model.dto.InterviewReportQuestionDTO;
-import com.interview.modules.interview.model.dto.InterviewSessionDTO;
+import com.interview.modules.interview.model.dto.*;
 import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 import com.interview.modules.interview.model.InterviewSessionStatus;
 import com.interview.modules.interview.model.request.SubmitAnswerRequest;
@@ -202,7 +199,7 @@ public class InterviewSessionService {
         return cplInterviewSessionDTO;
     }
 
-    public InterviewSessionDTO submitAnswer(SubmitAnswerRequest cplSubmitAnswerRequest) {
+    public SubmitAnswerResponse submitAnswer(SubmitAnswerRequest cplSubmitAnswerRequest) {
         log.info("开始提交面试答案: sessionId={}, questionIndex={}",
                 cplSubmitAnswerRequest.getSessionId(),
                 cplSubmitAnswerRequest.getQuestionIndex());
@@ -281,16 +278,22 @@ public class InterviewSessionService {
                 cplSubmitAnswerRequest.getQuestionIndex(),
                 tblSavedInterviewSessionEntity.getStatus());
 
-        InterviewSessionDTO cplInterviewSessionDTO = new InterviewSessionDTO();
-        cplInterviewSessionDTO.setSessionId(tblSavedInterviewSessionEntity.getSessionId()); // 会话ID
-        cplInterviewSessionDTO.setResumeId(tblSavedInterviewSessionEntity.getResume().getId()); // 简历ID
-        cplInterviewSessionDTO.setTotalQuestions(tblSavedInterviewSessionEntity.getTotalQuestions()); // 题目总数
-        cplInterviewSessionDTO.setCurrentQuestionIndex(tblSavedInterviewSessionEntity.getCurrentQuestionIndex()); // 当前题目索引
-        cplInterviewSessionDTO.setQuestions(lstInterviewQuestionDTO); // 题目列表
-        cplInterviewSessionDTO.setStatus(tblSavedInterviewSessionEntity.getStatus()); // 会话状态
-        cplInterviewSessionDTO.setCreatedAt(tblSavedInterviewSessionEntity.getCreatedAt()); // 创建时间
+        SubmitAnswerResponse cplSubmitAnswerResponse = new SubmitAnswerResponse();
+        cplSubmitAnswerResponse.setCurrentQuestionIndex(tblSavedInterviewSessionEntity.getCurrentQuestionIndex());
+        cplSubmitAnswerResponse.setTotalQuestions(tblSavedInterviewSessionEntity.getTotalQuestions());
 
-        return cplInterviewSessionDTO;
+        boolean bolHasNextQuestion =
+                cplSubmitAnswerResponse.getCurrentQuestionIndex() < cplSubmitAnswerResponse.getTotalQuestions();
+
+        cplSubmitAnswerResponse.setHasNextQuestion(bolHasNextQuestion);
+
+        InterviewQuestionDTO cplNextQuestionDTO = null;
+        if (bolHasNextQuestion) {
+            cplNextQuestionDTO = lstInterviewQuestionDTO.get(cplSubmitAnswerResponse.getCurrentQuestionIndex());
+        }
+        cplSubmitAnswerResponse.setNextQuestion(cplNextQuestionDTO);
+
+        return cplSubmitAnswerResponse;
     }
 
     public InterviewReportDTO generateReport(String strSessionId) {
@@ -404,5 +407,52 @@ public class InterviewSessionService {
 
         return cplInterviewReportDTO;
 
+    }
+
+    public CurrentQuestionResponseDTO getCurrentQuestion(String strSessionId) {
+
+        log.info("开始获取当前面试题: sessionId={}", strSessionId);
+
+        Optional<InterviewSessionEntity> optInterviewSessionEntity =
+                interviewSessionRepository.findBySessionId(strSessionId);
+
+        if (optInterviewSessionEntity.isEmpty()) {
+            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在");
+        }
+
+        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+
+        List<InterviewQuestionDTO> lstInterviewQuestionDTO;
+        try {
+            lstInterviewQuestionDTO = objectMapper.readValue(
+                    tblInterviewSessionEntity.getQuestionsJson(),
+                    new TypeReference<List<InterviewQuestionDTO>>() {}
+            );
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
+        }
+
+        Integer intCurrentQuestionIndex = tblInterviewSessionEntity.getCurrentQuestionIndex();
+
+        CurrentQuestionResponseDTO cplCurrentQuestionResponseDTO = new CurrentQuestionResponseDTO();
+
+        if (intCurrentQuestionIndex == null || intCurrentQuestionIndex >= lstInterviewQuestionDTO.size()) {
+            cplCurrentQuestionResponseDTO.setCompleted(true);
+            cplCurrentQuestionResponseDTO.setMessage("所有问题已回答完毕");
+            cplCurrentQuestionResponseDTO.setQuestion(null);
+            return cplCurrentQuestionResponseDTO;
+        }
+
+        InterviewQuestionDTO cplInterviewQuestionDTO =
+                lstInterviewQuestionDTO.get(intCurrentQuestionIndex);
+
+        cplCurrentQuestionResponseDTO.setCompleted(false);
+        cplCurrentQuestionResponseDTO.setMessage(null);
+        cplCurrentQuestionResponseDTO.setQuestion(cplInterviewQuestionDTO);
+
+        log.info("获取当前面试题成功: sessionId={}, questionIndex={}",
+                strSessionId, intCurrentQuestionIndex);
+
+        return cplCurrentQuestionResponseDTO;
     }
 }
