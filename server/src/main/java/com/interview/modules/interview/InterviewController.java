@@ -1,8 +1,10 @@
 package com.interview.modules.interview;
 
 import com.interview.common.result.Result;
+import com.interview.modules.interview.model.dto.InterviewReportDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionDTO;
 import com.interview.modules.interview.model.request.CreateInterviewRequest;
+import com.interview.modules.interview.model.request.SubmitAnswerRequest;
 import com.interview.modules.interview.service.InterviewSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,5 +38,24 @@ public class InterviewController {
         InterviewSessionDTO cplInterviewSessionDTO =
                 interviewSessionService.getInterviewSession(sessionId);
         return Result.success(cplInterviewSessionDTO);
+    }
+
+    /**
+     * 提交当前面试题答案。
+     */
+    @PostMapping("/answer")
+    public Result<InterviewSessionDTO> submitAnswer(
+            @Valid @RequestBody SubmitAnswerRequest cplSubmitAnswerRequest) {
+
+        InterviewSessionDTO cplInterviewSessionDTO =
+                interviewSessionService.submitAnswer(cplSubmitAnswerRequest);
+        return Result.success(cplInterviewSessionDTO);
+    }
+
+    @GetMapping("/{sessionId}/report")
+    public Result<InterviewReportDTO> getInterviewReport(@PathVariable String sessionId) {
+        InterviewReportDTO cplInterviewReportDTO =
+                interviewSessionService.generateReport(sessionId);
+        return Result.success(cplInterviewReportDTO);
     }
 }

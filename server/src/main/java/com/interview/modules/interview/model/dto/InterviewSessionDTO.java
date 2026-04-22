@@ -2,6 +2,7 @@ package com.interview.modules.interview.model.dto;
 
 import com.interview.common.annotation.FieldMeta;
 import com.interview.modules.interview.model.InterviewSessionStatus;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,8 +13,7 @@ import java.util.List;
  * 面试会话查询接口的返回 DTO。
  * 当前版本用于返回面试会话的基础信息和题目列表。
  */
-@Getter
-@Setter
+@Data
 public class InterviewSessionDTO {
 
     /**

@@ -1,6 +1,7 @@
 package com.interview.modules.interview.model.dto;
 
 import com.interview.common.annotation.FieldMeta;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,8 +9,7 @@ import lombok.Setter;
  * 面试问题 DTO。
  * 当前版本用于表示一条生成后的基础面试题信息。
  */
-@Getter
-@Setter
+@Data
 public class InterviewQuestionDTO {
 
     /**
@@ -39,4 +39,11 @@ public class InterviewQuestionDTO {
      */
     @FieldMeta(name = "题目分类", desc = "面试题的展示分类名称")
     private String category;
+
+    /**
+     * 用户答案
+     * 当前用户对这道面试题提交的回答内容
+     */
+    @FieldMeta(name = "用户答案", desc = "当前用户对这道面试题提交的回答内容")
+    private String userAnswer;
 }
