@@ -34,6 +34,10 @@ public class InterviewSessionService {
     private final InterviewSessionRepository interviewSessionRepository;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 创建一场新的模拟面试。
+     * 当前版本流程：查简历 -> 按简历关键词生成题目 -> 题目列表序列化入库 -> 返回会话快照。
+     */
     public InterviewSessionDTO createInterview(CreateInterviewRequest cplCreateInterviewRequest) {
         log.info("开始创建面试会话: resumeId={}, questionCount={}",
                 cplCreateInterviewRequest.getResumeId(),
@@ -86,6 +90,10 @@ public class InterviewSessionService {
     }
 
 
+    /**
+     * 根据简历正文生成第一版规则题目。
+     * 当前先用关键词命中方式生成题目，后续再平滑升级为 AI 出题。
+     */
     private List<InterviewQuestionDTO> buildQuestions(String strResumeText, Integer intQuestionCount) {
         List<InterviewQuestionDTO> lstInterviewQuestionDTO = new ArrayList<>();
 
@@ -146,6 +154,9 @@ public class InterviewSessionService {
         return lstInterviewQuestionDTO;
     }
 
+    /**
+     * 构造单道面试题对象，供 buildQuestions 统一复用。
+     */
     private InterviewQuestionDTO createQuestion(
             Integer intQuestionIndex,
             String strQuestion,
@@ -161,6 +172,10 @@ public class InterviewSessionService {
     }
 
 
+    /**
+     * 查询整场面试会话的完整快照。
+     * 这个接口面向“看整场状态”，因此会返回全部题目、当前索引和会话状态等信息。
+     */
     public InterviewSessionDTO getInterviewSession(String strSessionId) {
         log.info("开始查询面试会话: sessionId={}", strSessionId);
 
@@ -199,6 +214,10 @@ public class InterviewSessionService {
         return cplInterviewSessionDTO;
     }
 
+    /**
+     * 提交当前题答案，并返回“下一步怎么走”的结果。
+     * 当前版本要求按顺序作答，返回值聚焦在是否还有下一题、下一题是谁以及当前进度。
+     */
     public SubmitAnswerResponse submitAnswer(SubmitAnswerRequest cplSubmitAnswerRequest) {
         log.info("开始提交面试答案: sessionId={}, questionIndex={}",
                 cplSubmitAnswerRequest.getSessionId(),
@@ -231,6 +250,7 @@ public class InterviewSessionService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
 
+        // 先定位本次提交答案对应的题目对象，后面会直接把 userAnswer 写回这道题。
         InterviewQuestionDTO cplTargetQuestionDTO = null;
         for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
             if (cplSubmitAnswerRequest.getQuestionIndex().equals(cplInterviewQuestionDTO.getQuestionIndex())) {
@@ -245,6 +265,7 @@ public class InterviewSessionService {
 
         cplTargetQuestionDTO.setUserAnswer(cplSubmitAnswerRequest.getAnswer()); // 用户答案
 
+        // 当前版本里 currentQuestionIndex 表示“下一道要回答的题目索引”。
         Integer intNextQuestionIndex = cplSubmitAnswerRequest.getQuestionIndex() + 1;
         Integer intCurrentQuestionIndex = Math.max(
                 tblInterviewSessionEntity.getCurrentQuestionIndex(),
@@ -253,9 +274,7 @@ public class InterviewSessionService {
         tblInterviewSessionEntity.setCurrentQuestionIndex(
                 Math.min(intCurrentQuestionIndex, tblInterviewSessionEntity.getTotalQuestions())
         ); // 当前题目索引
-
-
-
+        // 如果索引已经推进到题目总数，说明整场面试已答完；否则仍处于进行中。
         if (tblInterviewSessionEntity.getCurrentQuestionIndex() >= tblInterviewSessionEntity.getTotalQuestions()) {
             tblInterviewSessionEntity.setStatus(COMPLETED); // 会话状态
         } else {
@@ -278,6 +297,7 @@ public class InterviewSessionService {
                 cplSubmitAnswerRequest.getQuestionIndex(),
                 tblSavedInterviewSessionEntity.getStatus());
 
+        // SubmitAnswerResponse 不是整场会话快照，而是“本次提交后下一步怎么走”的动作结果。
         SubmitAnswerResponse cplSubmitAnswerResponse = new SubmitAnswerResponse();
         cplSubmitAnswerResponse.setCurrentQuestionIndex(tblSavedInterviewSessionEntity.getCurrentQuestionIndex());
         cplSubmitAnswerResponse.setTotalQuestions(tblSavedInterviewSessionEntity.getTotalQuestions());
@@ -287,6 +307,7 @@ public class InterviewSessionService {
 
         cplSubmitAnswerResponse.setHasNextQuestion(bolHasNextQuestion);
 
+        // nextQuestion 基于“提交后的最新索引”来取，不是本次提交的题目本身。
         InterviewQuestionDTO cplNextQuestionDTO = null;
         if (bolHasNextQuestion) {
             cplNextQuestionDTO = lstInterviewQuestionDTO.get(cplSubmitAnswerResponse.getCurrentQuestionIndex());
@@ -296,6 +317,10 @@ public class InterviewSessionService {
         return cplSubmitAnswerResponse;
     }
 
+    /**
+     * 生成整场面试的规则版报告。
+     * 当前先基于题目与答案生成统计、评分和总结，后续再升级为 AI 报告。
+     */
     public InterviewReportDTO generateReport(String strSessionId) {
         log.info("开始生成面试报告: sessionId={}", strSessionId);
         Optional<InterviewSessionEntity> optInterviewSessionEntity =
@@ -409,6 +434,10 @@ public class InterviewSessionService {
 
     }
 
+    /**
+     * 获取当前流程步骤应该展示的题目。
+     * 这个接口面向“当前该答哪一题”，而不是返回整场会话的全量信息。
+     */
     public CurrentQuestionResponseDTO getCurrentQuestion(String strSessionId) {
 
         log.info("开始获取当前面试题: sessionId={}", strSessionId);
@@ -432,10 +461,12 @@ public class InterviewSessionService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
 
+        // currentQuestionIndex 表示下一道待答题目的索引。
         Integer intCurrentQuestionIndex = tblInterviewSessionEntity.getCurrentQuestionIndex();
 
         CurrentQuestionResponseDTO cplCurrentQuestionResponseDTO = new CurrentQuestionResponseDTO();
 
+        // 当前索引越界说明已经没有下一题了，这属于正常完成状态，不是异常。
         if (intCurrentQuestionIndex == null || intCurrentQuestionIndex >= lstInterviewQuestionDTO.size()) {
             cplCurrentQuestionResponseDTO.setCompleted(true);
             cplCurrentQuestionResponseDTO.setMessage("所有问题已回答完毕");
@@ -443,6 +474,7 @@ public class InterviewSessionService {
             return cplCurrentQuestionResponseDTO;
         }
 
+        // 否则直接按当前索引定位当前题目，返回给前端展示。
         InterviewQuestionDTO cplInterviewQuestionDTO =
                 lstInterviewQuestionDTO.get(intCurrentQuestionIndex);
 
@@ -454,5 +486,15 @@ public class InterviewSessionService {
                 strSessionId, intCurrentQuestionIndex);
 
         return cplCurrentQuestionResponseDTO;
+    }
+
+    public void completeInterview(String strSessionId) {
+        Optional<InterviewSessionEntity> optInterviewSessionEntity =
+                interviewSessionRepository.findBySessionId(strSessionId);
+        if (optInterviewSessionEntity.isEmpty()) {
+            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在");
+        }
+        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+
     }
 }

@@ -44,6 +44,7 @@ public class InterviewController {
 
     /**
      * 提交当前面试题答案。
+     * 当前返回的是提交动作结果，而不是整场会话快照。
      */
     @PostMapping("/answer")
     public Result<SubmitAnswerResponse> submitAnswer(
@@ -54,6 +55,9 @@ public class InterviewController {
         return Result.success(cplSubmitAnswerResponse);
     }
 
+    /**
+     * 根据会话ID生成面试报告。
+     */
     @GetMapping("/{sessionId}/report")
     public Result<InterviewReportDTO> getInterviewReport(@PathVariable String sessionId) {
         InterviewReportDTO cplInterviewReportDTO =
@@ -61,10 +65,20 @@ public class InterviewController {
         return Result.success(cplInterviewReportDTO);
     }
 
+    /**
+     * 获取当前流程中应该展示给用户的题目。
+     */
     @GetMapping("/{sessionId}/question")
     public Result<CurrentQuestionResponseDTO> getCurrentQuestion(@PathVariable String sessionId) {
         CurrentQuestionResponseDTO cplCurrentQuestionResponseDTO =
                 interviewSessionService.getCurrentQuestion(sessionId);
         return Result.success(cplCurrentQuestionResponseDTO);
     }
+
+    @PostMapping("/api/interviews/{sessionId}/complete")
+    public Result<Void> completeInterview(String strSessionId){
+        interviewSessionService.completeInterview(strSessionId);
+        return Result.success(null);
+    }
+
 }
