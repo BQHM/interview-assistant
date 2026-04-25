@@ -75,8 +75,8 @@ public class InterviewController {
         return Result.success(cplCurrentQuestionResponseDTO);
     }
 
-    @PostMapping("/api/interviews/{sessionId}/complete")
-    public Result<Void> completeInterview(String strSessionId){
+    @PostMapping("/{sessionId}/complete")
+    public Result<Void> completeInterview(@PathVariable("sessionId") String strSessionId) {
         interviewSessionService.completeInterview(strSessionId);
         return Result.success(null);
     }

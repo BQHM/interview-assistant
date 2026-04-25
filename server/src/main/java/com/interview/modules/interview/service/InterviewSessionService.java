@@ -489,6 +489,7 @@ public class InterviewSessionService {
     }
 
     public void completeInterview(String strSessionId) {
+        log.info("开始提前完成面试: sessionId={}", strSessionId);
         Optional<InterviewSessionEntity> optInterviewSessionEntity =
                 interviewSessionRepository.findBySessionId(strSessionId);
         if (optInterviewSessionEntity.isEmpty()) {
@@ -496,5 +497,14 @@ public class InterviewSessionService {
         }
         InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
 
+        if (COMPLETED.equals(tblInterviewSessionEntity.getStatus())) {
+            throw new BusinessException(ErrorCode.INTERVIEW_ALREADY_COMPLETED, "面试已完成");
+        }
+
+        tblInterviewSessionEntity.setCurrentQuestionIndex(tblInterviewSessionEntity.getTotalQuestions());
+        tblInterviewSessionEntity.setStatus(COMPLETED);
+
+        interviewSessionRepository.save(tblInterviewSessionEntity);
+        log.info("面试提前完成: sessionId={}", strSessionId);
     }
 }

@@ -3,7 +3,9 @@ package com.interview.modules.interview.repository;
 import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import com.interview.modules.interview.model.InterviewSessionStatus;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -16,4 +18,9 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
      * 根据会话ID查询面试会话。
      */
     Optional<InterviewSessionEntity> findBySessionId(String strSessionId);
+
+    Optional<InterviewSessionEntity> findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
+            Long resumeId,
+            List<InterviewSessionStatus> statuses
+    );
 }
