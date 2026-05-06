@@ -19,8 +19,12 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
      */
     Optional<InterviewSessionEntity> findBySessionId(String strSessionId);
 
+    /**
+     * 根据简历ID查询最近一条未完成的面试会话。
+     * 未完成状态包括 CREATED 和 IN_PROGRESS，按创建时间倒序取最新一条。
+     */
     Optional<InterviewSessionEntity> findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
-            Long resumeId,
-            List<InterviewSessionStatus> statuses
+            Long lngResumeId,
+            List<InterviewSessionStatus> lstStatus
     );
 }

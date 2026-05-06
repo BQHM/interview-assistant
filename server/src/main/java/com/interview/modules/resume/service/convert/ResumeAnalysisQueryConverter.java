@@ -1,13 +1,14 @@
 package com.interview.modules.resume.service.convert;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.resume.model.dto.ResumeAnalysisDTO;
 import com.interview.modules.resume.model.entity.ResumeAnalysisEntity;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 /**
  * 简历分析结果查询转换器，负责实体到分析结果 DTO 的转换。
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ResumeAnalysisQueryConverter {
@@ -44,21 +46,24 @@ public class ResumeAnalysisQueryConverter {
         try {
             cplResumeAnalysisDTO.setStrengths(parseStrengths(tblResumeAnalysisEntity.getStrengthsJson())); // 简历优点
             cplResumeAnalysisDTO.setSuggestions(parseSuggestions(tblResumeAnalysisEntity.getSuggestionsJson())); // 改进建议
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
+            log.error("简历分析结果反序列化失败: strengthsJson={}, suggestionsJson={}",
+                    tblResumeAnalysisEntity.getStrengthsJson(),
+                    tblResumeAnalysisEntity.getSuggestionsJson(), e);
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果反序列化失败");
         }
 
         return cplResumeAnalysisDTO;
     }
 
-    private List<String> parseStrengths(String strStrengthsJson) throws JsonProcessingException {
+    private List<String> parseStrengths(String strStrengthsJson) throws JacksonException {
         if (strStrengthsJson == null || strStrengthsJson.isBlank()) {
             return List.of();
         }
         return objectMapper.readValue(strStrengthsJson, new TypeReference<List<String>>() {});
     }
 
-    private List<ResumeAnalysisDTO.Suggestion> parseSuggestions(String strSuggestionsJson) throws JsonProcessingException {
+    private List<ResumeAnalysisDTO.Suggestion> parseSuggestions(String strSuggestionsJson) throws JacksonException {
         if (strSuggestionsJson == null || strSuggestionsJson.isBlank()) {
             return List.of();
         }

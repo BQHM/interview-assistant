@@ -1,7 +1,7 @@
 package com.interview.modules.resume.service.convert;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
@@ -40,7 +40,7 @@ public class ResumeAnalysisPersistenceConverter {
         try {
             tblResumeAnalysisEntity.setStrengthsJson(objectMapper.writeValueAsString(cplResumeAnalysisResultDTO.getStrengths())); // 优点列表JSON
             tblResumeAnalysisEntity.setSuggestionsJson(objectMapper.writeValueAsString(cplResumeAnalysisResultDTO.getSuggestions())); // 改进建议JSON
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果序列化失败");
         }
 

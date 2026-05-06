@@ -1,8 +1,8 @@
 package com.interview.modules.interview.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.interview.model.dto.*;
@@ -25,6 +25,15 @@ import java.util.UUID;
 
 import static com.interview.modules.interview.model.InterviewSessionStatus.COMPLETED;
 
+/**
+ * 面试会话管理服务。
+ * 核心职责：管理面试会话的完整生命周期，包括创建、答题推进、提前交卷和报告生成。
+ *
+ * 关键设计：
+ * - currentQuestionIndex 表示"下一道待答题的索引"，从 0 开始
+ * - 题目和答案统一存储在 questionsJson 字段中（当前阶段简化方案）
+ * - 会话状态流转：CREATED → IN_PROGRESS → COMPLETED
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -60,7 +69,7 @@ public class InterviewSessionService {
         String strQuestionsJson;
         try {
             strQuestionsJson = objectMapper.writeValueAsString(lstInterviewQuestionDTO); // 题目列表JSON
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目序列化失败");
         }
 
@@ -196,7 +205,7 @@ public class InterviewSessionService {
                     tblInterviewSessionEntity.getQuestionsJson(),
                     new TypeReference<List<InterviewQuestionDTO>>() {}
             );
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
 
@@ -246,7 +255,7 @@ public class InterviewSessionService {
                     tblInterviewSessionEntity.getQuestionsJson(),
                     new TypeReference<List<InterviewQuestionDTO>>() {}
             );
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
 
@@ -284,7 +293,7 @@ public class InterviewSessionService {
         String strQuestionsJson;
         try {
             strQuestionsJson = objectMapper.writeValueAsString(lstInterviewQuestionDTO);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目序列化失败");
         }
 
@@ -341,7 +350,7 @@ public class InterviewSessionService {
             lstInterviewQuestionDTO = objectMapper.readValue(tblInterviewSessionEntity.getQuestionsJson(), new TypeReference<List<InterviewQuestionDTO>>() {
             });
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
 
@@ -457,7 +466,7 @@ public class InterviewSessionService {
                     tblInterviewSessionEntity.getQuestionsJson(),
                     new TypeReference<List<InterviewQuestionDTO>>() {}
             );
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
 
@@ -488,6 +497,12 @@ public class InterviewSessionService {
         return cplCurrentQuestionResponseDTO;
     }
 
+    /**
+     * 提前交卷，将面试会话强制置为完成态。
+     * 会把 currentQuestionIndex 推进到 totalQuestions，状态改为 COMPLETED。
+     * 交卷后不允许继续提交答案，但允许生成报告。
+     * 如果会话不存在或已经完成，则抛出业务异常。
+     */
     public void completeInterview(String strSessionId) {
         log.info("开始提前完成面试: sessionId={}", strSessionId);
         Optional<InterviewSessionEntity> optInterviewSessionEntity =
@@ -506,5 +521,42 @@ public class InterviewSessionService {
 
         interviewSessionRepository.save(tblInterviewSessionEntity);
         log.info("面试提前完成: sessionId={}", strSessionId);
+    }
+
+    /**
+     * 根据简历ID查询最近一条未完成的面试会话。
+     * 未完成状态包括 CREATED 和 IN_PROGRESS。
+     * 查到后复用 getInterviewSession() 组装完整 DTO。
+     */
+    public InterviewSessionDTO findUnfinishedSessionByResumeId(Long lngResumeId) {
+        log.info("开始查询未完成面试会话: resumeId={}", lngResumeId);
+
+        // 1. 先校验简历是否存在，避免"简历不存在却返回未找到会话"的歧义
+        if (resumeRepository.findById(lngResumeId).isEmpty()) {
+            throw new BusinessException(ErrorCode.RESUME_NOT_FOUND, "简历不存在");
+        }
+
+        // 2. 定义未完成状态：刚创建或正在进行中
+        List<InterviewSessionStatus> lstUnfinishedStatus = List.of(
+                InterviewSessionStatus.CREATED,
+                InterviewSessionStatus.IN_PROGRESS
+        );
+
+        // 3. 查最近一条未完成会话
+        Optional<InterviewSessionEntity> optInterviewSessionEntity =
+                interviewSessionRepository.findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
+                        lngResumeId,
+                        lstUnfinishedStatus
+                );
+
+        // 4. 查不到就抛异常
+        if (optInterviewSessionEntity.isEmpty()) {
+            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "未找到未完成的面试会话");
+        }
+
+        // 5. 复用已有方法组装完整 DTO，避免重复写反序列化逻辑
+        String strSessionId = optInterviewSessionEntity.get().getSessionId();
+        log.info("查询未完成面试会话成功: resumeId={}, sessionId={}", lngResumeId, strSessionId);
+        return getInterviewSession(strSessionId);
     }
 }
