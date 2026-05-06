@@ -1,24 +1,29 @@
 # IntelliJ IDEA
 .idea/
+**/.idea/
 *.iml
-out/
 
-# Maven
-target/
+# VS Code
+.vscode/
 
-# Env
-.env
-.env.*
-!.env.example
-
-# Logs
-*.log
-logs/
-
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
-# Temporary files
+# Build output
+target/
+**/target/
+out/
+**/out/
+
+# Logs
+*.log
+
+# Local environment files
+.env
+**/.env
+.env.*
+
+# Local temp files
 *.tmp
 *.temp
