@@ -1,5 +1,6 @@
 package com.interview.modules.interview.service;
 
+import com.interview.modules.interview.model.request.SaveAnswerRequest;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -28,7 +29,7 @@ import static com.interview.modules.interview.model.InterviewSessionStatus.COMPL
 /**
  * 面试会话管理服务。
  * 核心职责：管理面试会话的完整生命周期，包括创建、答题推进、提前交卷和报告生成。
- *
+ * <p>
  * 关键设计：
  * - currentQuestionIndex 表示"下一道待答题的索引"，从 0 开始
  * - 题目和答案统一存储在 questionsJson 字段中（当前阶段简化方案）
@@ -203,7 +204,8 @@ public class InterviewSessionService {
         try {
             lstInterviewQuestionDTO = objectMapper.readValue(
                     tblInterviewSessionEntity.getQuestionsJson(),
-                    new TypeReference<List<InterviewQuestionDTO>>() {}
+                    new TypeReference<List<InterviewQuestionDTO>>() {
+                    }
             );
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
@@ -253,7 +255,8 @@ public class InterviewSessionService {
         try {
             lstInterviewQuestionDTO = objectMapper.readValue(
                     tblInterviewSessionEntity.getQuestionsJson(),
-                    new TypeReference<List<InterviewQuestionDTO>>() {}
+                    new TypeReference<List<InterviewQuestionDTO>>() {
+                    }
             );
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
@@ -346,7 +349,7 @@ public class InterviewSessionService {
         }
 
         List<InterviewQuestionDTO> lstInterviewQuestionDTO;
-        try{
+        try {
             lstInterviewQuestionDTO = objectMapper.readValue(tblInterviewSessionEntity.getQuestionsJson(), new TypeReference<List<InterviewQuestionDTO>>() {
             });
 
@@ -464,7 +467,8 @@ public class InterviewSessionService {
         try {
             lstInterviewQuestionDTO = objectMapper.readValue(
                     tblInterviewSessionEntity.getQuestionsJson(),
-                    new TypeReference<List<InterviewQuestionDTO>>() {}
+                    new TypeReference<List<InterviewQuestionDTO>>() {
+                    }
             );
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
@@ -558,5 +562,76 @@ public class InterviewSessionService {
         String strSessionId = optInterviewSessionEntity.get().getSessionId();
         log.info("查询未完成面试会话成功: resumeId={}, sessionId={}", lngResumeId, strSessionId);
         return getInterviewSession(strSessionId);
+    }
+
+    /**
+     * 暂存指定题目的答案草稿。
+     * 与 submitAnswer 不同，此方法只更新答案内容，不推进 currentQuestionIndex。
+     * 如果会话尚未开始作答，则在首次暂存后将状态从 CREATED 改为 IN_PROGRESS。
+     */
+    public void saveAnswer(String strSessionId, SaveAnswerRequest cplSaveAnswerRequest){
+        log.info("开始暂存面试答案: sessionId={}, questionIndex={}",
+                strSessionId,
+                cplSaveAnswerRequest.getQuestionIndex());
+
+        Optional<InterviewSessionEntity> optInterviewSessionEntity =
+                interviewSessionRepository.findBySessionId(strSessionId);
+
+        if (optInterviewSessionEntity.isEmpty()) {
+            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在");
+        }
+
+        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+
+        if (COMPLETED.equals(tblInterviewSessionEntity.getStatus())) {
+            throw new BusinessException(ErrorCode.INTERVIEW_ALREADY_COMPLETED, "面试已完成，不能继续暂存答案");
+        }
+
+        // 从会话快照中取出题目列表，定位本次需要暂存答案的题目。
+        List<InterviewQuestionDTO> lstInterviewQuestionDTO;
+        try {
+            lstInterviewQuestionDTO = objectMapper.readValue(
+                    tblInterviewSessionEntity.getQuestionsJson(),
+                    new TypeReference<List<InterviewQuestionDTO>>() {
+                    }
+            );
+        } catch (JacksonException e) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
+        }
+
+        // 按题目索引查找目标题目，只更新这一题的答案内容。
+        InterviewQuestionDTO cplTargetQuestionDTO = null;
+        for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
+            if (cplSaveAnswerRequest.getQuestionIndex().equals(cplInterviewQuestionDTO.getQuestionIndex())) {
+                cplTargetQuestionDTO = cplInterviewQuestionDTO;
+                break;
+            }
+        }
+
+        if (cplTargetQuestionDTO == null) {
+            throw new BusinessException(ErrorCode.INTERVIEW_QUESTION_NOT_FOUND, "面试问题不存在");
+        }
+
+        cplTargetQuestionDTO.setUserAnswer(cplSaveAnswerRequest.getAnswer());
+
+        // 暂存答案意味着用户已经开始作答，会话状态需要进入进行中。
+        if (InterviewSessionStatus.CREATED.equals(tblInterviewSessionEntity.getStatus())) {
+            tblInterviewSessionEntity.setStatus(InterviewSessionStatus.IN_PROGRESS);
+        }
+
+        // 保存更新后的题目快照，不修改 currentQuestionIndex。
+        String strQuestionsJson;
+        try {
+            strQuestionsJson = objectMapper.writeValueAsString(lstInterviewQuestionDTO);
+        } catch (JacksonException e) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目序列化失败");
+        }
+
+        tblInterviewSessionEntity.setQuestionsJson(strQuestionsJson);
+        interviewSessionRepository.save(tblInterviewSessionEntity);
+
+        log.info("暂存面试答案成功: sessionId={}, questionIndex={}",
+                strSessionId,
+                cplSaveAnswerRequest.getQuestionIndex());
     }
 }
