@@ -6,6 +6,7 @@ import com.interview.modules.interview.model.dto.InterviewReportDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionDTO;
 import com.interview.modules.interview.model.dto.SubmitAnswerResponse;
 import com.interview.modules.interview.model.request.CreateInterviewRequest;
+import com.interview.modules.interview.model.request.SaveAnswerRequest;
 import com.interview.modules.interview.model.request.SubmitAnswerRequest;
 import com.interview.modules.interview.service.InterviewSessionService;
 import jakarta.validation.Valid;
@@ -96,4 +97,14 @@ public class InterviewController {
         return Result.success(cplInterviewSessionDTO);
     }
 
+    /**
+     * 暂存某道题的答案草稿。
+     * 该接口只更新指定题目的 userAnswer，不推进当前作答进度。
+     */
+    @PutMapping("/{sessionId}/answers")
+    public Result<Void> saveAnswer(@PathVariable("sessionId") String strSessionId,
+                                   @Valid @RequestBody SaveAnswerRequest cplSaveAnswerRequest) {
+        interviewSessionService.saveAnswer(strSessionId,cplSaveAnswerRequest);
+        return Result.success(null);
+    }
 }
