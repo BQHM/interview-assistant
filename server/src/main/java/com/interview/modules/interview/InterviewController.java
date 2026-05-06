@@ -12,6 +12,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 面试模块的 HTTP 入口。
+ * 提供模拟面试的会话创建、答题交互、提前交卷、报告生成等接口。
+ */
 @RestController
 @RequestMapping("/api/interviews")
 @RequiredArgsConstructor
@@ -75,10 +79,21 @@ public class InterviewController {
         return Result.success(cplCurrentQuestionResponseDTO);
     }
 
+    /**
+     * 提前交卷，将面试会话状态置为 COMPLETED。
+     * 交卷后不允许再提交答案，但允许生成报告。
+     */
     @PostMapping("/{sessionId}/complete")
     public Result<Void> completeInterview(@PathVariable("sessionId") String strSessionId) {
         interviewSessionService.completeInterview(strSessionId);
         return Result.success(null);
+    }
+
+    @GetMapping("/unfinished/{resumeId}")
+    public Result<InterviewSessionDTO> findUnfinishedSessionByResumeId(@PathVariable("resumeId") Long lngResumeId) {
+        InterviewSessionDTO cplInterviewSessionDTO =
+                interviewSessionService.findUnfinishedSessionByResumeId(lngResumeId);
+        return Result.success(cplInterviewSessionDTO);
     }
 
 }
