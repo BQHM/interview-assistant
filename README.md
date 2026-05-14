@@ -1,82 +1,130 @@
-# AI Interview Assistant
+# 《智能面试助手》
 
-## 项目说明
+基于 Spring Boot 和 Spring AI 的后端练手项目，当前聚焦简历分析与文字模拟面试两条主链路。
 
-`interview-assistant` 是一个智能面试助手后端练手项目，当前阶段主要聚焦两个核心模块：
+---
 
-- 简历上传、解析与分析
-- 模拟面试会话创建、答题推进与报告生成
+## 项目介绍
 
-这个项目以 `interview-guide/` 作为参考实现，但目前还不是完整平台版本，而是一个逐步演进中的后端 MVP。
+`interview-assistant` 是一个以 `interview-guide` 为参考实现、按教学式节奏逐步迭代的后端 MVP。
 
-## 当前进度
+当前项目暂不追求一次性覆盖完整平台能力，而是优先把下面两条核心链路做扎实：
 
-### 已完成模块
+- 简历上传、解析、存储与分析
+- 文字模拟面试的会话创建、答题推进、暂存答案与报告生成
 
-#### 1. 简历模块
+和 `interview-guide` 相比，`interview-assistant` 当前仍处于简化实现阶段：
 
-当前已经打通以下链路：
+- 只保留后端，不包含前端页面
+- 只实现 `resume` 和 `interview` 两个核心模块
+- 先用规则版出题与规则版报告跑通主流程
+- 先用单表 + `questionsJson` 的方式保存题目与答案快照
 
-- 上传简历文件
-- 校验文件类型与大小
-- 基于文件哈希去重
-- 使用 Apache Tika 解析简历文本
-- 将原始文件上传到 RustFS / S3 兼容存储
-- 调用 AI 进行简历分析
-- AI 失败时回退到规则版分析
-- 查询简历列表
-- 查询简历详情
-- 查询简历分析结果
+## 当前定位
 
-#### 2. 模拟面试模块
+当前后端重点是先把简历模块和文字模拟面试模块的主链路跑通，再逐步向 `interview-guide` 的模块拆分、接口语义和业务语义靠拢。
 
-当前已经打通以下链路：
+现阶段更偏向：
 
-- 基于简历创建面试会话
-- 根据简历关键词生成规则版题目
-- 查询整场面试会话详情
-- 获取当前应该展示的题目
-- 提交答案并推进到下一题
-- 提前交卷
-- 生成规则版面试报告
-- 按简历查询最近一条未完成面试会话
+- 能清楚展示后端分层设计
+- 能完整演示业务主链路
+- 能支持 Postman 级别的联调与验证
+- 能为后续 AI 出题、AI 评估、Redis 缓存和独立答案表演进打基础
 
-## 当前未完成的能力
+## 技术栈
 
-以下能力在参考实现中存在，但当前项目还没有完成：
+### 后端技术
 
-- 前端页面
-- 知识库 / RAG 问答
-- 语音面试
-- 面试日程管理
-- Redis 会话缓存
-- 异步任务流转
-- Skill 驱动 AI 出题
-- AI 面试评估报告
-- 暂存答案但不推进下一题
-- PDF 报告导出
+| 技术 | 版本 | 说明 |
+| ---- | ---- | ---- |
+| Spring Boot | 4.0.1 | 应用框架 |
+| Java | 21 | 开发语言 |
+| Spring AI | 2.x | AI 集成框架 |
+| PostgreSQL | 14+ | 关系型数据库 |
+| Spring Data JPA | - | 数据访问层 |
+| Apache Tika | - | 简历文本解析 |
+| RustFS / S3 Compatible Storage | - | 对象存储 |
+| Maven | 3.9+ | 构建工具 |
 
-## 当前技术栈
+## 功能特性
 
-- Spring Boot 4.0.1
-- Java 21
-- Maven
-- PostgreSQL
-- Spring Data JPA
-- Spring AI
-- Apache Tika
-- RustFS / S3 Compatible Storage
+### 简历模块
 
-## 当前后端架构
+- 支持上传简历文件
+- 支持文件类型与大小校验
+- 支持基于文件内容哈希的重复检测
+- 支持使用 Apache Tika 解析简历文本
+- 支持将原始简历上传到 RustFS / S3 兼容存储
+- 支持调用 AI 分析简历内容
+- 支持 AI 失败时自动回退到规则版分析
+- 支持简历列表、详情和分析结果查询
 
-项目当前采用较清晰的分层结构：
+### 模拟面试模块
 
-- Controller：对外暴露 HTTP 接口
-- Service：编排业务流程
-- Repository：负责数据库访问
-- Infrastructure：文件解析、文件校验、对象存储等基础设施能力
+- 支持基于简历创建面试会话
+- 支持自动复用同一简历最近一条未完成会话
+- 支持根据简历关键词生成规则版面试题目
+- 支持查询面试会话详情
+- 支持获取当前应该展示的题目
+- 支持暂存答案但不推进下一题
+- 支持正式提交答案并推进到下一题
+- 支持提前交卷
+- 支持生成规则版面试报告
+- 支持按简历查询最近一条未完成面试会话
 
-## 目录结构
+## 当前开发进度
+
+### 已完成
+
+- [x] 简历上传
+- [x] 简历解析
+- [x] 简历去重
+- [x] 简历对象存储上传
+- [x] AI 简历分析 + 规则兜底
+- [x] 简历列表 / 详情 / 分析结果查询
+- [x] 创建文字模拟面试会话
+- [x] 自动复用未完成面试会话
+- [x] 当前题查询
+- [x] 暂存答案
+- [x] 提交答案并推进进度
+- [x] 提前交卷
+- [x] 规则版面试报告生成
+
+### 未完成
+
+- [ ] 面试历史列表
+- [ ] 面试历史详情
+- [ ] 独立答案表
+- [ ] Skill 驱动 AI 出题
+- [ ] AI 面试评估报告
+- [ ] Redis 会话缓存
+- [ ] 异步任务流转
+- [ ] 知识库 / RAG 问答
+- [ ] 面试日程管理
+- [ ] 语音面试
+- [ ] PDF 报告导出
+- [ ] 前端页面
+
+## 当前实现的关键设计点
+
+### 简历模块
+
+- 使用文件内容哈希做去重，而不是只比较文件名
+- 简历分析优先走 AI，失败时自动降级到规则版分析
+- 分析结果持久化后，可直接通过查询接口返回前端
+
+### 面试模块
+
+- 一场面试对应一条 `InterviewSessionEntity`
+- `currentQuestionIndex` 表示下一道待答题的索引，而不是最近一道已答题索引
+- 创建面试时会优先复用同一简历最近一条未完成会话
+- 当前版本将题目与答案统一存储在 `questionsJson` 中
+- `saveAnswer` 只更新指定题目的草稿答案，不推进 `currentQuestionIndex`
+- `submitAnswer` 要求按顺序作答，并在成功后推进到下一题
+- 提前交卷会将状态改为 `COMPLETED`
+- 只有 `COMPLETED` 状态才允许生成报告
+
+## 项目结构
 
 ```text
 interview-assistant/
@@ -86,6 +134,7 @@ interview-assistant/
     └── src/main/java/com/interview/
         ├── App.java
         ├── common/
+        │   ├── annotation/
         │   ├── config/
         │   ├── constant/
         │   ├── exception/
@@ -117,22 +166,25 @@ interview-assistant/
 
 ### 面试模块
 
-- `POST /api/interviews`：创建面试会话
+- `POST /api/interviews`：创建面试会话；若存在未完成会话则直接返回原会话
 - `GET /api/interviews/{sessionId}`：查询面试会话详情
 - `GET /api/interviews/{sessionId}/question`：获取当前题目
+- `PUT /api/interviews/{sessionId}/answers`：暂存答案但不推进下一题
 - `POST /api/interviews/answer`：提交当前题答案
 - `POST /api/interviews/{sessionId}/complete`：提前交卷
 - `GET /api/interviews/{sessionId}/report`：生成面试报告
 - `GET /api/interviews/unfinished/{resumeId}`：查询未完成面试会话
 
-## 环境要求
+## 快速开始
+
+### 环境要求
 
 - JDK 21+
 - Maven 3.9+
 - PostgreSQL
 - RustFS 或其他兼容 S3 协议的对象存储
 
-## 配置说明
+### 配置说明
 
 项目通过 `server/src/main/resources/application.yml` 和 `server/.env` 读取配置。
 
@@ -163,7 +215,7 @@ APP_STORAGE_BUCKET=interview-guide
 APP_STORAGE_REGION=us-east-1
 ```
 
-## 启动方式
+### 启动方式
 
 进入后端目录后启动：
 
@@ -188,35 +240,21 @@ http://localhost:8080
 4. 创建面试：`POST /api/interviews`
 5. 查询未完成面试：`GET /api/interviews/unfinished/{resumeId}`
 6. 查询当前题目：`GET /api/interviews/{sessionId}/question`
-7. 提交答案：`POST /api/interviews/answer`
-8. 提前交卷：`POST /api/interviews/{sessionId}/complete`
-9. 生成报告：`GET /api/interviews/{sessionId}/report`
+7. 暂存答案：`PUT /api/interviews/{sessionId}/answers`
+8. 提交答案：`POST /api/interviews/answer`
+9. 提前交卷：`POST /api/interviews/{sessionId}/complete`
+10. 生成报告：`GET /api/interviews/{sessionId}/report`
 
-## 当前实现的几个关键设计点
+## 后续演进建议
 
-### 简历模块
+当前项目仍处于教学式迭代阶段，建议按下面顺序继续推进：
 
-- 使用文件内容哈希做去重，而不是只看文件名
-- 简历分析优先走 AI，失败时自动降级到规则版分析
-- 分析结果落库后，可通过查询接口直接返回给前端
-
-### 面试模块
-
-- 一场面试对应一条 `InterviewSessionEntity`
-- `currentQuestionIndex` 表示下一道待答题的索引
-- 当前版本将题目与答案统一存储在 `questionsJson` 中
-- 提前交卷会将状态改为 `COMPLETED`
-- 只有 `COMPLETED` 状态才允许生成报告
-
-## 开发备注
-
-- 当前项目仍处于教学式迭代阶段，优先保证主链路可跑通
-- 后续如果继续演进，建议优先补齐以下能力：
-  - 暂存答案
-  - 面试历史列表
-  - AI 出题
-  - 独立答案表
-  - Redis 会话缓存
+1. 面试历史列表
+2. 面试历史详情
+3. 独立答案表
+4. AI 出题
+5. AI 评估报告
+6. Redis 会话缓存
 
 ## 参考项目
 
