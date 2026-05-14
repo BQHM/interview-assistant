@@ -46,7 +46,7 @@ public class InterviewSessionService {
 
     /**
      * 创建一场新的模拟面试。
-     * 当前版本流程：查简历 -> 按简历关键词生成题目 -> 题目列表序列化入库 -> 返回会话快照。
+     * 当前版本流程：查简历 -> 优先复用未完成会话 -> 生成题目并落库 -> 返回会话快照。
      */
     public InterviewSessionDTO createInterview(CreateInterviewRequest cplCreateInterviewRequest) {
         log.info("开始创建面试会话: resumeId={}, questionCount={}",
@@ -58,6 +58,24 @@ public class InterviewSessionService {
 
         if (optResumeEntity.isEmpty()) {
             throw new BusinessException(ErrorCode.RESUME_NOT_FOUND, "简历不存在");
+        }
+
+        // 同一份简历在当前阶段只保留一条未完成会话，避免重复创建多场并行面试。
+        List<InterviewSessionStatus> lstUnfinishedStatus = List.of(
+                InterviewSessionStatus.CREATED,
+                InterviewSessionStatus.IN_PROGRESS
+        );
+        Optional<InterviewSessionEntity> optUnfinishedInterviewSessionEntity =
+                interviewSessionRepository.findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
+                        cplCreateInterviewRequest.getResumeId(),
+                        lstUnfinishedStatus
+                );
+        if (optUnfinishedInterviewSessionEntity.isPresent()) {
+            String strSessionId = optUnfinishedInterviewSessionEntity.get().getSessionId();
+            log.info("检测到未完成面试会话，直接复用: resumeId={}, sessionId={}",
+                    cplCreateInterviewRequest.getResumeId(),
+                    strSessionId);
+            return getInterviewSession(strSessionId);
         }
 
         ResumeEntity tblResumeEntity = optResumeEntity.get(); // 简历实体

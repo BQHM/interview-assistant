@@ -26,7 +26,7 @@ public class InterviewController {
 
     /**
      * 创建面试会话。
-     * 当前版本基于指定简历创建一场模拟面试。
+     * 如果同一份简历已有未完成会话，则直接返回该会话，避免重复创建。
      */
     @PostMapping
     public Result<InterviewSessionDTO> createInterview(
