@@ -1,26 +1,27 @@
 package com.interview.modules.resume.service.convert;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.interview.modules.resume.model.dto.ResumeDetailDTO;
 import com.interview.modules.resume.model.dto.ResumeListItemDTO;
 import com.interview.modules.resume.model.entity.ResumeAnalysisEntity;
 import com.interview.modules.resume.model.entity.ResumeEntity;
-import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 简历详情与列表相关转换器，负责 Resume 模块查询侧 DTO 转换。
  */
-@Component
 public class ResumeDetailConverter {
+
+    private ResumeDetailConverter() {
+    }
 
     // 简历实体转详情 DTO
 
     /**
      * 将简历实体转换为详情 DTO。
      */
-    public ResumeDetailDTO convertToResumeDetailDTO(ResumeEntity tblResumeEntity) {
+    public static ResumeDetailDTO convertToResumeDetailDTO(ResumeEntity tblResumeEntity) {
         ResumeDetailDTO cplResumeDetailDTO = new ResumeDetailDTO();
         cplResumeDetailDTO.setId(tblResumeEntity.getId()); // 简历ID
         cplResumeDetailDTO.setOriginalFilename(tblResumeEntity.getOriginalFilename()); // 原始文件名
@@ -38,7 +39,7 @@ public class ResumeDetailConverter {
     /**
      * 将分析历史实体列表转换为详情页分析历史摘要列表。
      */
-    public List<ResumeDetailDTO.AnalysisHistoryDTO> convertToAnalysisHistoryDTO(
+    public static List<ResumeDetailDTO.AnalysisHistoryDTO> convertToAnalysisHistoryDTO(
             List<ResumeAnalysisEntity> lstResumeAnalysisEntity) {
 
         List<ResumeDetailDTO.AnalysisHistoryDTO> lstAnalysisHistoryDTO = new ArrayList<>();
@@ -63,7 +64,7 @@ public class ResumeDetailConverter {
     /**
      * 将简历实体与最近一次分析结果转换为列表项 DTO。
      */
-    public ResumeListItemDTO convertToResumeListItemDTO(
+    public static ResumeListItemDTO convertToResumeListItemDTO(
             ResumeEntity tblResumeEntity,
             ResumeAnalysisEntity tblResumeAnalysisEntity) {
 

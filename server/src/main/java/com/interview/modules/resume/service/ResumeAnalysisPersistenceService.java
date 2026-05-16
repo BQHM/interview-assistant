@@ -1,5 +1,7 @@
 package com.interview.modules.resume.service;
 
+import org.springframework.stereotype.Service;
+
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
@@ -7,9 +9,10 @@ import com.interview.modules.resume.model.entity.ResumeAnalysisEntity;
 import com.interview.modules.resume.model.entity.ResumeEntity;
 import com.interview.modules.resume.repository.ResumeAnalysisRepository;
 import com.interview.modules.resume.service.convert.ResumeAnalysisPersistenceConverter;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 简历分析结果持久化服务，负责把分析结果落到数据库。
@@ -20,7 +23,7 @@ import org.springframework.stereotype.Service;
 public class ResumeAnalysisPersistenceService {
 
     private final ResumeAnalysisRepository resumeAnalysisRepository;
-    private final ResumeAnalysisPersistenceConverter resumeAnalysisPersistenceConverter;
+    private final ObjectMapper objectMapper;
 
     /**
      * 保存一份简历的分析结果。
@@ -34,9 +37,10 @@ public class ResumeAnalysisPersistenceService {
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果不完整，无法落库");
         }
 
-        ResumeAnalysisEntity tblResumeAnalysisEntity = resumeAnalysisPersistenceConverter.convertToResumeAnalysisEntity(
+        ResumeAnalysisEntity tblResumeAnalysisEntity = ResumeAnalysisPersistenceConverter.convertToResumeAnalysisEntity(
                 tblResumeEntity,
-                cplResumeAnalysisResultDTO
+                cplResumeAnalysisResultDTO,
+                objectMapper
         );
 
         resumeAnalysisRepository.save(tblResumeAnalysisEntity);

@@ -14,6 +14,7 @@ import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.interview.model.InterviewSessionStatus;
 import com.interview.modules.interview.model.dto.CurrentQuestionResponseDTO;
+import com.interview.modules.interview.model.dto.InterviewDetailDTO;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
 import com.interview.modules.interview.model.dto.InterviewReportDTO;
 import com.interview.modules.interview.model.dto.InterviewReportQuestionDTO;
@@ -51,7 +52,6 @@ public class InterviewSessionService {
 
     private final ResumeRepository resumeRepository;
     private final InterviewSessionRepository interviewSessionRepository;
-    private final InterviewSessionConverter interviewSessionConverter;
     private final ObjectMapper objectMapper;
 
     /**
@@ -643,11 +643,75 @@ public class InterviewSessionService {
                 cplSaveAnswerRequest.getQuestionIndex());
     }
 
+    /**
+     * 查询面试历史列表。
+     * 当前只组装列表页需要的摘要字段，避免把 questionsJson 暴露给列表接口。
+     */
     public List<InterviewSessionListItemDTO> getHistory() {
 
-        List<InterviewSessionEntity> interviewSessions = interviewSessionRepository.findAllByOrderByCreatedAtDesc();
-        return interviewSessions.stream()
-                .map(interviewSessionConverter::convertToInterviewSessionListItemDTO)
-                .toList();
+        List<InterviewSessionEntity> lstInterviewSessionEntity = interviewSessionRepository
+                .findAllByOrderByCreatedAtDesc();
+
+        List<InterviewSessionListItemDTO> lstInterviewSessionListItemDTO = new ArrayList<>();
+
+        for (InterviewSessionEntity tblInterviewSessionEntity : lstInterviewSessionEntity) {
+            InterviewSessionListItemDTO cplInterviewSessionListItemDTO = InterviewSessionConverter
+                    .convertToInterviewSessionListItemDTO(tblInterviewSessionEntity);
+            lstInterviewSessionListItemDTO.add(cplInterviewSessionListItemDTO);
+        }
+
+        return lstInterviewSessionListItemDTO;
+    }
+
+    /**
+     * 查询面试历史详情。
+     * 当前阶段从 questionsJson 中反序列化题目和用户答案，后续会切换到独立答案表。
+     */
+    public InterviewDetailDTO getInterviewDetail(String strSessionId) {
+        Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
+                .findBySessionId(strSessionId);
+
+        if (optInterviewSessionEntity.isEmpty()) {
+            throw new BusinessException(
+                    ErrorCode.INTERVIEW_SESSION_NOT_FOUND,
+                    "面试会话不存在");
+        }
+
+        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+
+        List<InterviewQuestionDTO> lstInterviewQuestionDTO;
+        try {
+            lstInterviewQuestionDTO = objectMapper.readValue(
+                    tblInterviewSessionEntity.getQuestionsJson(),
+                    new TypeReference<List<InterviewQuestionDTO>>() {
+                    });
+        } catch (JacksonException e) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
+        }
+        InterviewDetailDTO cplInterviewDetailDTO = InterviewSessionConverter.convertToInterviewDetailDTO(
+                tblInterviewSessionEntity,
+                lstInterviewQuestionDTO);
+        return cplInterviewDetailDTO;
+    }
+
+    /**
+     * 删除面试会话。
+     * 当前阶段没有独立答案表，只需要删除 interview_sessions 表中的会话记录。
+     */
+    public void deleteInterview(String strSessionId) {
+        Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
+                .findBySessionId(strSessionId);
+
+        if (optInterviewSessionEntity.isEmpty()) {
+            throw new BusinessException(
+                    ErrorCode.INTERVIEW_SESSION_NOT_FOUND,
+                    "面试会话不存在");
+        }
+
+        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+
+        interviewSessionRepository.delete(tblInterviewSessionEntity);
+
+        log.info("删除面试会话成功: sessionId={}", strSessionId);
     }
 }

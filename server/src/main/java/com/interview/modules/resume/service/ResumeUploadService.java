@@ -1,5 +1,11 @@
 package com.interview.modules.resume.service;
 
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.common.model.AsyncTaskStatus;
@@ -12,13 +18,9 @@ import com.interview.modules.resume.model.dto.ResumeUploadResponseDTO;
 import com.interview.modules.resume.model.entity.ResumeEntity;
 import com.interview.modules.resume.repository.ResumeRepository;
 import com.interview.modules.resume.service.convert.ResumeUploadConverter;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -32,7 +34,6 @@ public class ResumeUploadService {
     private final FileHashService fileHashService;
     private final ResumeGradingService resumeGradingService;
     private final ResumeAnalysisPersistenceService resumeAnalysisPersistenceService;
-    private final ResumeUploadConverter resumeUploadConverter;
 
     /**
      * 简历上传主流程。
@@ -61,7 +62,7 @@ public class ResumeUploadService {
         if (optResumeEntity.isPresent()) {
             ResumeEntity tblOldResumeEntity = optResumeEntity.get();
             log.info("命中重复简历，直接返回已有记录: resumeId={}, filename={}", tblOldResumeEntity.getId(), strOriginalFilename);
-            return resumeUploadConverter.convertToResumeUploadResponseDTO(tblOldResumeEntity, true);
+            return ResumeUploadConverter.convertToResumeUploadResponseDTO(tblOldResumeEntity, true);
         }
 
         log.debug("识别到简历文件类型: filename={}, contentType={}", strOriginalFilename, strContentType);
@@ -109,6 +110,6 @@ public class ResumeUploadService {
             resumeRepository.save(tblSavedResumeEntity);
         }
 
-        return resumeUploadConverter.convertToResumeUploadResponseDTO(tblSavedResumeEntity, false);
+        return ResumeUploadConverter.convertToResumeUploadResponseDTO(tblSavedResumeEntity, false);
     }
 }
