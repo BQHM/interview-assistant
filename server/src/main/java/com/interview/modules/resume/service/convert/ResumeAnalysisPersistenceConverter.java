@@ -1,31 +1,28 @@
 package com.interview.modules.resume.service.convert;
 
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
 import com.interview.modules.resume.model.entity.ResumeAnalysisEntity;
 import com.interview.modules.resume.model.entity.ResumeEntity;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * 简历分析结果持久化转换器，负责分析结果 DTO 到实体的转换。
  */
-@Component
-@RequiredArgsConstructor
 public class ResumeAnalysisPersistenceConverter {
 
-    // JSON 序列化工具
-    private final ObjectMapper objectMapper;
+    private ResumeAnalysisPersistenceConverter() {
+    }
 
     /**
      * 将结构化分析结果转换为持久化实体。
      */
-    public ResumeAnalysisEntity convertToResumeAnalysisEntity(
+    public static ResumeAnalysisEntity convertToResumeAnalysisEntity(
             ResumeEntity tblResumeEntity,
-            ResumeAnalysisResultDTO cplResumeAnalysisResultDTO) {
+            ResumeAnalysisResultDTO cplResumeAnalysisResultDTO,
+            ObjectMapper objectMapper) {
 
         ResumeAnalysisEntity tblResumeAnalysisEntity = new ResumeAnalysisEntity();
         tblResumeAnalysisEntity.setResume(tblResumeEntity); // 关联简历
