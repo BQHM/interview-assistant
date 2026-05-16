@@ -2,6 +2,7 @@ package com.interview.modules.interview;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.interview.common.result.Result;
 import com.interview.modules.interview.model.dto.CurrentQuestionResponseDTO;
+import com.interview.modules.interview.model.dto.InterviewDetailDTO;
 import com.interview.modules.interview.model.dto.InterviewReportDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionListItemDTO;
@@ -23,7 +25,6 @@ import com.interview.modules.interview.service.InterviewSessionService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
 
 /**
  * 面试模块的 HTTP 入口。
@@ -44,8 +45,7 @@ public class InterviewController {
     public Result<InterviewSessionDTO> createInterview(
             @Valid @RequestBody CreateInterviewRequest cplCreateInterviewRequest) {
 
-        InterviewSessionDTO cplInterviewSessionDTO =
-                interviewSessionService.createInterview(cplCreateInterviewRequest);
+        InterviewSessionDTO cplInterviewSessionDTO = interviewSessionService.createInterview(cplCreateInterviewRequest);
         return Result.success(cplInterviewSessionDTO);
     }
 
@@ -54,8 +54,7 @@ public class InterviewController {
      */
     @GetMapping("/{sessionId}")
     public Result<InterviewSessionDTO> getInterviewSession(@PathVariable String sessionId) {
-        InterviewSessionDTO cplInterviewSessionDTO =
-                interviewSessionService.getInterviewSession(sessionId);
+        InterviewSessionDTO cplInterviewSessionDTO = interviewSessionService.getInterviewSession(sessionId);
         return Result.success(cplInterviewSessionDTO);
     }
 
@@ -67,8 +66,7 @@ public class InterviewController {
     public Result<SubmitAnswerResponse> submitAnswer(
             @Valid @RequestBody SubmitAnswerRequest cplSubmitAnswerRequest) {
 
-        SubmitAnswerResponse cplSubmitAnswerResponse =
-                interviewSessionService.submitAnswer(cplSubmitAnswerRequest);
+        SubmitAnswerResponse cplSubmitAnswerResponse = interviewSessionService.submitAnswer(cplSubmitAnswerRequest);
         return Result.success(cplSubmitAnswerResponse);
     }
 
@@ -77,8 +75,7 @@ public class InterviewController {
      */
     @GetMapping("/{sessionId}/report")
     public Result<InterviewReportDTO> getInterviewReport(@PathVariable String sessionId) {
-        InterviewReportDTO cplInterviewReportDTO =
-                interviewSessionService.generateReport(sessionId);
+        InterviewReportDTO cplInterviewReportDTO = interviewSessionService.generateReport(sessionId);
         return Result.success(cplInterviewReportDTO);
     }
 
@@ -87,8 +84,8 @@ public class InterviewController {
      */
     @GetMapping("/{sessionId}/question")
     public Result<CurrentQuestionResponseDTO> getCurrentQuestion(@PathVariable String sessionId) {
-        CurrentQuestionResponseDTO cplCurrentQuestionResponseDTO =
-                interviewSessionService.getCurrentQuestion(sessionId);
+        CurrentQuestionResponseDTO cplCurrentQuestionResponseDTO = interviewSessionService
+                .getCurrentQuestion(sessionId);
         return Result.success(cplCurrentQuestionResponseDTO);
     }
 
@@ -104,8 +101,8 @@ public class InterviewController {
 
     @GetMapping("/unfinished/{resumeId}")
     public Result<InterviewSessionDTO> findUnfinishedSessionByResumeId(@PathVariable("resumeId") Long lngResumeId) {
-        InterviewSessionDTO cplInterviewSessionDTO =
-                interviewSessionService.findUnfinishedSessionByResumeId(lngResumeId);
+        InterviewSessionDTO cplInterviewSessionDTO = interviewSessionService
+                .findUnfinishedSessionByResumeId(lngResumeId);
         return Result.success(cplInterviewSessionDTO);
     }
 
@@ -115,15 +112,37 @@ public class InterviewController {
      */
     @PutMapping("/{sessionId}/answers")
     public Result<Void> saveAnswer(@PathVariable("sessionId") String strSessionId,
-                                   @Valid @RequestBody SaveAnswerRequest cplSaveAnswerRequest) {
-        interviewSessionService.saveAnswer(strSessionId,cplSaveAnswerRequest);
+            @Valid @RequestBody SaveAnswerRequest cplSaveAnswerRequest) {
+        interviewSessionService.saveAnswer(strSessionId, cplSaveAnswerRequest);
         return Result.success(null);
     }
 
+    /**
+     * 查询面试历史列表。
+     * 只返回会话摘要信息，不返回完整题目 JSON，避免列表接口过重。
+     */
     @GetMapping
     public Result<List<InterviewSessionListItemDTO>> getHistory() {
-        List<InterviewSessionListItemDTO> interviewSessionList =
-            interviewSessionService.getHistory();
-    return Result.success(interviewSessionList);
+        List<InterviewSessionListItemDTO> interviewSessionList = interviewSessionService.getHistory();
+        return Result.success(interviewSessionList);
+    }
+
+    /**
+     * 查询面试历史详情。
+     */
+    @GetMapping("/{sessionId}/details")
+    public Result<InterviewDetailDTO> getInterviewDetail(@PathVariable String sessionId) {
+        InterviewDetailDTO interviewDetail = interviewSessionService.getInterviewDetail(sessionId);
+        return Result.success(interviewDetail);
+    }
+
+    /**
+     * 删除面试会话。
+     * 当前阶段只删除面试会话表记录，后续引入独立答案表后再补充级联删除策略。
+     */
+    @DeleteMapping("/{sessionId}")
+    public Result<Void> deleteInterview(@PathVariable String sessionId) {
+        interviewSessionService.deleteInterview(sessionId);
+        return Result.success(null);
     }
 }
