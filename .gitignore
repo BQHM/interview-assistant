@@ -27,3 +27,6 @@ out/
 # Local temp files
 *.tmp
 *.temp
+
+# Local Codex/desktop workspace state
+.edp/
