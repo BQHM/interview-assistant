@@ -1,17 +1,29 @@
 package com.interview.modules.interview;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.interview.common.result.Result;
 import com.interview.modules.interview.model.dto.CurrentQuestionResponseDTO;
 import com.interview.modules.interview.model.dto.InterviewReportDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionDTO;
+import com.interview.modules.interview.model.dto.InterviewSessionListItemDTO;
 import com.interview.modules.interview.model.dto.SubmitAnswerResponse;
 import com.interview.modules.interview.model.request.CreateInterviewRequest;
 import com.interview.modules.interview.model.request.SaveAnswerRequest;
 import com.interview.modules.interview.model.request.SubmitAnswerRequest;
 import com.interview.modules.interview.service.InterviewSessionService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+
 
 /**
  * 面试模块的 HTTP 入口。
@@ -106,5 +118,12 @@ public class InterviewController {
                                    @Valid @RequestBody SaveAnswerRequest cplSaveAnswerRequest) {
         interviewSessionService.saveAnswer(strSessionId,cplSaveAnswerRequest);
         return Result.success(null);
+    }
+
+    @GetMapping
+    public Result<List<InterviewSessionListItemDTO>> getHistory() {
+        List<InterviewSessionListItemDTO> interviewSessionList =
+            interviewSessionService.getHistory();
+    return Result.success(interviewSessionList);
     }
 }

@@ -1,12 +1,13 @@
 package com.interview.modules.interview.repository;
 
-import com.interview.modules.interview.model.entity.InterviewSessionEntity;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-import com.interview.modules.interview.model.InterviewSessionStatus;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.interview.modules.interview.model.InterviewSessionStatus;
+import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 
 /**
  * 面试会话 Repository，负责和 interview_sessions 表交互。
@@ -25,6 +26,10 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
      */
     Optional<InterviewSessionEntity> findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
             Long lngResumeId,
-            List<InterviewSessionStatus> lstStatus
-    );
+            List<InterviewSessionStatus> lstStatus);
+
+    /**
+     * 按创建时间倒序查询所有面试会话。
+     */
+    List<InterviewSessionEntity> findAllByOrderByCreatedAtDesc();
 }
