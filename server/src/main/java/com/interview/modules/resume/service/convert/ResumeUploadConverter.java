@@ -2,18 +2,19 @@ package com.interview.modules.resume.service.convert;
 
 import com.interview.modules.resume.model.dto.ResumeUploadResponseDTO;
 import com.interview.modules.resume.model.entity.ResumeEntity;
-import org.springframework.stereotype.Component;
 
 /**
  * 简历上传转换器，负责上传场景下的返回 DTO 组装。
  */
-@Component
 public class ResumeUploadConverter {
+
+    private ResumeUploadConverter() {
+    }
 
     /**
      * 将简历实体转换为上传接口返回 DTO。
      */
-    public ResumeUploadResponseDTO convertToResumeUploadResponseDTO(
+    public static ResumeUploadResponseDTO convertToResumeUploadResponseDTO(
             ResumeEntity tblResumeEntity,
             Boolean boolIsDuplicate) {
 

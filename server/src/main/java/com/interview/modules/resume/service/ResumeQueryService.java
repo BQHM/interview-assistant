@@ -1,5 +1,13 @@
 package com.interview.modules.resume.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.resume.model.dto.ResumeDetailDTO;
@@ -9,15 +17,9 @@ import com.interview.modules.resume.model.entity.ResumeEntity;
 import com.interview.modules.resume.repository.ResumeAnalysisRepository;
 import com.interview.modules.resume.repository.ResumeRepository;
 import com.interview.modules.resume.service.convert.ResumeDetailConverter;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * 简历查询服务，负责简历详情查询与简历列表查询。
@@ -29,7 +31,6 @@ public class ResumeQueryService {
 
     private final ResumeRepository resumeRepository;
     private final ResumeAnalysisRepository resumeAnalysisRepository;
-    private final ResumeDetailConverter resumeDetailConverter;
 
     /**
      * 根据简历主键查询简历详情。
@@ -45,9 +46,9 @@ public class ResumeQueryService {
             List<ResumeAnalysisEntity> lstResumeAnalysisEntity =
                     resumeAnalysisRepository.findByResumeIdOrderByAnalyzedAtDesc(lngResumeId);
 
-            ResumeDetailDTO cplResumeDetailDTO = resumeDetailConverter.convertToResumeDetailDTO(tblResumeEntity);
+            ResumeDetailDTO cplResumeDetailDTO = ResumeDetailConverter.convertToResumeDetailDTO(tblResumeEntity);
             List<ResumeDetailDTO.AnalysisHistoryDTO> lstAnalysisHistoryDTO =
-                    resumeDetailConverter.convertToAnalysisHistoryDTO(lstResumeAnalysisEntity);
+                    ResumeDetailConverter.convertToAnalysisHistoryDTO(lstResumeAnalysisEntity);
             cplResumeDetailDTO.setAnalyses(lstAnalysisHistoryDTO);
 
             log.info("查询简历详情成功: resumeId={}, analysesCount={}", lngResumeId, lstAnalysisHistoryDTO.size());
@@ -86,7 +87,7 @@ public class ResumeQueryService {
         List<ResumeListItemDTO> lstResumeListItemDTO = new ArrayList<>();
         for (ResumeEntity tblResumeEntity : lstResumeEntity) {
             ResumeAnalysisEntity tblResumeAnalysisEntity = mapResumeAnalysisEntity.get(tblResumeEntity.getId());
-            ResumeListItemDTO cplResumeListItemDTO = resumeDetailConverter.convertToResumeListItemDTO(
+            ResumeListItemDTO cplResumeListItemDTO = ResumeDetailConverter.convertToResumeListItemDTO(
                     tblResumeEntity,
                     tblResumeAnalysisEntity
             );
