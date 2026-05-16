@@ -72,6 +72,12 @@
 
     <!-- 这里放项目真正需要引入的依赖 -->
     <dependencies>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Web 应用基础依赖：Spring MVC、嵌入式 Tomcat、JSON 处理等 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
