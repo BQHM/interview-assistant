@@ -3,8 +3,6 @@ package com.interview.modules.interview.model.dto;
 import com.interview.common.annotation.FieldMeta;
 import com.interview.modules.interview.model.InterviewSessionStatus;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -2,8 +2,6 @@ package com.interview.modules.interview.model.dto;
 
 import com.interview.common.annotation.FieldMeta;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * 面试问题 DTO。
