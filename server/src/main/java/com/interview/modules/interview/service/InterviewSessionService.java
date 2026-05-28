@@ -21,10 +21,12 @@ import com.interview.modules.interview.model.dto.InterviewReportQuestionDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionListItemDTO;
 import com.interview.modules.interview.model.dto.SubmitAnswerResponse;
+import com.interview.modules.interview.model.entity.InterviewAnswerEntity;
 import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 import com.interview.modules.interview.model.request.CreateInterviewRequest;
 import com.interview.modules.interview.model.request.SaveAnswerRequest;
 import com.interview.modules.interview.model.request.SubmitAnswerRequest;
+import com.interview.modules.interview.repository.InterviewAnswerRepository;
 import com.interview.modules.interview.repository.InterviewSessionRepository;
 import com.interview.modules.interview.service.convert.InterviewSessionConverter;
 import com.interview.modules.resume.model.entity.ResumeEntity;
@@ -52,6 +54,7 @@ public class InterviewSessionService {
 
     private final ResumeRepository resumeRepository;
     private final InterviewSessionRepository interviewSessionRepository;
+    private final InterviewAnswerRepository interviewAnswerRepository;
     private final ObjectMapper objectMapper;
 
     /**
@@ -620,22 +623,31 @@ public class InterviewSessionService {
             throw new BusinessException(ErrorCode.INTERVIEW_QUESTION_NOT_FOUND, "面试问题不存在");
         }
 
-        cplTargetQuestionDTO.setUserAnswer(cplSaveAnswerRequest.getAnswer());
+        Optional<InterviewAnswerEntity> optInterviewAnswerEntity = interviewAnswerRepository
+                .findBySessionAndQuestionIndex(
+                        tblInterviewSessionEntity,
+                        cplSaveAnswerRequest.getQuestionIndex());
+
+        InterviewAnswerEntity tblInterviewAnswerEntity;
+
+        if (optInterviewAnswerEntity.isPresent()) {
+            tblInterviewAnswerEntity = optInterviewAnswerEntity.get();
+            tblInterviewAnswerEntity.setUserAnswer(cplSaveAnswerRequest.getAnswer());
+        } else {
+            tblInterviewAnswerEntity = new InterviewAnswerEntity();
+            tblInterviewAnswerEntity.setSession(tblInterviewSessionEntity);
+            tblInterviewAnswerEntity.setQuestionIndex(cplTargetQuestionDTO.getQuestionIndex());
+            tblInterviewAnswerEntity.setQuestion(cplTargetQuestionDTO.getQuestion());
+            tblInterviewAnswerEntity.setCategory(cplTargetQuestionDTO.getCategory());
+            tblInterviewAnswerEntity.setUserAnswer(cplSaveAnswerRequest.getAnswer());
+        }
 
         // 暂存答案意味着用户已经开始作答，会话状态需要进入进行中。
         if (InterviewSessionStatus.CREATED.equals(tblInterviewSessionEntity.getStatus())) {
             tblInterviewSessionEntity.setStatus(InterviewSessionStatus.IN_PROGRESS);
         }
 
-        // 保存更新后的题目快照，不修改 currentQuestionIndex。
-        String strQuestionsJson;
-        try {
-            strQuestionsJson = objectMapper.writeValueAsString(lstInterviewQuestionDTO);
-        } catch (JacksonException e) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目序列化失败");
-        }
-
-        tblInterviewSessionEntity.setQuestionsJson(strQuestionsJson);
+        interviewAnswerRepository.save(tblInterviewAnswerEntity);
         interviewSessionRepository.save(tblInterviewSessionEntity);
 
         log.info("暂存面试答案成功: sessionId={}, questionIndex={}",
@@ -688,6 +700,18 @@ public class InterviewSessionService {
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
+        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository
+                .findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
+
+        for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
+            for (InterviewAnswerEntity tblInterviewAnswerEntity : lstInterviewAnswerEntity) {
+                if (cplInterviewQuestionDTO.getQuestionIndex().equals(tblInterviewAnswerEntity.getQuestionIndex())) {
+                    cplInterviewQuestionDTO.setUserAnswer(tblInterviewAnswerEntity.getUserAnswer());
+                    break;
+                }
+            }
+        }
+
         InterviewDetailDTO cplInterviewDetailDTO = InterviewSessionConverter.convertToInterviewDetailDTO(
                 tblInterviewSessionEntity,
                 lstInterviewQuestionDTO);
