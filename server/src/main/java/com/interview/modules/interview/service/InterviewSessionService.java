@@ -14,6 +14,7 @@ import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.interview.model.InterviewSessionStatus;
 import com.interview.modules.interview.model.dto.CurrentQuestionResponseDTO;
+import com.interview.modules.interview.model.dto.InterviewDetailDTO;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
 import com.interview.modules.interview.model.dto.InterviewReportDTO;
 import com.interview.modules.interview.model.dto.InterviewReportQuestionDTO;
@@ -25,6 +26,7 @@ import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 import com.interview.modules.interview.model.request.CreateInterviewRequest;
 import com.interview.modules.interview.model.request.SaveAnswerRequest;
 import com.interview.modules.interview.model.request.SubmitAnswerRequest;
+import com.interview.modules.interview.repository.InterviewAnswerRepository;
 import com.interview.modules.interview.repository.InterviewSessionRepository;
 import com.interview.modules.interview.service.convert.InterviewSessionConverter;
 import com.interview.modules.resume.model.entity.ResumeEntity;
@@ -52,8 +54,8 @@ public class InterviewSessionService {
 
     private final ResumeRepository resumeRepository;
     private final InterviewSessionRepository interviewSessionRepository;
-    private final InterviewSessionConverter interviewSessionConverter;
     private final ObjectMapper objectMapper;
+    private final InterviewAnswerRepository interviewAnswerRepository;
 
     /**
      * 创建一场新的模拟面试。
@@ -291,7 +293,28 @@ public class InterviewSessionService {
             throw new BusinessException(ErrorCode.INTERVIEW_QUESTION_NOT_FOUND, "面试问题不存在");
         }
 
-        cplTargetQuestionDTO.setUserAnswer(cplSubmitAnswerRequest.getAnswer()); // 用户答案
+        // 提交答案时不再修改 questionsJson，而是写入独立答案表。
+        // questionsJson 只负责保存题目快照，interview_answers 负责保存用户答案。
+        Optional<InterviewAnswerEntity> optInterviewAnswerEntity = interviewAnswerRepository
+                .findBySessionAndQuestionIndex(
+                        tblInterviewSessionEntity,
+                        cplSubmitAnswerRequest.getQuestionIndex());
+
+        InterviewAnswerEntity tblInterviewAnswerEntity;
+
+        if (optInterviewAnswerEntity.isPresent()) {
+            tblInterviewAnswerEntity = optInterviewAnswerEntity.get();
+            tblInterviewAnswerEntity.setUserAnswer(cplSubmitAnswerRequest.getAnswer());
+        } else {
+            tblInterviewAnswerEntity = new InterviewAnswerEntity();
+            tblInterviewAnswerEntity.setSession(tblInterviewSessionEntity);
+            tblInterviewAnswerEntity.setQuestionIndex(cplTargetQuestionDTO.getQuestionIndex());
+            tblInterviewAnswerEntity.setQuestion(cplTargetQuestionDTO.getQuestion());
+            tblInterviewAnswerEntity.setCategory(cplTargetQuestionDTO.getCategory());
+            tblInterviewAnswerEntity.setUserAnswer(cplSubmitAnswerRequest.getAnswer());
+        }
+
+        interviewAnswerRepository.save(tblInterviewAnswerEntity);
 
         // 当前版本里 currentQuestionIndex 表示“下一道要回答的题目索引”。
         Integer intNextQuestionIndex = cplSubmitAnswerRequest.getQuestionIndex() + 1;
@@ -307,15 +330,6 @@ public class InterviewSessionService {
         } else {
             tblInterviewSessionEntity.setStatus(InterviewSessionStatus.IN_PROGRESS); // 会话状态
         }
-
-        String strQuestionsJson;
-        try {
-            strQuestionsJson = objectMapper.writeValueAsString(lstInterviewQuestionDTO);
-        } catch (JacksonException e) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目序列化失败");
-        }
-
-        tblInterviewSessionEntity.setQuestionsJson(strQuestionsJson); // 题目列表JSON
 
         InterviewSessionEntity tblSavedInterviewSessionEntity = interviewSessionRepository
                 .save(tblInterviewSessionEntity);
@@ -659,9 +673,69 @@ public class InterviewSessionService {
      */
     public List<InterviewSessionListItemDTO> getHistory() {
 
-        List<InterviewSessionEntity> interviewSessions = interviewSessionRepository.findAllByOrderByCreatedAtDesc();
-        return interviewSessions.stream()
-                .map(interviewSessionConverter::convertToInterviewSessionListItemDTO)
-                .toList();
+        List<InterviewSessionEntity> lstInterviewSessionEntity = interviewSessionRepository
+                .findAllByOrderByCreatedAtDesc();
+
+        List<InterviewSessionListItemDTO> lstInterviewSessionListItemDTO = new ArrayList<>();
+
+        for (InterviewSessionEntity tblInterviewSessionEntity : lstInterviewSessionEntity) {
+            InterviewSessionListItemDTO cplInterviewSessionListItemDTO = InterviewSessionConverter
+                    .convertToInterviewSessionListItemDTO(tblInterviewSessionEntity);
+            lstInterviewSessionListItemDTO.add(cplInterviewSessionListItemDTO);
+        }
+
+        return lstInterviewSessionListItemDTO;
+    }
+
+    /**
+     * 查询面试历史详情。
+     * 当前阶段从 questionsJson 中反序列化题目和用户答案，后续会切换到独立答案表。
+     */
+    public InterviewDetailDTO getInterviewDetail(String strSessionId) {
+        Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
+                .findBySessionId(strSessionId);
+
+        if (optInterviewSessionEntity.isEmpty()) {
+            throw new BusinessException(
+                    ErrorCode.INTERVIEW_SESSION_NOT_FOUND,
+                    "面试会话不存在");
+        }
+
+        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+
+        List<InterviewQuestionDTO> lstInterviewQuestionDTO;
+        try {
+            lstInterviewQuestionDTO = objectMapper.readValue(
+                    tblInterviewSessionEntity.getQuestionsJson(),
+                    new TypeReference<List<InterviewQuestionDTO>>() {
+                    });
+        } catch (JacksonException e) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
+        }
+        InterviewDetailDTO cplInterviewDetailDTO = InterviewSessionConverter.convertToInterviewDetailDTO(
+                tblInterviewSessionEntity,
+                lstInterviewQuestionDTO);
+        return cplInterviewDetailDTO;
+    }
+
+    /**
+     * 删除面试会话。
+     * 当前阶段没有独立答案表，只需要删除 interview_sessions 表中的会话记录。
+     */
+    public void deleteInterview(String strSessionId) {
+        Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
+                .findBySessionId(strSessionId);
+
+        if (optInterviewSessionEntity.isEmpty()) {
+            throw new BusinessException(
+                    ErrorCode.INTERVIEW_SESSION_NOT_FOUND,
+                    "面试会话不存在");
+        }
+
+        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+
+        interviewSessionRepository.delete(tblInterviewSessionEntity);
+
+        log.info("删除面试会话成功: sessionId={}", strSessionId);
     }
 }
