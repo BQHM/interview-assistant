@@ -594,9 +594,7 @@ public class InterviewSessionService {
      * 如果会话尚未开始作答，则在首次暂存后将状态从 CREATED 改为 IN_PROGRESS。
      */
     public void saveAnswer(String strSessionId, SaveAnswerRequest cplSaveAnswerRequest) {
-        log.info("开始暂存面试答案: sessionId={}, questionIndex={}",
-                strSessionId,
-                cplSaveAnswerRequest.getQuestionIndex());
+        log.info("开始暂存面试答案: sessionId={}, questionIndex={}", strSessionId, cplSaveAnswerRequest.getQuestionIndex());
 
         Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
                 .findBySessionId(strSessionId);
@@ -636,9 +634,7 @@ public class InterviewSessionService {
         }
 
         Optional<InterviewAnswerEntity> optInterviewAnswerEntity = interviewAnswerRepository
-                .findBySessionAndQuestionIndex(
-                        tblInterviewSessionEntity,
-                        cplSaveAnswerRequest.getQuestionIndex());
+                .findBySessionAndQuestionIndex(tblInterviewSessionEntity, cplSaveAnswerRequest.getQuestionIndex());
 
         InterviewAnswerEntity tblInterviewAnswerEntity;
 
@@ -673,6 +669,7 @@ public class InterviewSessionService {
      */
     public List<InterviewSessionListItemDTO> getHistory() {
 
+        // 按创建时间倒序查询所有面试会话
         List<InterviewSessionEntity> lstInterviewSessionEntity = interviewSessionRepository
                 .findAllByOrderByCreatedAtDesc();
 
@@ -689,18 +686,19 @@ public class InterviewSessionService {
 
     /**
      * 查询面试历史详情。
-     * 当前阶段从 questionsJson 中反序列化题目和用户答案，后续会切换到独立答案表。
+     * questionsJson 保存题目快照，interview_answers 保存用户答案。
+     * 这里会把题目和答案按 questionIndex 聚合成详情返回。
      */
     public InterviewDetailDTO getInterviewDetail(String strSessionId) {
+        // 根据会话ID查询面试会话
         Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
                 .findBySessionId(strSessionId);
 
         if (optInterviewSessionEntity.isEmpty()) {
-            throw new BusinessException(
-                    ErrorCode.INTERVIEW_SESSION_NOT_FOUND,
-                    "面试会话不存在");
+            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在");
         }
 
+        // 获取面试会话
         InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
 
         List<InterviewQuestionDTO> lstInterviewQuestionDTO;
@@ -712,6 +710,23 @@ public class InterviewSessionService {
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
+
+        // 查找答案表
+        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository
+                .findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
+
+        // 如果题目的 questionIndex == 答案的 questionIndex
+        // 就把答案表里的 userAnswer 填回题目 DTO
+        for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
+            for (InterviewAnswerEntity tblInterviewAnswerEntity : lstInterviewAnswerEntity) {
+                if (cplInterviewQuestionDTO.getQuestionIndex().equals(tblInterviewAnswerEntity.getQuestionIndex())) {
+                    cplInterviewQuestionDTO.setUserAnswer(tblInterviewAnswerEntity.getUserAnswer());
+                    break;
+                }
+            }
+        }
+
+        // 输出转换
         InterviewDetailDTO cplInterviewDetailDTO = InterviewSessionConverter.convertToInterviewDetailDTO(
                 tblInterviewSessionEntity,
                 lstInterviewQuestionDTO);
