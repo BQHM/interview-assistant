@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
@@ -206,6 +207,7 @@ public class InterviewSessionService {
      * 查询整场面试会话的完整快照。
      * 这个接口面向“看整场状态”，因此会返回全部题目、当前索引和会话状态等信息。
      */
+    @Transactional(readOnly = true)
     public InterviewSessionDTO getInterviewSession(String strSessionId) {
         log.info("开始查询面试会话: sessionId={}", strSessionId);
 
@@ -228,6 +230,18 @@ public class InterviewSessionService {
                     });
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
+        }
+
+        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository
+                .findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
+
+        for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
+            for (InterviewAnswerEntity tblInterviewAnswerEntity : lstInterviewAnswerEntity) {
+                if (cplInterviewQuestionDTO.getQuestionIndex().equals(tblInterviewAnswerEntity.getQuestionIndex())) {
+                    cplInterviewQuestionDTO.setUserAnswer(tblInterviewAnswerEntity.getUserAnswer());
+                    break;
+                }
+            }
         }
 
         // 3. 手动组装返回 DTO。
@@ -362,6 +376,7 @@ public class InterviewSessionService {
      * 生成整场面试的规则版报告。
      * 当前先基于题目与答案生成统计、评分和总结，后续再升级为 AI 报告。
      */
+    @Transactional(readOnly = true)
     public InterviewReportDTO generateReport(String strSessionId) {
         log.info("开始生成面试报告: sessionId={}", strSessionId);
         Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
@@ -382,9 +397,19 @@ public class InterviewSessionService {
             lstInterviewQuestionDTO = objectMapper.readValue(tblInterviewSessionEntity.getQuestionsJson(),
                     new TypeReference<List<InterviewQuestionDTO>>() {
                     });
-
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
+        }
+
+        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
+
+        for(InterviewQuestionDTO cplInterviewQuestionDTO:lstInterviewQuestionDTO){
+            for(InterviewAnswerEntity tblInterviewAnswerEntity:lstInterviewAnswerEntity){
+                if(cplInterviewQuestionDTO.getQuestionIndex().equals(tblInterviewAnswerEntity.getQuestionIndex())){
+                    cplInterviewQuestionDTO.setUserAnswer(tblInterviewAnswerEntity.getUserAnswer());
+                    break;
+                }
+            }
         }
 
         Integer intAnsweredQuestions = 0;
