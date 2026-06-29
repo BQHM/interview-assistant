@@ -21,6 +21,8 @@ import com.interview.modules.interview.model.dto.SubmitAnswerResponse;
 import com.interview.modules.interview.model.request.CreateInterviewRequest;
 import com.interview.modules.interview.model.request.SaveAnswerRequest;
 import com.interview.modules.interview.model.request.SubmitAnswerRequest;
+import com.interview.modules.interview.service.InterviewHistoryService;
+import com.interview.modules.interview.service.InterviewReportService;
 import com.interview.modules.interview.service.InterviewSessionService;
 
 import jakarta.validation.Valid;
@@ -36,6 +38,8 @@ import lombok.RequiredArgsConstructor;
 public class InterviewController {
 
     private final InterviewSessionService interviewSessionService;
+    private final InterviewHistoryService interviewHistoryService;
+    private final InterviewReportService interviewReportService;
 
     /**
      * 创建面试会话。
@@ -75,7 +79,7 @@ public class InterviewController {
      */
     @GetMapping("/{sessionId}/report")
     public Result<InterviewReportDTO> getInterviewReport(@PathVariable String sessionId) {
-        InterviewReportDTO cplInterviewReportDTO = interviewSessionService.generateReport(sessionId);
+        InterviewReportDTO cplInterviewReportDTO = interviewReportService.generateReport(sessionId);
         return Result.success(cplInterviewReportDTO);
     }
 
@@ -123,7 +127,7 @@ public class InterviewController {
      */
     @GetMapping
     public Result<List<InterviewSessionListItemDTO>> getHistory() {
-        List<InterviewSessionListItemDTO> interviewSessionList = interviewSessionService.getHistory();
+        List<InterviewSessionListItemDTO> interviewSessionList = interviewHistoryService.getHistory();
         return Result.success(interviewSessionList);
     }
 
@@ -132,7 +136,7 @@ public class InterviewController {
      */
     @GetMapping("/{sessionId}/details")
     public Result<InterviewDetailDTO> getInterviewDetail(@PathVariable String sessionId) {
-        InterviewDetailDTO interviewDetail = interviewSessionService.getInterviewDetail(sessionId);
+        InterviewDetailDTO interviewDetail = interviewHistoryService.getInterviewDetail(sessionId);
         return Result.success(interviewDetail);
     }
 
@@ -142,7 +146,7 @@ public class InterviewController {
      */
     @DeleteMapping("/{sessionId}")
     public Result<Void> deleteInterview(@PathVariable String sessionId) {
-        interviewSessionService.deleteInterview(sessionId);
+        interviewHistoryService.deleteInterview(sessionId);
         return Result.success(null);
     }
 }
