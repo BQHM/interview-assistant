@@ -15,18 +15,21 @@ import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 @Repository
 public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswerEntity, Long> {
 
-    /**
-     * 查询某场面试下某一道题的答案。
-     */
-    Optional<InterviewAnswerEntity> findBySessionAndQuestionIndex(
-            InterviewSessionEntity tblInterviewSessionEntity,
-            Integer intQuestionIndex
-    );
+        /**
+         * 查询某场面试下某一道题的答案。
+         */
+        Optional<InterviewAnswerEntity> findBySessionAndQuestionIndex(InterviewSessionEntity tblInterviewSessionEntity,
+                        Integer intQuestionIndex);
 
-    /**
-     * 查询某场面试下的全部答案。
-     */
-    List<InterviewAnswerEntity> findBySessionOrderByQuestionIndexAsc(
-            InterviewSessionEntity tblInterviewSessionEntity
-    );
+        /**
+         * 查询某场面试下的全部答案。
+         */
+        List<InterviewAnswerEntity> findBySessionOrderByQuestionIndexAsc(
+                        InterviewSessionEntity tblInterviewSessionEntity);
+
+        /**
+         * 删除某场面试下的全部答案。
+         */
+        void deleteBySession(
+                        InterviewSessionEntity tblInterviewSessionEntity);
 }

@@ -1,8 +1,8 @@
 package com.interview.modules.interview.service;
 
+
 import static com.interview.modules.interview.model.InterviewSessionStatus.COMPLETED;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -15,12 +15,8 @@ import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.interview.model.InterviewSessionStatus;
 import com.interview.modules.interview.model.dto.CurrentQuestionResponseDTO;
-import com.interview.modules.interview.model.dto.InterviewDetailDTO;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
-import com.interview.modules.interview.model.dto.InterviewReportDTO;
-import com.interview.modules.interview.model.dto.InterviewReportQuestionDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionDTO;
-import com.interview.modules.interview.model.dto.InterviewSessionListItemDTO;
 import com.interview.modules.interview.model.dto.SubmitAnswerResponse;
 import com.interview.modules.interview.model.entity.InterviewAnswerEntity;
 import com.interview.modules.interview.model.entity.InterviewSessionEntity;
@@ -29,7 +25,7 @@ import com.interview.modules.interview.model.request.SaveAnswerRequest;
 import com.interview.modules.interview.model.request.SubmitAnswerRequest;
 import com.interview.modules.interview.repository.InterviewAnswerRepository;
 import com.interview.modules.interview.repository.InterviewSessionRepository;
-import com.interview.modules.interview.service.convert.InterviewSessionConverter;
+import com.interview.modules.interview.service.comm.InterviewQuestionAnswerAggregator;
 import com.interview.modules.resume.model.entity.ResumeEntity;
 import com.interview.modules.resume.repository.ResumeRepository;
 
@@ -234,15 +230,7 @@ public class InterviewSessionService {
 
         List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository
                 .findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
-
-        for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
-            for (InterviewAnswerEntity tblInterviewAnswerEntity : lstInterviewAnswerEntity) {
-                if (cplInterviewQuestionDTO.getQuestionIndex().equals(tblInterviewAnswerEntity.getQuestionIndex())) {
-                    cplInterviewQuestionDTO.setUserAnswer(tblInterviewAnswerEntity.getUserAnswer());
-                    break;
-                }
-            }
-        }
+        InterviewQuestionAnswerAggregator.fillUserAnswers(lstInterviewQuestionDTO, lstInterviewAnswerEntity);
 
         // 3. 手动组装返回 DTO。
         InterviewSessionDTO cplInterviewSessionDTO = new InterviewSessionDTO();
@@ -372,132 +360,7 @@ public class InterviewSessionService {
         return cplSubmitAnswerResponse;
     }
 
-    /**
-     * 生成整场面试的规则版报告。
-     * 当前先基于题目与答案生成统计、评分和总结，后续再升级为 AI 报告。
-     */
-    @Transactional(readOnly = true)
-    public InterviewReportDTO generateReport(String strSessionId) {
-        log.info("开始生成面试报告: sessionId={}", strSessionId);
-        Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
-                .findBySessionId(strSessionId);
 
-        if (optInterviewSessionEntity.isEmpty()) {
-            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在");
-        }
-
-        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
-
-        if (!COMPLETED.equals(tblInterviewSessionEntity.getStatus())) {
-            throw new BusinessException(ErrorCode.INTERVIEW_NOT_COMPLETED, "面试尚未完成，无法生成报告");
-        }
-
-        List<InterviewQuestionDTO> lstInterviewQuestionDTO;
-        try {
-            lstInterviewQuestionDTO = objectMapper.readValue(tblInterviewSessionEntity.getQuestionsJson(),
-                    new TypeReference<List<InterviewQuestionDTO>>() {
-                    });
-        } catch (JacksonException e) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
-        }
-
-        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
-
-        for(InterviewQuestionDTO cplInterviewQuestionDTO:lstInterviewQuestionDTO){
-            for(InterviewAnswerEntity tblInterviewAnswerEntity:lstInterviewAnswerEntity){
-                if(cplInterviewQuestionDTO.getQuestionIndex().equals(tblInterviewAnswerEntity.getQuestionIndex())){
-                    cplInterviewQuestionDTO.setUserAnswer(tblInterviewAnswerEntity.getUserAnswer());
-                    break;
-                }
-            }
-        }
-
-        Integer intAnsweredQuestions = 0;
-        Integer intTotalScore = 0;
-
-        List<InterviewReportQuestionDTO> lstInterviewReportQuestionDTO = new ArrayList<>();
-
-        for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
-            String strUserAnswer = cplInterviewQuestionDTO.getUserAnswer(); // 用户答案
-            boolean bolAnswered = strUserAnswer != null && !strUserAnswer.trim().isEmpty(); // 是否已回答
-
-            if (bolAnswered) {
-                intAnsweredQuestions++;
-            }
-
-            Integer intScore;
-            String strEvaluation;
-
-            if (!bolAnswered) {
-                intScore = 0;
-                strEvaluation = "未作答，建议补充该题答案。";
-            } else if (strUserAnswer.trim().length() < 20) {
-                intScore = 60;
-                strEvaluation = "已作答，但答案较短，建议补充更多项目细节和技术实现。";
-            } else if (strUserAnswer.trim().length() < 80) {
-                intScore = 75;
-                strEvaluation = "已作答，答案较完整，建议进一步加强表达的条理性和深度。";
-            } else {
-                intScore = 90;
-                strEvaluation = "已作答，答案较完整，能够体现一定的项目经验和技术理解。";
-            }
-
-            intTotalScore += intScore;
-
-            InterviewReportQuestionDTO cplInterviewReportQuestionDTO = new InterviewReportQuestionDTO();
-            cplInterviewReportQuestionDTO.setQuestionIndex(cplInterviewQuestionDTO.getQuestionIndex()); // 题目索引
-            cplInterviewReportQuestionDTO.setQuestion(cplInterviewQuestionDTO.getQuestion()); // 题目内容
-            cplInterviewReportQuestionDTO.setCategory(cplInterviewQuestionDTO.getCategory()); // 题目分类
-            cplInterviewReportQuestionDTO.setUserAnswer(strUserAnswer); // 用户答案
-            cplInterviewReportQuestionDTO.setAnswered(bolAnswered); // 是否已回答
-            cplInterviewReportQuestionDTO.setEvaluation(strEvaluation); // 单题点评
-            cplInterviewReportQuestionDTO.setScore(intScore); // 单题分数
-
-            lstInterviewReportQuestionDTO.add(cplInterviewReportQuestionDTO);
-        }
-        // 5. 统计整场面试的已答题数和未答题数。
-        Integer intUnansweredQuestions = tblInterviewSessionEntity.getTotalQuestions() - intAnsweredQuestions;
-
-        // 6. 生成整场面试的整体评价。
-        String strOverallEvaluation;
-
-        if (intAnsweredQuestions == 0) {
-            strOverallEvaluation = "本次模拟面试尚未形成有效回答，建议先完成全部题目再查看报告。";
-        } else if (intUnansweredQuestions > 0) {
-            strOverallEvaluation = "本次模拟面试尚未全部完成，当前报告仅基于已回答题目生成，建议补全剩余题目。";
-        } else {
-            Integer intAverageScore = intTotalScore / tblInterviewSessionEntity.getTotalQuestions();
-
-            if (intAverageScore >= 85) {
-                strOverallEvaluation = "本次模拟面试完成度较高，整体回答较完整，能够体现较好的项目经验和技术表达能力。";
-            } else if (intAverageScore >= 70) {
-                strOverallEvaluation = "本次模拟面试整体表现较稳定，已具备一定的表达和技术基础，建议继续加强答案细节与深度。";
-            } else {
-                strOverallEvaluation = "本次模拟面试已完成，但部分答案仍较简略，建议结合实际项目进一步补充技术细节和解决思路。";
-            }
-        }
-
-        // 7. 手动组装返回 DTO。
-        InterviewReportDTO cplInterviewReportDTO = new InterviewReportDTO();
-        cplInterviewReportDTO.setSessionId(tblInterviewSessionEntity.getSessionId()); // 会话ID
-        cplInterviewReportDTO.setResumeId(tblInterviewSessionEntity.getResume().getId()); // 简历ID
-        cplInterviewReportDTO.setTotalQuestions(tblInterviewSessionEntity.getTotalQuestions()); // 题目总数
-        cplInterviewReportDTO.setAnsweredQuestions(intAnsweredQuestions); // 已回答题数
-        cplInterviewReportDTO.setUnansweredQuestions(intUnansweredQuestions); // 未回答题数
-        cplInterviewReportDTO.setCompleted(
-                InterviewSessionStatus.COMPLETED.equals(tblInterviewSessionEntity.getStatus())); // 是否已完成
-        cplInterviewReportDTO.setOverallEvaluation(strOverallEvaluation); // 整体评价
-        cplInterviewReportDTO.setQuestionReports(lstInterviewReportQuestionDTO); // 单题报告列表
-        cplInterviewReportDTO.setGeneratedAt(LocalDateTime.now()); // 报告生成时间
-
-        log.info("生成面试报告成功: sessionId={}, answeredQuestions={}, totalQuestions={}",
-                strSessionId,
-                intAnsweredQuestions,
-                tblInterviewSessionEntity.getTotalQuestions());
-
-        return cplInterviewReportDTO;
-
-    }
 
     /**
      * 获取当前流程步骤应该展示的题目。
@@ -688,94 +551,8 @@ public class InterviewSessionService {
                 cplSaveAnswerRequest.getQuestionIndex());
     }
 
-    /**
-     * 查询面试历史列表。
-     * 当前只组装列表页需要的摘要字段，避免把 questionsJson 暴露给列表接口。
-     */
-    public List<InterviewSessionListItemDTO> getHistory() {
+    
 
-        // 按创建时间倒序查询所有面试会话
-        List<InterviewSessionEntity> lstInterviewSessionEntity = interviewSessionRepository
-                .findAllByOrderByCreatedAtDesc();
 
-        List<InterviewSessionListItemDTO> lstInterviewSessionListItemDTO = new ArrayList<>();
 
-        for (InterviewSessionEntity tblInterviewSessionEntity : lstInterviewSessionEntity) {
-            InterviewSessionListItemDTO cplInterviewSessionListItemDTO = InterviewSessionConverter
-                    .convertToInterviewSessionListItemDTO(tblInterviewSessionEntity);
-            lstInterviewSessionListItemDTO.add(cplInterviewSessionListItemDTO);
-        }
-
-        return lstInterviewSessionListItemDTO;
-    }
-
-    /**
-     * 查询面试历史详情。
-     * questionsJson 保存题目快照，interview_answers 保存用户答案。
-     * 这里会把题目和答案按 questionIndex 聚合成详情返回。
-     */
-    public InterviewDetailDTO getInterviewDetail(String strSessionId) {
-        // 根据会话ID查询面试会话
-        Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
-                .findBySessionId(strSessionId);
-
-        if (optInterviewSessionEntity.isEmpty()) {
-            throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在");
-        }
-
-        // 获取面试会话
-        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
-
-        List<InterviewQuestionDTO> lstInterviewQuestionDTO;
-        try {
-            lstInterviewQuestionDTO = objectMapper.readValue(
-                    tblInterviewSessionEntity.getQuestionsJson(),
-                    new TypeReference<List<InterviewQuestionDTO>>() {
-                    });
-        } catch (JacksonException e) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
-        }
-
-        // 查找答案表
-        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository
-                .findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
-
-        // 如果题目的 questionIndex == 答案的 questionIndex
-        // 就把答案表里的 userAnswer 填回题目 DTO
-        for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
-            for (InterviewAnswerEntity tblInterviewAnswerEntity : lstInterviewAnswerEntity) {
-                if (cplInterviewQuestionDTO.getQuestionIndex().equals(tblInterviewAnswerEntity.getQuestionIndex())) {
-                    cplInterviewQuestionDTO.setUserAnswer(tblInterviewAnswerEntity.getUserAnswer());
-                    break;
-                }
-            }
-        }
-
-        // 输出转换
-        InterviewDetailDTO cplInterviewDetailDTO = InterviewSessionConverter.convertToInterviewDetailDTO(
-                tblInterviewSessionEntity,
-                lstInterviewQuestionDTO);
-        return cplInterviewDetailDTO;
-    }
-
-    /**
-     * 删除面试会话。
-     * 当前阶段没有独立答案表，只需要删除 interview_sessions 表中的会话记录。
-     */
-    public void deleteInterview(String strSessionId) {
-        Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
-                .findBySessionId(strSessionId);
-
-        if (optInterviewSessionEntity.isEmpty()) {
-            throw new BusinessException(
-                    ErrorCode.INTERVIEW_SESSION_NOT_FOUND,
-                    "面试会话不存在");
-        }
-
-        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
-
-        interviewSessionRepository.delete(tblInterviewSessionEntity);
-
-        log.info("删除面试会话成功: sessionId={}", strSessionId);
-    }
 }
