@@ -10,7 +10,8 @@
 - 参考项目 `interview-guide` 作为架构和业务语义基线，但实现时适配当前包名 `com.interview` 和当前项目结构。
 - 当前阶段先巩固后端，后端 API 稳定后再启动前端。
 - 复杂能力按“同步可用 -> 工程化增强 -> 异步化/缓存化”演进，不直接跳到最终形态。
-- 当前 `questionsJson` 是过渡方案；完成历史详情后再拆独立答案表。
+- 当前 `questionsJson` 只保留题目快照；用户答案已经拆到独立答案表。
+- AI 面试评估先采用同步调用 + 规则兜底，链路跑通后再异步化。
 
 ## Phase 1: 工程基线整理
 
@@ -102,13 +103,13 @@
 
 ### Task 4: 实现面试历史详情
 
-**Description:** 增加面试历史详情接口，展示会话基础信息、所有题目、用户答案、完成状态和当前报告相关信息。当前阶段先基于 `questionsJson` 聚合，作为拆独立答案表前的过渡方案。
+**Description:** 增加面试历史详情接口，展示会话基础信息、所有题目、用户答案和完成状态。当前实现已经从早期 `questionsJson` 聚合演进为题目快照 + 独立答案表聚合。
 
 **Acceptance criteria:**
 
-- [ ] 新增详情 DTO，能表达题目和答案明细。
-- [ ] 新增 `GET /api/interviews/{sessionId}/details` 接口。
-- [ ] 已回答和未回答题目都能展示。
+- [x] 新增详情 DTO，能表达题目和答案明细。
+- [x] 新增 `GET /api/interviews/{sessionId}/details` 接口。
+- [x] 已回答和未回答题目都能展示。
 
 **Verification:**
 
@@ -243,13 +244,39 @@
 
 ### Checkpoint: 答案模型
 
-- [ ] 答案已经独立持久化。
-- [ ] 暂存、提交、详情、报告行为一致。
-- [ ] 可以开始接 AI 单题评估。
+- [x] 答案已经独立持久化。
+- [x] 暂存、提交、详情、报告行为一致。
+- [x] 已抽取题目与答案聚合工具，避免多个 Service 重复写聚合逻辑。
+- [x] 已创建 AI 单题评估 DTO、Prompt 和 Service。
+- [ ] 提交答案后写入 AI 单题评估结果。
+- [ ] 报告优先读取答案表中的 AI 评分和反馈。
 
 ## Phase 4: 测试体系
 
-### Task 9: 为面试会话核心流程补单元测试
+### Task 9: 为题目答案聚合工具补最小单元测试
+
+**Description:** 已为 `InterviewQuestionAnswerAggregator` 编写一个最小 JUnit 测试，验证题目快照和答案表记录能按 `questionIndex` 聚合。
+
+**Acceptance criteria:**
+
+- [x] 测试位于 Maven 标准目录 `src/test/java`。
+- [x] 能验证答案按 `questionIndex` 回填到对应题目。
+- [x] 未匹配题目保持 `userAnswer == null`。
+
+**Verification:**
+
+- [x] Tests pass: `cd server && mvn -Dtest=InterviewQuestionAnswerAggregatorTest test` 或 IDE 运行该测试。
+
+**Dependencies:** Task 8
+
+**Files likely touched:**
+
+- `server/src/test/java/com/interview/modules/interview/service/comm/InterviewQuestionAnswerAggregatorTest.java`
+- `server/pom.xml`, if test dependencies need adjustment
+
+**Estimated scope:** Small: 1-2 files
+
+### Task 10: 为面试会话核心流程补单元测试
 
 **Description:** 为创建会话、复用未完成会话、暂存、提交、提前交卷、报告生成补最小单元测试，建立重构安全网。
 
@@ -330,37 +357,43 @@
 
 **Estimated scope:** Medium: 3-5 files
 
-### Task 12: 实现同步版 AI 面试评估
+### Task 12: 实现同步版 AI 单题答案评估
 
-**Description:** 基于独立答案表，对已完成面试进行 AI 评估，生成整体反馈、单题反馈和分数；AI 失败时保留规则版报告。
+**Description:** 基于独立答案表，对每道已提交答案进行 AI 评估，生成单题分数、反馈、参考答案和关键点；AI 失败时使用规则版评估结果兜底。
 
 **Acceptance criteria:**
 
-- [ ] 只有完成状态允许评估。
-- [ ] 单题答案可以生成分数和反馈。
-- [ ] 整体报告可以汇总优势和改进建议。
-- [ ] AI 失败时返回规则版报告。
+- [x] 新增 `InterviewAnswerEvaluationDTO`。
+- [x] 新增面试答案评估 system/user prompt 模板。
+- [x] 新增 `InterviewAnswerEvaluationService`。
+- [ ] 提交答案后调用评估服务。
+- [ ] 评估结果写回 `InterviewAnswerEntity.score`、`feedback`、`referenceAnswer`、`keyPointsJson`。
+- [ ] AI 失败时不影响提交答案主流程。
 
 **Verification:**
 
-- [ ] Tests pass: `cd server && mvn test`。
-- [ ] Manual check: 完成一场面试后生成报告。
+- [ ] Build succeeds: `cd server && mvn clean package -DskipTests`。
+- [ ] Manual check: 提交答案后数据库 `interview_answers` 中出现评分和反馈。
+- [ ] Manual check: 错误配置 AI 后仍能提交答案，并写入规则版评估结果。
 
-**Dependencies:** Task 11
+**Dependencies:** Task 8
 
 **Files likely touched:**
 
-- `server/src/main/java/com/interview/modules/interview/service/AnswerEvaluationService.java`
+- `server/src/main/java/com/interview/modules/interview/service/InterviewAnswerEvaluationService.java`
+- `server/src/main/java/com/interview/modules/interview/service/InterviewSessionService.java`
+- `server/src/main/java/com/interview/modules/interview/model/dto/InterviewAnswerEvaluationDTO.java`
 - `server/src/main/java/com/interview/modules/interview/model/entity/InterviewAnswerEntity.java`
-- `server/src/main/java/com/interview/modules/interview/model/dto/InterviewReportDTO.java`
-- `server/src/main/resources/prompts/interview-evaluation-*.st`
+- `server/src/main/resources/prompts/interview-answer-evaluation-system.st`
+- `server/src/main/resources/prompts/interview-answer-evaluation-user.st`
 
-**Estimated scope:** Medium: 4-5 files
+**Estimated scope:** Medium: 4-6 files
 
 ### Checkpoint: AI 面试能力
 
 - [ ] AI 出题可用，规则出题兜底可用。
-- [ ] AI 评估可用，规则报告兜底可用。
+- [ ] 提交答案后可同步生成单题 AI 评估，规则评估兜底可用。
+- [ ] 报告优先读取答案表中的评估结果。
 - [ ] 可以开始异步化。
 
 ## Phase 6: Redis、限流与异步任务
