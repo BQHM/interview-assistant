@@ -2,7 +2,7 @@
 
 ## 审计日期
 
-2026-05-16
+2026-06-29
 
 ## 参考基线
 
@@ -12,13 +12,13 @@
 
 ## 总体结论
 
-`interview-assistant` 当前已经完成后端 MVP 的两条核心主链路：简历处理和文字模拟面试。它不是完整平台，但已经具备继续演进的基础。
+`interview-assistant` 当前已经完成后端 MVP 的两条核心主链路：简历处理和文字模拟面试。文字面试模块已经从单纯跑通流程，推进到历史查询、独立答案表、报告聚合和 AI 单题评估服务阶段。它还不是完整平台，但已经具备继续向 `interview-guide` 工程化能力演进的基础。
 
 | 维度 | 当前完成度 | 判断 |
 | --- | --- | --- |
-| 按当前 README 定义的后端 MVP | 约 75% - 80% | 简历与文字面试主流程已具备，缺历史、答案表、测试和异步能力 |
-| 按 `interview-guide` 完整平台 | 约 25% - 30% | 参考项目包含前端、Redis、RAG、日程、语音、PDF、Docker 等完整能力 |
-| 工程学习价值 | 较高 | 当前阶段适合学习分层、JPA、文件处理、AI 调用和接口设计 |
+| 按当前 README 定义的后端 MVP | 约 85% - 90% | 简历与文字面试主流程、历史、答案表和规则报告已具备，AI 单题评估正在接入业务链路 |
+| 按 `interview-guide` 完整平台 | 约 30% - 35% | 参考项目包含前端、Redis、RAG、日程、语音、PDF、Docker 等完整能力 |
+| 工程学习价值 | 较高 | 当前阶段适合学习分层、JPA、文件处理、AI 调用、接口设计、服务拆分和测试入门 |
 
 ## 当前已经开发的内容
 
@@ -70,26 +70,30 @@
 | 创建面试会话 | 已完成 | `POST /api/interviews` |
 | 复用未完成会话 | 已完成 | 同一简历存在未完成会话时返回旧会话 |
 | 规则版出题 | 已完成第一版 | 根据简历关键词生成题目 |
-| 查询会话详情 | 已完成基础版 | `GET /api/interviews/{sessionId}` |
+| 查询会话详情 | 已完成 | `GET /api/interviews/{sessionId}`，题目快照和答案表聚合 |
 | 查询当前题 | 已完成 | `GET /api/interviews/{sessionId}/question` |
-| 暂存答案 | 已完成 | `PUT /api/interviews/{sessionId}/answers` |
-| 提交答案并推进 | 已完成 | 当前接口为 `POST /api/interviews/answer` |
+| 暂存答案 | 已完成 | `PUT /api/interviews/{sessionId}/answers`，写入独立答案表 |
+| 提交答案并推进 | 已完成 | 当前接口为 `POST /api/interviews/answer`，写入独立答案表 |
 | 提前交卷 | 已完成 | `POST /api/interviews/{sessionId}/complete` |
-| 规则版报告 | 已完成第一版 | `GET /api/interviews/{sessionId}/report` |
+| 面试历史列表 | 已完成 | `GET /api/interviews` |
+| 面试历史详情 | 已完成 | `GET /api/interviews/{sessionId}/details` |
+| 删除面试会话 | 已完成 | 删除答案记录后删除会话 |
+| 独立答案表 | 已完成 | `interview_answers` 保存用户答案和评估字段 |
+| 规则版报告 | 已完成第一版 | `GET /api/interviews/{sessionId}/report`，从答案表聚合 |
 | 查询未完成会话 | 已完成 | `GET /api/interviews/unfinished/{resumeId}` |
+| 服务拆分 | 已完成第一版 | 拆为会话、历史、报告 Service |
+| AI 单题评估服务 | 已完成骨架 | DTO、Prompt、Service 已完成，正在接入提交答案链路 |
 
 与参考项目差距：
 
 | 参考项目能力 | 当前状态 | 后续建议 |
 | --- | --- | --- |
-| 面试历史列表 | 未完成 | 下一步优先做 |
-| 面试历史详情 | 未完成 | 列表后做，先基于 `questionsJson` 聚合 |
-| 删除面试会话 | 未完成 | 历史列表稳定后补 |
-| 独立答案表 | 未完成 | 历史详情后做，避免过早重构 |
-| Skill 驱动出题 | 未完成 | AI 出题阶段引入 |
+| 提交答案后写入 AI 评分 | 进行中 | 下一步接入 `InterviewAnswerEvaluationService` |
+| 报告读取 AI 评分和反馈 | 未完成 | 单题评估入库后改造报告 |
+| Skill 驱动出题 | 未完成 | AI 评估链路稳定后引入 |
 | 历史题目去重 | 未完成 | Skill 出题后加入 |
 | 多轮追问 | 未完成 | AI 出题和评估稳定后再做 |
-| AI 面试评估 | 未完成 | 先同步版，再 Redis Stream 异步版 |
+| Redis Stream 异步评估 | 未完成 | 同步 AI 评估跑通后再异步化 |
 | PDF 面试报告导出 | 未完成 | AI 评估报告稳定后做 |
 
 ## 3. 通用工程能力
@@ -104,12 +108,15 @@
 | 配置属性类 | 部分完成 | 存储和简历分析已有 Properties |
 | 对象存储配置 | 已完成基础版 | `S3Config` |
 | Prompt 模板目录 | 已完成 | `resources/prompts` |
+| Spring AI 接入 | 已完成第一版 | 简历分析已接入，面试答案评估正在接入 |
+| 最小单元测试 | 已完成第一版 | 已为题目答案聚合工具补充 JUnit 测试 |
+| 服务职责拆分 | 已完成第一版 | 面试模块已拆出历史服务和报告服务 |
 
 未完成或待强化能力：
 
 | 能力 | 当前状态 | 后续建议 |
 | --- | --- | --- |
-| 单元测试和集成测试 | 未完成 | 优先补面试 Service 测试 |
+| 单元测试和集成测试 | 部分完成 | 已有 1 个最小单元测试，后续补核心 Service 测试 |
 | API 文档 / OpenAPI | 未完成 | 接口稳定后加入 SpringDoc |
 | Redis / Redisson | 未完成 | 先用于限流和会话缓存，再做 Stream |
 | 限流注解 | 未完成 | 参考 `interview-guide` 的 `@RateLimit` |
@@ -124,7 +131,7 @@
 | 模块 | 参考项目状态 | 当前项目状态 | 建议学习顺序 |
 | --- | --- | --- | --- |
 | resume | 完整 | MVP 已完成 | 继续补异步、导出、删除、重分析 |
-| interview | 完整 | MVP 已完成 | 当前最高优先级继续深化 |
+| interview | 完整 | MVP 已完成并进入 AI 评估接入阶段 | 先完成单题评估入库，再做 AI 出题 |
 | knowledgebase | 完整 | 未开始 | 放在面试 AI 评估后 |
 | interviewschedule | 完整 | 未开始 | 放在知识库后或前端后 |
 | voiceinterview | 完整 | 未开始 | 最后做，依赖较多 |
@@ -134,12 +141,12 @@
 
 优先级从高到低：
 
-1. 面试历史列表。
-2. 面试历史详情。
-3. 独立答案表。
-4. 后端测试体系。
-5. AI 出题和 AI 评估。
-6. Redis 会话缓存和异步任务。
+1. 提交答案后调用 AI 单题评估并写回答案表。
+2. 面试报告优先读取答案表中的 AI 评分和反馈。
+3. AI 出题。
+4. 后端核心 Service 测试补强。
+5. Redis 会话缓存和接口限流。
+6. Redis Stream 异步化简历分析和面试评估。
 7. PDF 导出。
 8. 知识库 / RAG。
 9. 前端页面。
@@ -149,17 +156,19 @@
 
 | 风险 | 影响 | 建议 |
 | --- | --- | --- |
-| 没有测试 | 改动后容易回归 | 从 `InterviewSessionService` 开始补单元测试 |
-| 答案存储在 `questionsJson` | 历史详情、单题评分、导出会越来越复杂 | 做完历史详情后拆独立答案表 |
+| 没有完整测试 | 改动后容易回归 | 已有最小测试，后续从核心 Service 开始补单元测试 |
+| AI 单题评估尚未写回答案表 | 报告暂时仍以规则评分为主 | 下一步接入提交答案链路并保存评估结果 |
 | 上传流程里同步 AI 分析 | 上传接口耗时长，失败重试弱 | 后续引入 Redis Stream 异步分析 |
+| 当前提交答案后同步 AI 评估 | AI 慢时提交接口会变慢 | 当前阶段先同步跑通，后续改为异步任务 |
 | 接口路径和参考项目不完全一致 | 前端对接时需要适配 | 后续可以逐步统一或写清楚 API 规范 |
 | 当前 Git 状态有迁移残留 | 可能误提交旧路径 | 正式开发前整理 `git status` |
 
 ## 7. 近期推荐结论
 
-下一阶段不要马上做 Redis、RAG 或语音面试。最适合当前学习节奏的是继续深化文字面试模块：
+下一阶段不要马上做 Redis、RAG 或语音面试。最适合当前学习节奏的是继续深化文字面试模块的 AI 评估闭环：
 
-1. 先做面试历史列表。
-2. 再做面试历史详情。
-3. 再把答案从 `questionsJson` 拆到独立 `InterviewAnswerEntity`。
-4. 最后基于独立答案表做 AI 评估和报告导出。
+1. 先在提交答案后调用 `InterviewAnswerEvaluationService`。
+2. 将单题评分、反馈、参考答案和关键点 JSON 写回 `InterviewAnswerEntity`。
+3. 再让 `InterviewReportService` 优先读取答案表中的 AI 评估结果。
+4. 之后再做 AI 出题。
+5. 同步 AI 链路稳定后，再考虑 Redis Stream 异步化。
