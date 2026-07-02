@@ -47,16 +47,20 @@ public class InterviewReportService {
         Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
                 .findBySessionId(strSessionId);
 
+        // 检查面试会话是否存在
         if (optInterviewSessionEntity.isEmpty()) {
             throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在");
         }
 
+        // 获取面试会话实体
         InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
 
+        // 检查状态是否为已完成
         if (!COMPLETED.equals(tblInterviewSessionEntity.getStatus())) {
             throw new BusinessException(ErrorCode.INTERVIEW_NOT_COMPLETED, "面试尚未完成，无法生成报告");
         }
 
+        // 解析面试题目 JSON 字符串
         List<InterviewQuestionDTO> lstInterviewQuestionDTO;
         try {
             lstInterviewQuestionDTO = objectMapper.readValue(tblInterviewSessionEntity.getQuestionsJson(),
@@ -66,12 +70,13 @@ public class InterviewReportService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
 
+        // 获取某场面试下的全部答案
         List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository
                 .findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
         InterviewQuestionAnswerAggregator.fillUserAnswers(lstInterviewQuestionDTO, lstInterviewAnswerEntity);
 
-        Integer intAnsweredQuestions = 0;
-        Integer intTotalScore = 0;
+        Integer intAnsweredQuestions = 0;// 已回答题目数量
+        Integer intTotalScore = 0; // 总分数
 
         List<InterviewReportQuestionDTO> lstInterviewReportQuestionDTO = new ArrayList<>();
 
@@ -80,27 +85,38 @@ public class InterviewReportService {
             boolean bolAnswered = strUserAnswer != null && !strUserAnswer.trim().isEmpty(); // 是否已回答
 
             if (bolAnswered) {
-                intAnsweredQuestions++;
+                intAnsweredQuestions++;// 已回答题目数量增加
             }
 
-            Integer intScore;
-            String strEvaluation;
+            // 获取对应的答案记录
+            InterviewAnswerEntity tblMatchedAnswerEntity = findAnswerByQuestionIndex(
+                    lstInterviewAnswerEntity,
+                    cplInterviewQuestionDTO.getQuestionIndex());
 
+            Integer intScore;// 单题分数
+            String strEvaluation;// 单题点评
+
+            // 处理未作答情况
             if (!bolAnswered) {
                 intScore = 0;
                 strEvaluation = "未作答，建议补充该题答案。";
-            } else if (strUserAnswer.trim().length() < 20) {
-                intScore = 60;
-                strEvaluation = "已作答，但答案较短，建议补充更多项目细节和技术实现。";
-            } else if (strUserAnswer.trim().length() < 80) {
-                intScore = 75;
-                strEvaluation = "已作答，答案较完整，建议进一步加强表达的条理性和深度。";
+            } else if (tblMatchedAnswerEntity != null && tblMatchedAnswerEntity.getScore() != null) {
+                // 已生成评分
+                intScore = tblMatchedAnswerEntity.getScore();
+                // 处理点评
+                if (tblMatchedAnswerEntity.getFeedback() == null
+                        || tblMatchedAnswerEntity.getFeedback().trim().isEmpty()) {
+                    strEvaluation = "已生成评分，但暂无详细点评。";
+                } else {
+                    strEvaluation = tblMatchedAnswerEntity.getFeedback();
+                }
             } else {
-                intScore = 90;
-                strEvaluation = "已作答，答案较完整，能够体现一定的项目经验和技术理解。";
+                // 未生成评分
+                intScore = 60;
+                strEvaluation = "已作答，但暂未生成评估结果，建议稍后重新查看报告。";
             }
 
-            intTotalScore += intScore;
+            intTotalScore += intScore;// 总分数增加
 
             InterviewReportQuestionDTO cplInterviewReportQuestionDTO = new InterviewReportQuestionDTO();
             cplInterviewReportQuestionDTO.setQuestionIndex(cplInterviewQuestionDTO.getQuestionIndex()); // 题目索引
@@ -155,5 +171,21 @@ public class InterviewReportService {
 
         return cplInterviewReportDTO;
 
+    }
+
+    /**
+     * 根据题目索引查找对应的答案记录。
+     */
+    private InterviewAnswerEntity findAnswerByQuestionIndex(
+            List<InterviewAnswerEntity> lstInterviewAnswerEntity,
+            Integer intQuestionIndex) {
+
+        for (InterviewAnswerEntity tblInterviewAnswerEntity : lstInterviewAnswerEntity) {
+            if (intQuestionIndex.equals(tblInterviewAnswerEntity.getQuestionIndex())) {
+                return tblInterviewAnswerEntity;
+            }
+        }
+
+        return null;
     }
 }

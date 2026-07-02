@@ -1,6 +1,5 @@
 package com.interview.modules.interview.service;
 
-
 import static com.interview.modules.interview.model.InterviewSessionStatus.COMPLETED;
 
 import java.util.ArrayList;
@@ -15,6 +14,7 @@ import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.modules.interview.model.InterviewSessionStatus;
 import com.interview.modules.interview.model.dto.CurrentQuestionResponseDTO;
+import com.interview.modules.interview.model.dto.InterviewAnswerEvaluationDTO;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
 import com.interview.modules.interview.model.dto.InterviewSessionDTO;
 import com.interview.modules.interview.model.dto.SubmitAnswerResponse;
@@ -53,6 +53,7 @@ public class InterviewSessionService {
     private final InterviewSessionRepository interviewSessionRepository;
     private final ObjectMapper objectMapper;
     private final InterviewAnswerRepository interviewAnswerRepository;
+    private final InterviewAnswerEvaluationService interviewAnswerEvaluationService;
 
     /**
      * 创建一场新的模拟面试。
@@ -316,7 +317,9 @@ public class InterviewSessionService {
             tblInterviewAnswerEntity.setUserAnswer(cplSubmitAnswerRequest.getAnswer());
         }
 
-        interviewAnswerRepository.save(tblInterviewAnswerEntity);
+        InterviewAnswerEntity tblSavedInterviewAnswerEntity = interviewAnswerRepository.save(tblInterviewAnswerEntity);
+        fillAnswerEvaluation(tblSavedInterviewAnswerEntity);
+        interviewAnswerRepository.save(tblSavedInterviewAnswerEntity);
 
         // 当前版本里 currentQuestionIndex 表示“下一道要回答的题目索引”。
         Integer intNextQuestionIndex = cplSubmitAnswerRequest.getQuestionIndex() + 1;
@@ -360,7 +363,30 @@ public class InterviewSessionService {
         return cplSubmitAnswerResponse;
     }
 
+    /**
+     * 对已保存的答案生成评估结果，并回填到答案实体。
+     *
+     * 当前阶段采用同步评估：
+     * - 优先调用 AI 生成评分、反馈、参考答案和关键点
+     * - AI 失败时 InterviewAnswerEvaluationService 内部会自动使用规则版兜底
+     * - keyPoints 使用 JSON 字符串保存，方便后续报告详情或前端展示
+     */
+    private void fillAnswerEvaluation(InterviewAnswerEntity tblInterviewAnswerEntity) {
+        InterviewAnswerEvaluationDTO cplEvaluationDTO = interviewAnswerEvaluationService
+                .evaluateAnswer(tblInterviewAnswerEntity);
 
+        tblInterviewAnswerEntity.setScore(cplEvaluationDTO.getScore());
+        tblInterviewAnswerEntity.setFeedback(cplEvaluationDTO.getFeedback());
+        tblInterviewAnswerEntity.setReferenceAnswer(cplEvaluationDTO.getReferenceAnswer());
+
+        try {
+            tblInterviewAnswerEntity.setKeyPointsJson(
+                    objectMapper.writeValueAsString(cplEvaluationDTO.getKeyPoints()));
+        } catch (JacksonException e) {
+            log.warn("面试答案关键点评估结果序列化失败: answerId={}", tblInterviewAnswerEntity.getId(), e);
+            tblInterviewAnswerEntity.setKeyPointsJson("[]");
+        }
+    }
 
     /**
      * 获取当前流程步骤应该展示的题目。
@@ -550,9 +576,5 @@ public class InterviewSessionService {
                 strSessionId,
                 cplSaveAnswerRequest.getQuestionIndex());
     }
-
-    
-
-
 
 }
