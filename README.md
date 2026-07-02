@@ -19,7 +19,7 @@
 - 已实现 `resume` 和 `interview` 两个核心模块
 - 简历模块已接入 AI 分析，并保留规则兜底
 - 文字面试主链路已从 `questionsJson` 答案存储演进到独立答案表
-- 当前正在接入 AI 单题答案评估，先采用同步评估 + 规则兜底，后续再异步化
+- 当前已接入 AI 单题答案评估，先采用同步评估 + 规则兜底，后续再异步化
 
 ## 当前定位
 
@@ -99,11 +99,13 @@
 - [x] 抽取题目与答案聚合工具
 - [x] 最小 JUnit 单元测试
 - [x] AI 单题答案评估 DTO、Prompt 和 Service
+- [x] 提交答案后同步调用 AI/规则单题评估并写回答案表
+- [x] 面试报告优先读取答案表中的评分和反馈
 
 ### 进行中
 
-- [ ] 提交答案后同步调用 AI 单题评估并写回答案表
-- [ ] 面试报告优先读取答案表中的 AI 评估结果
+- [ ] 面试报告展示参考答案和关键点列表
+- [ ] 手工验证提交答案、评估入库、报告读取评估结果的完整链路
 
 ### 未完成
 
@@ -132,6 +134,8 @@
 - `questionsJson` 现在只承担题目快照职责，不再作为用户答案的唯一存储位置
 - `saveAnswer` 只更新指定题目的草稿答案，不推进 `currentQuestionIndex`
 - `submitAnswer` 要求按顺序作答，并在成功后推进到下一题
+- 提交答案后会同步调用 `InterviewAnswerEvaluationService` 生成单题评分、反馈、参考答案和关键点，并写回 `interview_answers`
+- 面试报告优先读取 `interview_answers.score` 和 `interview_answers.feedback`，不再按答案长度现场评分
 - 提前交卷会将状态改为 `COMPLETED`
 - 只有 `COMPLETED` 状态才允许生成报告
 

@@ -366,9 +366,11 @@
 - [x] 新增 `InterviewAnswerEvaluationDTO`。
 - [x] 新增面试答案评估 system/user prompt 模板。
 - [x] 新增 `InterviewAnswerEvaluationService`。
-- [ ] 提交答案后调用评估服务。
-- [ ] 评估结果写回 `InterviewAnswerEntity.score`、`feedback`、`referenceAnswer`、`keyPointsJson`。
-- [ ] AI 失败时不影响提交答案主流程。
+- [x] 提交答案后调用评估服务。
+- [x] 评估结果写回 `InterviewAnswerEntity.score`、`feedback`、`referenceAnswer`、`keyPointsJson`。
+- [x] AI 失败时不影响提交答案主流程。
+- [x] 面试报告优先读取答案表中的评分和反馈。
+- [ ] 面试报告返回参考答案和关键点列表。
 
 **Verification:**
 
@@ -392,8 +394,9 @@
 ### Checkpoint: AI 面试能力
 
 - [ ] AI 出题可用，规则出题兜底可用。
-- [ ] 提交答案后可同步生成单题 AI 评估，规则评估兜底可用。
-- [ ] 报告优先读取答案表中的评估结果。
+- [x] 提交答案后可同步生成单题 AI 评估，规则评估兜底可用。
+- [x] 报告优先读取答案表中的评估结果。
+- [ ] 报告接口展示参考答案和关键点列表。
 - [ ] 可以开始异步化。
 
 ## Phase 6: Redis、限流与异步任务
