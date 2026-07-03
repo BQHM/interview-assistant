@@ -12,11 +12,12 @@
   -> 最小测试和工程质量
   -> AI 单题答案评估
   -> AI 出题与报告评估聚合验收
+  -> 前端核心页面等价复刻
+  -> 前后端主链路联调
   -> Skill 出题与核心测试补强
   -> Redis 缓存、限流、异步任务
   -> PDF 导出
   -> 知识库 / RAG
-  -> 前端页面
   -> 面试日程
   -> 语音面试
   -> Docker 部署与上线准备
@@ -116,7 +117,7 @@
 
 **接下来要做：**
 
-1. 手工验证 AI 出题、答案提交、评估入库和报告读取完整链路。
+1. 将已验收通过的后端主链路接入前端页面。
 2. 补强核心 Service 单元测试。
 3. 将同步 AI 出题演进为 Skill 驱动出题。
 4. 最后考虑 Redis Stream 异步化。
@@ -185,7 +186,46 @@
 - 结果稳定后再做 Skill 化和异步化。
 - 保留规则版出题和规则版报告作为兜底。
 
-## Phase 5：Redis 与异步任务
+## Phase 5：前端页面
+
+**目标：** 参考 `interview-guide` 的前端结构，先完成可展示的核心业务页面。
+
+**需要学习：**
+
+- React + TypeScript。
+- Vite。
+- React Router。
+- Axios 请求封装。
+- API、types、components、pages 分层。
+- 前后端联调和错误提示。
+
+**参考项目：**
+
+- `interview-guide/frontend/src/App.tsx`
+- `interview-guide/frontend/src/components/Layout.tsx`
+- `interview-guide/frontend/src/api/request.ts`
+- `interview-guide/frontend/src/pages/UploadPage.tsx`
+- `interview-guide/frontend/src/pages/HistoryPage.tsx`
+- `interview-guide/frontend/src/pages/InterviewHubPage.tsx`
+
+**推荐页面顺序：**
+
+1. Layout 左侧导航和右侧内容区。
+2. 简历管理页。
+3. 上传简历页。
+4. 简历详情和分析结果页。
+5. 面试中心页。
+6. 文字面试答题页。
+7. 面试记录页。
+8. 面试报告详情页。
+
+**当前阶段原则：**
+
+- 先复刻 `interview-guide` 的核心结构和交互路径。
+- 暂不做大横幅首页、聊天窗口改造、知识库、日程、语音面试和差异化 UI。
+- 项目完整后再考虑个人特色和差异化。
+
+## Phase 6：Redis 与异步任务
 
 **目标：** 引入真实工程中的缓存、限流和异步任务流。
 
@@ -213,7 +253,7 @@
 5. 面试评估异步化。
 6. 知识库向量化异步化。
 
-## Phase 6：PDF 导出
+## Phase 7：PDF 导出
 
 **目标：** 把简历分析和面试评估沉淀为可下载报告。
 
@@ -230,7 +270,7 @@
 - `interview-guide/app/src/main/java/interview/guide/modules/resume/ResumeController.java`
 - `interview-guide/app/src/main/java/interview/guide/modules/interview/InterviewController.java`
 
-## Phase 7：知识库与 RAG
+## Phase 8：知识库与 RAG
 
 **目标：** 实现知识库上传、向量化、检索增强问答和流式对话。
 
@@ -252,32 +292,6 @@
 - Redis 异步任务已经理解。
 - 文件上传和解析链路已经熟悉。
 - Spring AI 调用和结构化输出已经掌握。
-
-## Phase 8：前端页面
-
-**目标：** 为已稳定的后端 API 做可用的前端页面。
-
-**需要学习：**
-
-- React + TypeScript。
-- Vite。
-- Tailwind CSS。
-- React Router。
-- API Client 封装。
-- 表单、上传、列表、详情页。
-
-**推荐页面顺序：**
-
-1. 简历上传页。
-2. 简历历史页。
-3. 简历分析详情页。
-4. 面试中心页。
-5. 文字面试页。
-6. 面试历史页。
-7. 面试详情页。
-8. 知识库页面。
-9. 日程页面。
-10. 语音面试页面。
 
 ## Phase 9：面试日程
 
