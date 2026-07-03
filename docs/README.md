@@ -7,7 +7,8 @@
 1. `project-completion-audit.md`：先了解当前已经完成什么、还缺什么、和参考项目差距在哪里。
 2. `learning-roadmap.md`：再按阶段学习，每个阶段都有目标、参考文件和验收方式。
 3. `implementation-plan.md`：实际开发时按任务推进，每个任务都有验收标准和验证方法。
-4. `decisions/ADR-001-reference-guided-incremental-implementation.md`：理解为什么采用“参考项目驱动 + 分阶段演进”的方式。
+4. `api-acceptance.md`：当前后端接口的手工验收清单，配合 `api-acceptance.http` 使用。
+5. `decisions/ADR-001-reference-guided-incremental-implementation.md`：理解为什么采用“参考项目驱动 + 分阶段演进”的方式。
 
 ## 当前项目定位
 
