@@ -8,7 +8,7 @@
 
 - 当前继续保留 Maven 构建，不因为参考项目使用 Gradle 就迁移构建工具。
 - 参考项目 `interview-guide` 作为架构和业务语义基线，但实现时适配当前包名 `com.interview` 和当前项目结构。
-- 当前阶段先巩固后端，后端 API 稳定后再启动前端。
+- 当前阶段后端核心 API 已完成主链路验收，前端改为优先推进；前端先以 `interview-guide` 为目标做等价复刻，项目完整后再考虑差异化。
 - 复杂能力按“同步可用 -> 工程化增强 -> 异步化/缓存化”演进，不直接跳到最终形态。
 - 当前 `questionsJson` 只保留题目快照；用户答案已经拆到独立答案表。
 - AI 出题先采用同步调用 + 规则兜底，后续再演进为 Skill 驱动、题目去重和缓存/异步策略。
@@ -400,12 +400,93 @@
 - [x] 提交答案后可同步生成单题 AI 评估，规则评估兜底可用。
 - [x] 报告优先读取答案表中的评估结果。
 - [x] 报告接口展示参考答案和关键点列表。
-- [ ] 完成 AI 出题与报告接口的手工验收。
-- [ ] 可以开始 Skill 化和异步化。
+- [x] 完成 AI 出题与报告接口的手工验收。
+- [ ] 可以开始前端核心页面联调。
+- [ ] 前端主链路可展示后，再开始 Skill 化和异步化。
 
-## Phase 6: Redis、限流与异步任务
+## Phase 6: 前端核心页面
 
-### Task 13: 接入 Redis / Redisson 基础设施
+### Task 13: 初始化前端工程和参考项目结构
+
+**Description:** 添加 React + TypeScript + Vite 前端工程，参考 `interview-guide` 建立 `api`、`types`、`components`、`pages` 分层，并配置基础路由和管理台式 Layout。
+
+**Acceptance criteria:**
+
+- [ ] `frontend` 可以本地启动。
+- [ ] 安装 `react-router-dom`、`axios`、`lucide-react`。
+- [ ] 有左侧导航栏和右侧内容区。
+- [ ] 路由覆盖简历管理、上传简历、面试中心和面试记录。
+
+**Verification:**
+
+- [ ] Build succeeds: `cd frontend && npm run build`。
+- [ ] Manual check: 浏览器打开 `http://localhost:5173`，可以切换核心页面。
+
+**Dependencies:** Task 12
+
+**Files likely touched:**
+
+- `frontend/package.json`
+- `frontend/src/App.tsx`
+- `frontend/src/components/Layout.tsx`
+- `frontend/src/pages/*`
+
+**Estimated scope:** Medium: 4-6 files
+
+### Task 14: 封装前端 API 和 DTO 类型
+
+**Description:** 参考 `interview-guide/frontend/src/api/request.ts`，封装统一请求层，适配当前后端 `Result<T>` 响应；为简历和面试接口定义 TypeScript 类型。
+
+**Acceptance criteria:**
+
+- [ ] `api/request.ts` 统一处理 `code/message/data`。
+- [ ] `api/resume.ts` 支持上传、列表、详情、分析查询。
+- [ ] `api/interview.ts` 支持创建面试、查询当前题、暂存、提交、报告和历史。
+- [ ] `types/resume.ts` 和 `types/interview.ts` 与当前后端 DTO 对齐。
+
+**Verification:**
+
+- [ ] Build succeeds: `cd frontend && npm run build`。
+- [ ] Manual check: 页面能正常调用至少一个后端列表接口。
+
+**Dependencies:** Task 13
+
+**Files likely touched:**
+
+- `frontend/src/api/*`
+- `frontend/src/types/*`
+
+**Estimated scope:** Medium: 4 files
+
+### Task 15: 实现简历和文字面试页面
+
+**Description:** 先实现最核心用户路径：上传简历、查看分析、创建面试、答题、查看报告和历史详情。
+
+**Acceptance criteria:**
+
+- [ ] 用户可以上传简历。
+- [ ] 用户可以查看简历列表和分析详情。
+- [ ] 用户可以创建并完成文字面试。
+- [ ] 用户可以查看面试历史、详情和报告。
+- [ ] API 错误有基本提示。
+
+**Verification:**
+
+- [ ] Build succeeds: `cd frontend && npm run build`。
+- [ ] Manual check: 浏览器完成一条端到端流程。
+
+**Dependencies:** Task 14
+
+**Files likely touched:**
+
+- `frontend/src/pages/*`
+- `frontend/src/components/*`
+
+**Estimated scope:** Large: split by页面逐步实现
+
+## Phase 7: Redis、限流与异步任务
+
+### Task 16: 接入 Redis / Redisson 基础设施
 
 **Description:** 增加 Redis 配置和基础服务，为会话缓存、限流和异步任务做准备。
 
@@ -420,7 +501,7 @@
 - [ ] Build succeeds: `cd server && mvn -DskipTests package`。
 - [ ] Manual check: 本地 Redis 启动后应用正常启动。
 
-**Dependencies:** Task 12
+**Dependencies:** Phase 6
 
 **Files likely touched:**
 
@@ -430,7 +511,7 @@
 
 **Estimated scope:** Medium: 3 files
 
-### Task 14: 实现接口限流
+### Task 17: 实现接口限流
 
 **Description:** 参考 `interview-guide` 的 `@RateLimit`，为高成本接口增加限流能力，例如上传简历、创建面试、AI 查询。
 
@@ -446,7 +527,7 @@
 - [ ] Tests pass: `cd server && mvn test`。
 - [ ] Manual check: 连续请求超过限制时返回限流错误。
 
-**Dependencies:** Task 13
+**Dependencies:** Task 16
 
 **Files likely touched:**
 
@@ -457,7 +538,7 @@
 
 **Estimated scope:** Medium: 4-5 files
 
-### Task 15: 简历分析异步化
+### Task 18: 简历分析异步化
 
 **Description:** 将上传简历和分析简历拆开，上传后返回任务状态，Redis Stream 消费者异步执行分析并更新状态。
 
@@ -473,7 +554,7 @@
 - [ ] Tests pass: `cd server && mvn test`。
 - [ ] Manual check: 上传简历后状态从 PENDING 变为 COMPLETED 或 FAILED。
 
-**Dependencies:** Task 13
+**Dependencies:** Task 16
 
 **Files likely touched:**
 
@@ -484,7 +565,7 @@
 
 **Estimated scope:** Large: 5-8 files
 
-### Task 16: 面试评估异步化
+### Task 19: 面试评估异步化
 
 **Description:** 将 AI 面试评估从同步接口改为异步任务，完成面试后提交评估任务，前端轮询或查询评估状态。
 
@@ -518,9 +599,9 @@
 - [ ] 简历分析异步化。
 - [ ] 面试评估异步化。
 
-## Phase 7: PDF 导出
+## Phase 8: PDF 导出
 
-### Task 17: 实现简历分析 PDF 导出
+### Task 20: 实现简历分析 PDF 导出
 
 **Description:** 将简历分析结果导出为 PDF 文件，支持中文字体和浏览器下载。
 
@@ -546,7 +627,7 @@
 
 **Estimated scope:** Medium: 3-5 files
 
-### Task 18: 实现面试报告 PDF 导出
+### Task 21: 实现面试报告 PDF 导出
 
 **Description:** 将面试评估报告导出为 PDF 文件，内容包括整体评价、题目、答案、评分和建议。
 
@@ -561,7 +642,7 @@
 - [ ] Build succeeds: `cd server && mvn -DskipTests package`。
 - [ ] Manual check: 完成面试后下载 PDF。
 
-**Dependencies:** Task 17
+**Dependencies:** Task 20
 
 **Files likely touched:**
 
@@ -571,9 +652,9 @@
 
 **Estimated scope:** Medium: 3-5 files
 
-## Phase 8: 知识库 / RAG
+## Phase 9: 知识库 / RAG
 
-### Task 19: 实现知识库文档上传和列表
+### Task 22: 实现知识库文档上传和列表
 
 **Description:** 新增知识库模块，先完成文档上传、元信息保存、列表、详情和下载，复用已有文件处理基础设施。
 
@@ -598,7 +679,7 @@
 
 **Estimated scope:** Large: 5-8 files
 
-### Task 20: 实现知识库向量化和查询
+### Task 23: 实现知识库向量化和查询
 
 **Description:** 引入 pgvector 和 Embedding，将知识库文档切分、向量化并支持检索增强问答。
 
@@ -625,61 +706,9 @@
 
 **Estimated scope:** Large: 8+ files; should be split further before implementation
 
-## Phase 9: 前端
-
-### Task 21: 初始化前端工程
-
-**Description:** 添加 React + TypeScript + Vite 前端工程，并配置基础路由、API Client 和页面框架。
-
-**Acceptance criteria:**
-
-- [ ] `frontend` 可以本地启动。
-- [ ] 配置 API 基础地址。
-- [ ] 有基础布局和路由。
-
-**Verification:**
-
-- [ ] Build succeeds: `cd frontend && npm run build` 或对应包管理器命令。
-- [ ] Manual check: 浏览器打开首页。
-
-**Dependencies:** 后端核心 API 稳定后
-
-**Files likely touched:**
-
-- `frontend/*`
-
-**Estimated scope:** Large: 8+ files; should be split further before implementation
-
-### Task 22: 实现简历和文字面试页面
-
-**Description:** 先实现最核心用户路径：上传简历、查看分析、创建面试、答题、查看报告和历史详情。
-
-**Acceptance criteria:**
-
-- [ ] 用户可以上传简历。
-- [ ] 用户可以创建并完成文字面试。
-- [ ] 用户可以查看面试历史和详情。
-- [ ] API 错误有基本提示。
-
-**Verification:**
-
-- [ ] Build succeeds: `cd frontend && npm run build`。
-- [ ] Manual check: 完成一条端到端流程。
-
-**Dependencies:** Task 21
-
-**Files likely touched:**
-
-- `frontend/src/pages/*`
-- `frontend/src/api/*`
-- `frontend/src/types/*`
-- `frontend/src/components/*`
-
-**Estimated scope:** Large: 8+ files; should be split further before implementation
-
 ## Phase 10: 面试日程和语音面试
 
-### Task 23: 实现面试日程管理
+### Task 24: 实现面试日程管理
 
 **Description:** 实现面试邀请解析、日程 CRUD、状态流转和列表/日历视图。
 
@@ -705,7 +734,7 @@
 
 **Estimated scope:** Large: split into backend and frontend subtasks
 
-### Task 24: 实现语音面试 MVP
+### Task 25: 实现语音面试 MVP
 
 **Description:** 在文字面试稳定后，实现语音面试的最小闭环：创建语音会话、WebSocket 通信、文本化消息记录、结束会话和评估。
 
@@ -737,13 +766,13 @@
 | 一次性复制参考项目导致理解断层 | High | 每个能力先写当前阶段方案，再实现 |
 | 没有测试就重构答案模型 | High | 先补核心流程测试，再拆表 |
 | Redis 和异步任务过早引入 | Medium | 先完成同步 AI 出题/评估，再异步化 |
-| 前端过早启动导致 API 频繁变动 | Medium | 后端核心 API 稳定后再启动前端 |
+| 前端复制参考项目过深导致理解断层 | Medium | 只复刻当前后端已完成的核心页面，复杂模块等后端完成后再接入 |
 | AI 输出不稳定 | High | 结构化输出 + 重试 + 规则兜底 |
 | 本地环境依赖复杂 | Medium | 使用 Docker Compose 统一 PostgreSQL、Redis、RustFS |
 
 ## Open Questions
 
 - 是否要把当前接口路径逐步调整为和 `interview-guide` 完全一致，还是保持当前 `/api/interviews` 风格？
-- 前端包管理器后续使用 npm、pnpm 还是和参考项目一致？
+- 前端包管理器当前使用 npm；后续是否改为和参考项目一致的 pnpm？
 - 是否需要引入数据库迁移工具，还是继续学习阶段使用 JPA `ddl-auto: update`？
 - AI Provider 是否只保留 OpenAI Compatible，还是尽早抽象多 Provider？

@@ -1,12 +1,12 @@
 # 《智能面试助手》
 
-基于 Spring Boot 和 Spring AI 的后端练手项目，当前聚焦简历分析与文字模拟面试两条主链路。
+基于 Spring Boot、Spring AI 和 React 的智能面试助手练手项目，当前聚焦简历分析与文字模拟面试两条主链路。
 
 ---
 
 ## 项目介绍
 
-`interview-assistant` 是一个以 `interview-guide` 为参考实现、按教学式节奏逐步迭代的后端 MVP。
+`interview-assistant` 是一个以 `interview-guide` 为参考实现、按教学式节奏逐步迭代的智能面试助手项目。
 
 当前项目暂不追求一次性覆盖完整平台能力，而是优先把下面两条核心链路做扎实：
 
@@ -15,7 +15,7 @@
 
 和 `interview-guide` 相比，`interview-assistant` 当前仍处于分阶段演进阶段：
 
-- 只保留后端，不包含前端页面
+- 后端主链路已完成，前端已开始按 `interview-guide` 结构搭建
 - 已实现 `resume` 和 `interview` 两个核心模块
 - 简历模块已接入 AI 分析，并保留规则兜底
 - 文字面试主链路已从 `questionsJson` 答案存储演进到独立答案表
@@ -23,14 +23,14 @@
 
 ## 当前定位
 
-当前后端重点是先把简历模块和文字模拟面试模块的主链路跑通，再逐步向 `interview-guide` 的模块拆分、接口语义和业务语义靠拢。
+当前重点是在简历模块和文字模拟面试模块的后端主链路已验收基础上，用前端页面对齐 `interview-guide` 的核心交互方式。
 
 现阶段更偏向：
 
 - 能清楚展示后端分层设计
 - 能完整演示业务主链路
-- 能支持 Postman 级别的联调与验证
-- 能为后续 Redis 缓存、异步评估、知识库和前端页面演进打基础
+- 能支持 Postman 和浏览器页面两种联调与验证方式
+- 能为后续 Redis 缓存、异步评估、知识库、日程和语音面试演进打基础
 
 ## 技术栈
 
@@ -46,6 +46,17 @@
 | Apache Tika | - | 简历文本解析 |
 | RustFS / S3 Compatible Storage | - | 对象存储 |
 | Maven | 3.9+ | 构建工具 |
+
+### 前端技术
+
+| 技术 | 版本 | 说明 |
+| ---- | ---- | ---- |
+| React | 18.x | 前端 UI 框架 |
+| TypeScript | - | 前端类型约束 |
+| Vite | 8.x | 前端构建工具 |
+| React Router | - | 页面路由 |
+| Axios | - | 接口请求封装 |
+| lucide-react | - | 图标库 |
 
 ## 功能特性
 
@@ -108,11 +119,14 @@
 
 ### 进行中
 
-- [ ] 手工验证 AI 出题、提交答案、评估入库、报告读取评估结果的完整链路
+- [x] 手工验证 AI 出题、提交答案、评估入库、报告读取评估结果的完整链路
+- [ ] 前端工程初始化与参考项目结构对齐
+- [ ] 前端简历管理、文字面试、面试记录核心页面
 - [ ] 补强核心 Service 单元测试
 
 ### 未完成
 
+- [ ] 前端完整主链路联调
 - [ ] Skill 驱动 AI 出题
 - [ ] Redis 会话缓存
 - [ ] 异步任务流转
@@ -120,7 +134,6 @@
 - [ ] 面试日程管理
 - [ ] 语音面试
 - [ ] PDF 报告导出
-- [ ] 前端页面
 
 ## 当前实现的关键设计点
 
@@ -149,7 +162,7 @@
 ```text
 interview-assistant/
 ├── README.md
-└── server/
+├── server/
     ├── pom.xml
     └── src/main/java/com/interview/
         ├── App.java
@@ -173,6 +186,13 @@ interview-assistant/
                 ├── repository/
                 ├── service/
                 └── InterviewController.java
+└── frontend/
+    ├── package.json
+    └── src/
+        ├── api/
+        ├── types/
+        ├── components/
+        └── pages/
 ```
 
 ## 接口清单
@@ -237,7 +257,7 @@ APP_STORAGE_REGION=us-east-1
 
 ### 启动方式
 
-进入后端目录后启动：
+进入后端目录后启动后端：
 
 ```bash
 cd server
@@ -248,6 +268,19 @@ mvn spring-boot:run
 
 ```text
 http://localhost:8080
+```
+
+进入前端目录后启动前端：
+
+```bash
+cd frontend
+npm run dev
+```
+
+默认前端启动端口：
+
+```text
+http://localhost:5173
 ```
 
 ## Postman 测试建议顺序
@@ -269,14 +302,14 @@ http://localhost:8080
 
 当前项目仍处于教学式迭代阶段，建议按下面顺序继续推进：
 
-1. 手工验收完整链路：上传简历 -> 创建面试 -> 答题 -> 完成 -> 查看报告。
-2. 补强核心 Service 单元测试，优先覆盖 AI 失败兜底、提交答案推进和报告聚合。
-3. 将同步 AI 出题演进为 Skill 驱动出题，增加题目去重和更稳定的结构化输出。
-4. Redis 会话缓存和接口限流。
-5. Redis Stream 异步化简历分析和面试评估。
-6. PDF 报告导出。
-7. 知识库 / RAG。
-8. 前端页面。
+1. 按 `interview-guide` 前端结构完成核心页面：简历管理、上传简历、简历详情、面试中心、文字面试、面试记录和报告详情。
+2. 完成前后端主链路联调：上传简历 -> 查看分析 -> 创建面试 -> 答题 -> 完成 -> 查看报告。
+3. 补强核心 Service 单元测试，优先覆盖 AI 失败兜底、提交答案推进和报告聚合。
+4. 将同步 AI 出题演进为 Skill 驱动出题，增加题目去重和更稳定的结构化输出。
+5. Redis 会话缓存和接口限流。
+6. Redis Stream 异步化简历分析和面试评估。
+7. PDF 报告导出。
+8. 知识库 / RAG。
 
 ## 参考项目
 
