@@ -15,7 +15,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * 简历模块的 HTTP 入口。
+ * 文件功能说明
+ * <p>负责简历模块接口入口。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-02
  */
 @RestController
 @RequestMapping("/api/resumes")
@@ -27,8 +31,13 @@ public class ResumeController {
     private final ResumeAnalysisQueryService resumeAnalysisQueryService;
 
     /**
-     * 上传简历接口
-     * POST /api/resumes/upload
+     * 功能说明
+     * <p>上传简历文件。</p>
+     *
+     * @param file 简历文件
+     * @return 简历上传结果
+     * @author NobuNo
+     * @date 2026-04-02
      */
     @PostMapping("/upload")
     public Result<ResumeUploadResponseDTO> upload(@RequestParam("file") MultipartFile file) {
@@ -43,24 +52,44 @@ public class ResumeController {
         }
     }
 
-    @GetMapping("/{id}")
     /**
-     * 根据主键查询单份简历详情。
+     * 功能说明
+     * <p>查询简历详情。</p>
+     *
+     * @param id 简历编号
+     * @return 简历详情
+     * @author NobuNo
+     * @date 2026-04-02
      */
+    @GetMapping("/{id}")
     public Result<ResumeDetailDTO> getById(@PathVariable Long id) {
         ResumeDetailDTO cplResumeDetailDTO = resumeQueryService.getById(id);
         return Result.success(cplResumeDetailDTO);
     }
 
-    @GetMapping("/{id}/analysis")
     /**
-     * 根据主键查询单份简历结果。
+     * 功能说明
+     * <p>查询简历分析结果。</p>
+     *
+     * @param id 简历编号
+     * @return 简历分析结果
+     * @author NobuNo
+     * @date 2026-04-02
      */
+    @GetMapping("/{id}/analysis")
     public Result<ResumeAnalysisDTO> getResumeAnalysisById(@PathVariable Long id) {
         ResumeAnalysisDTO resume = resumeAnalysisQueryService.getResumeAnalysis(id);
         return Result.success(resume);
     }
 
+    /**
+     * 功能说明
+     * <p>查询简历列表。</p>
+     *
+     * @return 简历列表
+     * @author NobuNo
+     * @date 2026-04-02
+     */
     @GetMapping
     public Result<List<ResumeListItemDTO>> listResumes() {
         List<ResumeListItemDTO> lstResumeList = resumeQueryService.listResumes();

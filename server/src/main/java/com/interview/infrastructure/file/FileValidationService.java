@@ -8,7 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 简历文件上传前的基础校验。
+ * 文件功能说明
+ * <p>负责上传文件基础校验。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-08
  */
 @Service
 @RequiredArgsConstructor
@@ -18,7 +22,13 @@ public class FileValidationService {
     private final ContentTypeDetectionService contentTypeDetectionService;
 
     /**
-     * 当前只做最小校验：判空、大小限制、MIME 类型白名单。
+     * 功能说明
+     * <p>校验简历文件。</p>
+     *
+     * @param file 简历文件
+     * @return 文件内容类型
+     * @author NobuNo
+     * @date 2026-04-08
      */
     public String validateResume(MultipartFile file) {
 
@@ -46,6 +56,14 @@ public class FileValidationService {
     }
 
 
+    /**
+     * 功能说明
+     * <p>判断是否为支持的简历文件类型。</p>
+     *
+     * @param contentType 文件内容类型
+     * @author NobuNo
+     * @date 2026-04-08
+     */
     private void isSupportedResumeContentType(String contentType) {
         // 只支持以下类型
         if (!contentType.equals("application/pdf")

@@ -9,17 +9,25 @@ import com.interview.modules.resume.model.entity.ResumeAnalysisEntity;
 import com.interview.modules.resume.model.entity.ResumeEntity;
 
 /**
- * 简历详情与列表相关转换器，负责 Resume 模块查询侧 DTO 转换。
+ * 文件功能说明
+ * <p>负责简历详情和列表 DTO 转换。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-20
  */
 public class ResumeDetailConverter {
 
     private ResumeDetailConverter() {
     }
 
-    // 简历实体转详情 DTO
-
     /**
-     * 将简历实体转换为详情 DTO。
+     * 功能说明
+     * <p>转换简历详情。</p>
+     *
+     * @param tblResumeEntity 简历实体
+     * @return 简历详情
+     * @author NobuNo
+     * @date 2026-04-20
      */
     public static ResumeDetailDTO convertToResumeDetailDTO(ResumeEntity tblResumeEntity) {
         ResumeDetailDTO cplResumeDetailDTO = new ResumeDetailDTO();
@@ -35,9 +43,14 @@ public class ResumeDetailConverter {
         return cplResumeDetailDTO;
     }
 
-    // 分析历史实体列表转详情页历史摘要列表
     /**
-     * 将分析历史实体列表转换为详情页分析历史摘要列表。
+     * 功能说明
+     * <p>转换简历分析历史列表。</p>
+     *
+     * @param lstResumeAnalysisEntity 简历分析实体列表
+     * @return 简历分析历史列表
+     * @author NobuNo
+     * @date 2026-04-20
      */
     public static List<ResumeDetailDTO.AnalysisHistoryDTO> convertToAnalysisHistoryDTO(
             List<ResumeAnalysisEntity> lstResumeAnalysisEntity) {
@@ -62,7 +75,14 @@ public class ResumeDetailConverter {
     }
 
     /**
-     * 将简历实体与最近一次分析结果转换为列表项 DTO。
+     * 功能说明
+     * <p>转换简历列表项。</p>
+     *
+     * @param tblResumeEntity 简历实体
+     * @param tblResumeAnalysisEntity 简历分析实体
+     * @return 简历列表项
+     * @author NobuNo
+     * @date 2026-04-20
      */
     public static ResumeListItemDTO convertToResumeListItemDTO(
             ResumeEntity tblResumeEntity,

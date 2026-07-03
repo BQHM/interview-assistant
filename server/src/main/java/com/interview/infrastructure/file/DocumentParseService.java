@@ -9,7 +9,11 @@ import lombok.RequiredArgsConstructor;
 import java.io.IOException;
 
 /**
- * 文档解析服务，负责把上传文件提取成可入库的纯文本。
+ * 文件功能说明
+ * <p>负责解析上传文档文本。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-08
  */
 @RequiredArgsConstructor
 @Service
@@ -18,7 +22,13 @@ public class DocumentParseService {
     private final TextCleaningService textCleaningService;
 
     /**
-     * 先用 Tika 提取正文，再交给清洗服务做基础降噪。
+     * 功能说明
+     * <p>解析简历文件文本。</p>
+     *
+     * @param file 简历文件
+     * @return 简历文本
+     * @author NobuNo
+     * @date 2026-04-08
      */
     public String parseResume(MultipartFile file) {
         try {

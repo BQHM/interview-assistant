@@ -11,6 +11,7 @@
 - 当前阶段先巩固后端，后端 API 稳定后再启动前端。
 - 复杂能力按“同步可用 -> 工程化增强 -> 异步化/缓存化”演进，不直接跳到最终形态。
 - 当前 `questionsJson` 只保留题目快照；用户答案已经拆到独立答案表。
+- AI 出题先采用同步调用 + 规则兜底，后续再演进为 Skill 驱动、题目去重和缓存/异步策略。
 - AI 面试评估先采用同步调用 + 规则兜底，链路跑通后再异步化。
 
 ## Phase 1: 工程基线整理
@@ -248,8 +249,8 @@
 - [x] 暂存、提交、详情、报告行为一致。
 - [x] 已抽取题目与答案聚合工具，避免多个 Service 重复写聚合逻辑。
 - [x] 已创建 AI 单题评估 DTO、Prompt 和 Service。
-- [ ] 提交答案后写入 AI 单题评估结果。
-- [ ] 报告优先读取答案表中的 AI 评分和反馈。
+- [x] 提交答案后写入 AI 单题评估结果。
+- [x] 报告优先读取答案表中的 AI 评分和反馈。
 
 ## Phase 4: 测试体系
 
@@ -337,15 +338,16 @@
 
 **Acceptance criteria:**
 
-- [ ] 出题逻辑从 `InterviewSessionService` 中拆出。
-- [ ] AI 出题返回结构化题目列表。
-- [ ] AI 失败时使用规则版题目。
-- [ ] 题目数量符合请求参数。
+- [x] 出题逻辑从 `InterviewSessionService` 中拆出。
+- [x] AI 出题返回结构化题目列表。
+- [x] AI 失败时使用规则版题目。
+- [x] 题目数量符合请求参数。
 
 **Verification:**
 
 - [ ] Tests pass: `cd server && mvn test`。
 - [ ] Manual check: 关闭或错误配置 AI 后仍能创建面试。
+- [ ] Manual check: AI 配置可用时，创建面试返回的题目能结合简历内容。
 
 **Dependencies:** Task 10
 
@@ -370,13 +372,14 @@
 - [x] 评估结果写回 `InterviewAnswerEntity.score`、`feedback`、`referenceAnswer`、`keyPointsJson`。
 - [x] AI 失败时不影响提交答案主流程。
 - [x] 面试报告优先读取答案表中的评分和反馈。
-- [ ] 面试报告返回参考答案和关键点列表。
+- [x] 面试报告返回参考答案和关键点列表。
 
 **Verification:**
 
 - [ ] Build succeeds: `cd server && mvn clean package -DskipTests`。
-- [ ] Manual check: 提交答案后数据库 `interview_answers` 中出现评分和反馈。
+- [ ] Manual check: 提交答案后数据库 `interview_answers` 中出现评分、反馈、参考答案和关键点 JSON。
 - [ ] Manual check: 错误配置 AI 后仍能提交答案，并写入规则版评估结果。
+- [ ] Manual check: 报告接口返回单题 `referenceAnswer` 和 `keyPoints`。
 
 **Dependencies:** Task 8
 
@@ -393,11 +396,12 @@
 
 ### Checkpoint: AI 面试能力
 
-- [ ] AI 出题可用，规则出题兜底可用。
+- [x] AI 出题基础版可用，规则出题兜底可用。
 - [x] 提交答案后可同步生成单题 AI 评估，规则评估兜底可用。
 - [x] 报告优先读取答案表中的评估结果。
-- [ ] 报告接口展示参考答案和关键点列表。
-- [ ] 可以开始异步化。
+- [x] 报告接口展示参考答案和关键点列表。
+- [ ] 完成 AI 出题与报告接口的手工验收。
+- [ ] 可以开始 Skill 化和异步化。
 
 ## Phase 6: Redis、限流与异步任务
 

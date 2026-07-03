@@ -8,7 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * 基于文件内容探测真实 MIME 类型。
+ * 文件功能说明
+ * <p>负责检测上传文件内容类型。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-09
  */
 @Service
 public class ContentTypeDetectionService {
@@ -16,7 +20,13 @@ public class ContentTypeDetectionService {
     private final Tika tika = new Tika();
 
     /**
-     * 优先根据文件内容检测类型，读取失败时再回退到请求头中的 Content-Type。
+     * 功能说明
+     * <p>检测文件内容类型。</p>
+     *
+     * @param file 上传文件
+     * @return 文件内容类型
+     * @author NobuNo
+     * @date 2026-04-09
      */
     public String detectContentType(MultipartFile file) {
         try (InputStream inputStream = file.getInputStream()) {

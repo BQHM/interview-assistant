@@ -15,7 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 简历分析结果持久化服务，负责把分析结果落到数据库。
+ * 文件功能说明
+ * <p>负责简历分析结果保存业务逻辑。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-17
  */
 @Slf4j
 @Service
@@ -26,8 +30,13 @@ public class ResumeAnalysisPersistenceService {
     private final ObjectMapper objectMapper;
 
     /**
-     * 保存一份简历的分析结果。
-     * 当前负责把结构化分析结果转换为数据库实体，并完成 JSON 字段序列化。
+     * 功能说明
+     * <p>保存简历分析结果。</p>
+     *
+     * @param tblResumeEntity 简历实体
+     * @param cplResumeAnalysisResultDTO 简历分析结果
+     * @author NobuNo
+     * @date 2026-04-17
      */
     public void saveAnalysis(ResumeEntity tblResumeEntity, ResumeAnalysisResultDTO cplResumeAnalysisResultDTO) {
         log.info("开始保存简历分析结果: resumeId={}", tblResumeEntity.getId());

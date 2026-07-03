@@ -22,6 +22,13 @@ import com.interview.modules.resume.service.convert.ResumeUploadConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 文件功能说明
+ * <p>负责简历上传业务逻辑。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-08
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,16 +43,13 @@ public class ResumeUploadService {
     private final ResumeAnalysisPersistenceService resumeAnalysisPersistenceService;
 
     /**
-     * 简历上传主流程。
-     * <p>
-     * 当前版本负责 4 件事：
-     * 1. 校验上传文件是否合法
-     * 2. 解析并清洗简历文本
-     * 3. 上传原始文件到 RustFS / S3
-     * 4. 保存简历元信息和文本到数据库
+     * 功能说明
+     * <p>上传并保存简历。</p>
      *
-     * @param file 用户上传的 MultipartFile
-     * @return 上传成功后的简历基础返回信息
+     * @param file 简历文件
+     * @return 简历上传结果
+     * @author NobuNo
+     * @date 2026-04-08
      */
     @Transactional
     public ResumeUploadResponseDTO uploadAndSave(MultipartFile file) {

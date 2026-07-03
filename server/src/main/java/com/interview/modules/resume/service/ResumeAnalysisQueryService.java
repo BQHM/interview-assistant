@@ -16,7 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 简历分析结果查询服务，负责按 resumeId 返回分析结果。
+ * 文件功能说明
+ * <p>负责简历分析结果查询业务逻辑。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-14
  */
 @Slf4j
 @Service
@@ -27,7 +31,13 @@ public class ResumeAnalysisQueryService {
     private final ObjectMapper objectMapper;
 
     /**
-     * 查询指定简历的分析结果，查不到时返回明确业务异常。
+     * 功能说明
+     * <p>查询简历分析结果。</p>
+     *
+     * @param lngResumeId 简历编号
+     * @return 简历分析结果
+     * @author NobuNo
+     * @date 2026-04-14
      */
     public ResumeAnalysisDTO getResumeAnalysis(Long lngResumeId) {
         log.info("开始查询简历分析结果: resumeId={}", lngResumeId);

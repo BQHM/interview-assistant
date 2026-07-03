@@ -8,7 +8,11 @@ import com.interview.modules.interview.model.dto.InterviewSessionListItemDTO;
 import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 
 /**
- * 面试会话转换器，负责 Interview 模块会话相关 DTO 组装。
+ * 文件功能说明
+ * <p>负责面试会话 DTO 转换。</p>
+ *
+ * @author NobuNo
+ * @date 2026-05-16
  */
 public class InterviewSessionConverter {
 
@@ -16,7 +20,13 @@ public class InterviewSessionConverter {
     }
 
     /**
-     * 将面试会话实体转换为历史列表项 DTO。
+     * 功能说明
+     * <p>转换面试历史列表项。</p>
+     *
+     * @param tblInterviewSessionEntity 面试会话实体
+     * @return 面试历史列表项
+     * @author NobuNo
+     * @date 2026-05-16
      */
     public static InterviewSessionListItemDTO convertToInterviewSessionListItemDTO(
             InterviewSessionEntity tblInterviewSessionEntity) {
@@ -32,7 +42,14 @@ public class InterviewSessionConverter {
     }
 
     /**
-     * 将面试会话实体和题目快照转换为历史详情 DTO。
+     * 功能说明
+     * <p>转换面试历史详情。</p>
+     *
+     * @param tblInterviewSessionEntity 面试会话实体
+     * @param lstInterviewQuestionDTO 面试题列表
+     * @return 面试历史详情
+     * @author NobuNo
+     * @date 2026-05-16
      */
     public static InterviewDetailDTO convertToInterviewDetailDTO(
             InterviewSessionEntity tblInterviewSessionEntity,

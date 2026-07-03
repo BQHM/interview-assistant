@@ -10,26 +10,48 @@ import com.interview.modules.interview.model.entity.InterviewAnswerEntity;
 import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 
 /**
- * 面试答案 Repository，负责和 interview_answers 表交互。
+ * 文件功能说明
+ * <p>负责面试答案数据访问。</p>
+ *
+ * @author NobuNo
+ * @date 2026-05-18
  */
 @Repository
 public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswerEntity, Long> {
 
-        /**
-         * 查询某场面试下某一道题的答案。
-         */
-        Optional<InterviewAnswerEntity> findBySessionAndQuestionIndex(InterviewSessionEntity tblInterviewSessionEntity,
-                        Integer intQuestionIndex);
+    /**
+     * 功能说明
+     * <p>查询某道题的答案。</p>
+     *
+     * @param tblInterviewSessionEntity 面试会话实体
+     * @param intQuestionIndex 题目索引
+     * @return 面试答案实体
+     * @author NobuNo
+     * @date 2026-05-18
+     */
+    Optional<InterviewAnswerEntity> findBySessionAndQuestionIndex(InterviewSessionEntity tblInterviewSessionEntity,
+                    Integer intQuestionIndex);
 
-        /**
-         * 查询某场面试下的全部答案。
-         */
-        List<InterviewAnswerEntity> findBySessionOrderByQuestionIndexAsc(
-                        InterviewSessionEntity tblInterviewSessionEntity);
+    /**
+     * 功能说明
+     * <p>查询会话下的全部答案。</p>
+     *
+     * @param tblInterviewSessionEntity 面试会话实体
+     * @return 面试答案列表
+     * @author NobuNo
+     * @date 2026-05-18
+     */
+    List<InterviewAnswerEntity> findBySessionOrderByQuestionIndexAsc(
+                    InterviewSessionEntity tblInterviewSessionEntity);
 
-        /**
-         * 删除某场面试下的全部答案。
-         */
-        void deleteBySession(
-                        InterviewSessionEntity tblInterviewSessionEntity);
+    /**
+     * 功能说明
+     * <p>删除会话下的全部答案。</p>
+     *
+     * @param tblInterviewSessionEntity 面试会话实体
+     * @author NobuNo
+     * @date 2026-05-18
+     */
+    void deleteBySession(
+                    InterviewSessionEntity tblInterviewSessionEntity);
 }

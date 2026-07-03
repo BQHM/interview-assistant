@@ -29,8 +29,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 面试模块的 HTTP 入口。
- * 提供模拟面试的会话创建、答题交互、提前交卷、报告生成等接口。
+ * 文件功能说明
+ * <p>负责面试模块接口入口。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-20
  */
 @RestController
 @RequestMapping("/api/interviews")
@@ -42,8 +45,13 @@ public class InterviewController {
     private final InterviewReportService interviewReportService;
 
     /**
-     * 创建面试会话。
-     * 如果同一份简历已有未完成会话，则直接返回该会话，避免重复创建。
+     * 功能说明
+     * <p>创建面试会话。</p>
+     *
+     * @param cplCreateInterviewRequest 创建面试请求
+     * @return 面试会话信息
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @PostMapping
     public Result<InterviewSessionDTO> createInterview(
@@ -54,7 +62,13 @@ public class InterviewController {
     }
 
     /**
-     * 根据会话ID查询面试会话详情。
+     * 功能说明
+     * <p>查询面试会话详情。</p>
+     *
+     * @param sessionId 面试会话编号
+     * @return 面试会话信息
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @GetMapping("/{sessionId}")
     public Result<InterviewSessionDTO> getInterviewSession(@PathVariable String sessionId) {
@@ -63,8 +77,13 @@ public class InterviewController {
     }
 
     /**
-     * 提交当前面试题答案。
-     * 当前返回的是提交动作结果，而不是整场会话快照。
+     * 功能说明
+     * <p>提交面试答案。</p>
+     *
+     * @param cplSubmitAnswerRequest 提交答案请求
+     * @return 提交答案结果
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @PostMapping("/answer")
     public Result<SubmitAnswerResponse> submitAnswer(
@@ -75,7 +94,13 @@ public class InterviewController {
     }
 
     /**
-     * 根据会话ID生成面试报告。
+     * 功能说明
+     * <p>获取面试报告。</p>
+     *
+     * @param sessionId 面试会话编号
+     * @return 面试报告信息
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @GetMapping("/{sessionId}/report")
     public Result<InterviewReportDTO> getInterviewReport(@PathVariable String sessionId) {
@@ -84,7 +109,13 @@ public class InterviewController {
     }
 
     /**
-     * 获取当前流程中应该展示给用户的题目。
+     * 功能说明
+     * <p>获取当前面试题。</p>
+     *
+     * @param sessionId 面试会话编号
+     * @return 当前面试题信息
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @GetMapping("/{sessionId}/question")
     public Result<CurrentQuestionResponseDTO> getCurrentQuestion(@PathVariable String sessionId) {
@@ -94,8 +125,13 @@ public class InterviewController {
     }
 
     /**
-     * 提前交卷，将面试会话状态置为 COMPLETED。
-     * 交卷后不允许再提交答案，但允许生成报告。
+     * 功能说明
+     * <p>提前完成面试。</p>
+     *
+     * @param strSessionId 面试会话编号
+     * @return 空结果
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @PostMapping("/{sessionId}/complete")
     public Result<Void> completeInterview(@PathVariable("sessionId") String strSessionId) {
@@ -103,6 +139,15 @@ public class InterviewController {
         return Result.success(null);
     }
 
+    /**
+     * 功能说明
+     * <p>查询未完成面试会话。</p>
+     *
+     * @param lngResumeId 简历编号
+     * @return 未完成面试会话信息
+     * @author NobuNo
+     * @date 2026-04-20
+     */
     @GetMapping("/unfinished/{resumeId}")
     public Result<InterviewSessionDTO> findUnfinishedSessionByResumeId(@PathVariable("resumeId") Long lngResumeId) {
         InterviewSessionDTO cplInterviewSessionDTO = interviewSessionService
@@ -111,8 +156,14 @@ public class InterviewController {
     }
 
     /**
-     * 暂存某道题的答案草稿。
-     * 该接口只更新指定题目的 userAnswer，不推进当前作答进度。
+     * 功能说明
+     * <p>暂存面试答案。</p>
+     *
+     * @param strSessionId 面试会话编号
+     * @param cplSaveAnswerRequest 暂存答案请求
+     * @return 空结果
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @PutMapping("/{sessionId}/answers")
     public Result<Void> saveAnswer(@PathVariable("sessionId") String strSessionId,
@@ -122,8 +173,12 @@ public class InterviewController {
     }
 
     /**
-     * 查询面试历史列表。
-     * 只返回会话摘要信息，不返回完整题目 JSON，避免列表接口过重。
+     * 功能说明
+     * <p>查询面试历史列表。</p>
+     *
+     * @return 面试历史列表
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @GetMapping
     public Result<List<InterviewSessionListItemDTO>> getHistory() {
@@ -132,7 +187,13 @@ public class InterviewController {
     }
 
     /**
-     * 查询面试历史详情。
+     * 功能说明
+     * <p>查询面试历史详情。</p>
+     *
+     * @param sessionId 面试会话编号
+     * @return 面试历史详情
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @GetMapping("/{sessionId}/details")
     public Result<InterviewDetailDTO> getInterviewDetail(@PathVariable String sessionId) {
@@ -141,8 +202,13 @@ public class InterviewController {
     }
 
     /**
-     * 删除面试会话。
-     * 当前阶段只删除面试会话表记录，后续引入独立答案表后再补充级联删除策略。
+     * 功能说明
+     * <p>删除面试会话。</p>
+     *
+     * @param sessionId 面试会话编号
+     * @return 空结果
+     * @author NobuNo
+     * @date 2026-04-20
      */
     @DeleteMapping("/{sessionId}")
     public Result<Void> deleteInterview(@PathVariable String sessionId) {

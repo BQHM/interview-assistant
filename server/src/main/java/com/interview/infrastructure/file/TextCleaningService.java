@@ -5,8 +5,11 @@ import org.springframework.stereotype.Service;
 import java.util.regex.Pattern;
 
 /**
- * 文本清理服务：AI 的“初滤网”
- * 作用：去除解析文档时产生的杂质（乱码、控制字符、多余空行等）
+ * 文件功能说明
+ * <p>负责清洗解析后的文本。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-08
  */
 @Service
 public class TextCleaningService {
@@ -14,6 +17,15 @@ public class TextCleaningService {
     private static final Pattern CONTROL_CHARS = Pattern.compile("[\\p{Cntrl}&&[^\\r\\n\\t]]");
     private static final Pattern MULTI_BLANK_LINES = Pattern.compile("(\\n)\\s*(\\n)+");
 
+    /**
+     * 功能说明
+     * <p>清洗文本内容。</p>
+     *
+     * @param rawText 原始文本
+     * @return 清洗后的文本
+     * @author NobuNo
+     * @date 2026-04-08
+     */
     public String clean(String rawText){
 
         if (rawText == null || rawText.isBlank()) {

@@ -6,8 +6,11 @@ import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
 import com.interview.modules.interview.model.entity.InterviewAnswerEntity;
 
 /**
- * 面试题目答案聚合工具。
- * 负责把 questionsJson 解析出的题目快照和 interview_answers 查询出的答案记录按 questionIndex 合并。
+ * 文件功能说明
+ * <p>负责面试题和答案聚合。</p>
+ *
+ * @author NobuNo
+ * @date 2026-06-29
  */
 public class InterviewQuestionAnswerAggregator {
 
@@ -15,7 +18,13 @@ public class InterviewQuestionAnswerAggregator {
     }
 
     /**
-     * 将答案表中的 userAnswer 回填到题目 DTO 列表中。
+     * 功能说明
+     * <p>填充题目中的用户答案。</p>
+     *
+     * @param lstInterviewQuestionDTO 面试题列表
+     * @param lstInterviewAnswerEntity 面试答案列表
+     * @author NobuNo
+     * @date 2026-06-29
      */
     public static void fillUserAnswers(
             List<InterviewQuestionDTO> lstInterviewQuestionDTO,

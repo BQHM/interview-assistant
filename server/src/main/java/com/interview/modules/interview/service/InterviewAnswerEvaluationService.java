@@ -18,61 +18,46 @@ import com.interview.modules.interview.model.dto.InterviewAnswerEvaluationDTO;
 import com.interview.modules.interview.model.entity.InterviewAnswerEntity;
 
 /**
- * 面试单题答案评估服务。
+ * 文件功能说明
+ * <p>负责面试答案评估业务逻辑。</p>
  *
- * 当前阶段它只负责一件事：
- * 接收一条 interview_answers 表中的答案记录，然后生成这道题的评估结果。
- *
- * 这里暂时不直接保存数据库，是为了让职责更单一：
- * - 本类负责“怎么评估”
- * - 调用方负责“评估结果保存到哪里”
- *
- * 整体流程：
- * 1. 先检查答案是否为空。
- * 2. 答案不为空时，优先调用 AI。
- * 3. 如果 AI 调用失败，使用本地规则兜底。
- * 4. 最终统一返回 InterviewAnswerEvaluationDTO。
+ * @author NobuNo
+ * @date 2026-06-29
  */
 @Service
 public class InterviewAnswerEvaluationService {
 
     /**
-     * Spring AI 的聊天客户端，真正负责向大模型发送请求。
+     * AI 聊天客户端。
      */
     private final ChatClient chatClient;
 
     /**
-     * system prompt 模板。
-     * 用来告诉 AI：你是谁、你要按什么标准评分、输出什么格式。
+     * 系统 Prompt 模板。
      */
     private final PromptTemplate systemPromptTemplate;
 
     /**
-     * user prompt 模板。
-     * 用来放入本次评估的具体题目、分类和用户答案。
+     * 用户 Prompt 模板。
      */
     private final PromptTemplate userPromptTemplate;
 
     /**
-     * AI 结构化输出转换器。
-     *
-     * 它有两个作用：
-     * 1. outputConverter.getFormat() 会生成一段格式要求，提示 AI 按 DTO 字段返回 JSON。
-     * 2. outputConverter.convert(...) 会把 AI 返回的 JSON 字符串转成 InterviewAnswerEvaluationDTO。
+     * AI 输出转换器。
      */
     private final BeanOutputConverter<InterviewAnswerEvaluationDTO> outputConverter;
 
     private static final Logger log = LoggerFactory.getLogger(InterviewAnswerEvaluationService.class);
 
     /**
-     * 构造方法在 Spring 创建 Bean 的时候执行。
+     * 功能说明
+     * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * 这里提前完成三件事：
-     * 1. 创建 ChatClient。
-     * 2. 创建 DTO 输出转换器。
-     * 3. 从 resources/prompts 目录加载两个 prompt 模板。
-     *
-     * 这样后面每次评估答案时，就不用重复读取模板文件。
+     * @param chatClientBuilder AI 客户端构建器
+     * @param resourceLoader 资源加载器
+     * @throws IOException 当 Prompt 模板读取失败时抛出
+     * @author NobuNo
+     * @date 2026-06-29
      */
     public InterviewAnswerEvaluationService(ChatClient.Builder chatClientBuilder, ResourceLoader resourceLoader)
             throws IOException {
@@ -87,12 +72,13 @@ public class InterviewAnswerEvaluationService {
     }
 
     /**
-     * 对外暴露的评估入口。
+     * 功能说明
+     * <p>评估单题答案。</p>
      *
-     * 其他 Service 后续只需要调用这个方法，不需要关心底层到底是 AI 评分还是规则评分。
-     *
-     * @param tblInterviewAnswerEntity 一道题的答案记录
-     * @return 单题评估结果
+     * @param tblInterviewAnswerEntity 答案实体
+     * @return 答案评估结果
+     * @author NobuNo
+     * @date 2026-06-29
      */
     public InterviewAnswerEvaluationDTO evaluateAnswer(InterviewAnswerEntity tblInterviewAnswerEntity) {
         // 极端保护：如果调用方传入 null，就按“未作答”处理，避免空指针异常。
@@ -134,9 +120,36 @@ public class InterviewAnswerEvaluationService {
     }
 
     /**
-     * AI 评估主逻辑。
+     * 功能说明
+     * <p>构建空答案评估结果。</p>
      *
-     * 这一步只做“调用 AI 并把结果转成 DTO”，不处理数据库保存。
+     * @return 空答案评估结果
+     * @author NobuNo
+     * @date 2026-06-29
+     */
+    private InterviewAnswerEvaluationDTO buildEmptyAnswerEvaluation() {
+        InterviewAnswerEvaluationDTO cplInterviewAnswerEvaluationDTO = new InterviewAnswerEvaluationDTO();
+
+        cplInterviewAnswerEvaluationDTO.setScore(0);
+        cplInterviewAnswerEvaluationDTO.setFeedback("当前题目未作答，无法体现相关技术理解和项目经验。");
+        cplInterviewAnswerEvaluationDTO.setReferenceAnswer("建议先正面回答题目，再结合项目中的具体场景、实现方式和结果进行说明。");
+        cplInterviewAnswerEvaluationDTO.setKeyPoints(List.of(
+                "正面回答问题",
+                "说明核心知识点",
+                "结合项目经验",
+                "表达清晰完整"));
+
+        return cplInterviewAnswerEvaluationDTO;
+    }
+
+    /**
+     * 功能说明
+     * <p>调用 AI 评估答案。</p>
+     *
+     * @param tblInterviewAnswerEntity 答案实体
+     * @return AI 评估结果
+     * @author NobuNo
+     * @date 2026-06-29
      */
     private InterviewAnswerEvaluationDTO evaluateByAi(InterviewAnswerEntity tblInterviewAnswerEntity) {
         // 渲染 system prompt。当前 system prompt 没有变量，所以直接 render()。
@@ -179,15 +192,13 @@ public class InterviewAnswerEvaluationService {
     }
 
     /**
-     * 规则版兜底评估。
+     * 功能说明
+     * <p>构建规则版评估结果。</p>
      *
-     * 什么时候会走到这里：
-     * - AI 服务不可用
-     * - API Key 失效
-     * - AI 返回内容不是合法 JSON
-     * - 输出转换器转换失败
-     *
-     * 这个方法是过渡方案，不追求很准，只保证系统在 AI 失败时仍然能生成报告。
+     * @param tblInterviewAnswerEntity 答案实体
+     * @return 规则版评估结果
+     * @author NobuNo
+     * @date 2026-06-29
      */
     private InterviewAnswerEvaluationDTO buildRuleBasedEvaluation(InterviewAnswerEntity tblInterviewAnswerEntity) {
         InterviewAnswerEvaluationDTO cplInterviewAnswerEvaluationDTO = new InterviewAnswerEvaluationDTO();
@@ -208,34 +219,13 @@ public class InterviewAnswerEvaluationService {
     }
 
     /**
-     * 空答案评估。
+     * 功能说明
+     * <p>计算规则版评分。</p>
      *
-     * 用户没有回答时，不需要浪费一次 AI 调用，直接给固定的 0 分反馈。
-     */
-    private InterviewAnswerEvaluationDTO buildEmptyAnswerEvaluation() {
-        InterviewAnswerEvaluationDTO cplInterviewAnswerEvaluationDTO = new InterviewAnswerEvaluationDTO();
-
-        cplInterviewAnswerEvaluationDTO.setScore(0);
-        cplInterviewAnswerEvaluationDTO.setFeedback("当前题目未作答，无法体现相关技术理解和项目经验。");
-        cplInterviewAnswerEvaluationDTO.setReferenceAnswer("建议先正面回答题目，再结合项目中的具体场景、实现方式和结果进行说明。");
-        cplInterviewAnswerEvaluationDTO.setKeyPoints(List.of(
-                "正面回答问题",
-                "说明核心知识点",
-                "结合项目经验",
-                "表达清晰完整"));
-
-        return cplInterviewAnswerEvaluationDTO;
-    }
-
-    /**
-     * 规则版评分。
-     *
-     * 当前只是一个非常粗略的临时算法：
-     * 1. 先根据答案长度给基础分。
-     * 2. 如果提到项目、负责、设计、优化等实践词，加一点分。
-     * 3. 如果表达上有首先、其次、因为、所以等结构词，再加一点分。
-     *
-     * 后续接入稳定 AI 评估后，这个方法只作为兜底保留。
+     * @param strUserAnswer 用户答案
+     * @return 规则版评分
+     * @author NobuNo
+     * @date 2026-06-29
      */
     private int calculateRuleBasedScore(String strUserAnswer) {
         if (strUserAnswer == null || strUserAnswer.trim().isEmpty()) {
@@ -272,9 +262,14 @@ public class InterviewAnswerEvaluationService {
     }
 
     /**
-     * 判断文本中是否包含任意一个关键词。
+     * 功能说明
+     * <p>判断文本是否包含任意关键词。</p>
      *
-     * 用显式 for 循环写，是为了保持当前学习阶段代码直观易懂。
+     * @param strText 文本内容
+     * @param arrKeywords 关键词数组
+     * @return 是否包含关键词
+     * @author NobuNo
+     * @date 2026-06-29
      */
     private boolean containsAny(String strText, String... arrKeywords) {
         for (String strKeyword : arrKeywords) {
@@ -286,7 +281,13 @@ public class InterviewAnswerEvaluationService {
     }
 
     /**
-     * 根据规则评分生成对应的文字反馈。
+     * 功能说明
+     * <p>根据评分生成反馈。</p>
+     *
+     * @param intScore 评分
+     * @return 文字反馈
+     * @author NobuNo
+     * @date 2026-06-29
      */
     private String buildRuleBasedFeedback(int intScore) {
         if (intScore >= 85) {
