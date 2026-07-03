@@ -19,7 +19,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 简历分析服务，负责调用 AI 完成结构化分析，并在失败时回退到规则版分析。
+ * 文件功能说明
+ * <p>负责简历分析业务逻辑。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-14
  */
 @Service
 public class ResumeGradingService {
@@ -30,6 +34,17 @@ public class ResumeGradingService {
     private final BeanOutputConverter<ResumeAnalysisResultDTO> outputConverter;
     private static final Logger log = LoggerFactory.getLogger(ResumeGradingService.class);
 
+    /**
+     * 功能说明
+     * <p>初始化 AI 客户端和 Prompt 模板。</p>
+     *
+     * @param chatClientBuilder AI 客户端构建器
+     * @param properties 简历分析配置
+     * @param resourceLoader 资源加载器
+     * @throws IOException 当 Prompt 模板读取失败时抛出
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     public ResumeGradingService(
             ChatClient.Builder chatClientBuilder,
             ResumeAnalysisProperties properties,
@@ -47,7 +62,13 @@ public class ResumeGradingService {
     }
 
     /**
-     * 分析简历正文，优先走 AI 分析链路，失败时自动回退到规则版分析。
+     * 功能说明
+     * <p>分析简历正文。</p>
+     *
+     * @param resumeText 简历正文
+     * @return 简历分析结果
+     * @author NobuNo
+     * @date 2026-04-14
      */
     public ResumeAnalysisResultDTO analyzeResume(String resumeText) {
 
@@ -69,7 +90,13 @@ public class ResumeGradingService {
     }
 
     /**
-     * 调用大模型完成简历分析，并将原始文本结果转换为结构化 DTO。
+     * 功能说明
+     * <p>调用 AI 分析简历。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 简历分析结果
+     * @author NobuNo
+     * @date 2026-04-14
      */
     private ResumeAnalysisResultDTO analyzeByAi(String strResumeText) {
         String strSystemPrompt = systemPromptTemplate.render();
@@ -90,7 +117,13 @@ public class ResumeGradingService {
     }
 
     /**
-     * 当 AI 分析失败时，使用本地规则生成兜底分析结果。
+     * 功能说明
+     * <p>构建规则版简历分析结果。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 简历分析结果
+     * @author NobuNo
+     * @date 2026-04-14
      */
     private ResumeAnalysisResultDTO buildRuleBasedResult(String strResumeText) {
         ResumeAnalysisResultDTO cplResumeAnalysisResultDTO = new ResumeAnalysisResultDTO();
@@ -118,6 +151,16 @@ public class ResumeGradingService {
         return cplResumeAnalysisResultDTO;
     }
 
+    /**
+     * 功能说明
+     * <p>统计关键词命中数量。</p>
+     *
+     * @param strResumeText 简历正文
+     * @param arrKeywords 关键词数组
+     * @return 命中数量
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private int countMatches(String strResumeText, String... arrKeywords) {
         int intCount = 0;
         for (String strKeyword : arrKeywords) {
@@ -128,6 +171,16 @@ public class ResumeGradingService {
         return intCount;
     }
 
+    /**
+     * 功能说明
+     * <p>判断文本是否包含任意关键词。</p>
+     *
+     * @param strResumeText 简历正文
+     * @param arrKeywords 关键词数组
+     * @return 是否包含关键词
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private boolean containsAny(String strResumeText, String... arrKeywords) {
         for (String strKeyword : arrKeywords) {
             if (strResumeText.contains(strKeyword)) {
@@ -137,6 +190,15 @@ public class ResumeGradingService {
         return false;
     }
 
+    /**
+     * 功能说明
+     * <p>计算简历内容评分。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 内容评分
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private int scoreContent(String strResumeText) {
         int intScore;
 
@@ -156,6 +218,15 @@ public class ResumeGradingService {
         return Math.min(intScore, 25);
     }
 
+    /**
+     * 功能说明
+     * <p>计算简历结构评分。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 结构评分
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private int scoreStructure(String strResumeText) {
         int intSectionCount = countMatches(strResumeText, "教育", "项目", "工作经历", "技能", "实习");
 
@@ -170,6 +241,15 @@ public class ResumeGradingService {
         }
     }
 
+    /**
+     * 功能说明
+     * <p>计算技能匹配评分。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 技能匹配评分
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private int scoreSkillMatch(String strResumeText) {
         int intSkillCount = countMatches(strResumeText, "Java", "Spring", "Spring Boot", "MySQL", "Redis", "Docker", "Linux", "Git");
 
@@ -184,6 +264,15 @@ public class ResumeGradingService {
         }
     }
 
+    /**
+     * 功能说明
+     * <p>计算表达评分。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 表达评分
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private int scoreExpression(String strResumeText) {
         boolean boolHasAction = containsAny(strResumeText, "负责", "设计", "实现", "优化", "重构");
         boolean boolHasMetric = containsAny(strResumeText, "%", "提升", "降低", "减少", "QPS", "耗时");
@@ -197,6 +286,15 @@ public class ResumeGradingService {
         }
     }
 
+    /**
+     * 功能说明
+     * <p>计算项目经验评分。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 项目经验评分
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private int scoreProject(String strResumeText) {
         boolean boolHasProject = containsAny(strResumeText, "项目");
         boolean boolHasResponsibility = containsAny(strResumeText, "负责", "实现", "设计", "优化");
@@ -213,6 +311,15 @@ public class ResumeGradingService {
         }
     }
 
+    /**
+     * 功能说明
+     * <p>生成简历分析总结。</p>
+     *
+     * @param intOverallScore 综合评分
+     * @return 分析总结
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private String buildSummary(int intOverallScore) {
         if (intOverallScore >= 75) {
             return "简历整体较完整，具备一定岗位匹配度，建议进一步强化项目成果表达。";
@@ -223,10 +330,28 @@ public class ResumeGradingService {
         }
     }
 
+    /**
+     * 功能说明
+     * <p>生成简历优点列表。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 简历优点列表
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private List<String> buildStrengths(String strResumeText) {
         return List.of("具备基础简历结构", "包含一定技术关键词");
     }
 
+    /**
+     * 功能说明
+     * <p>生成简历修改建议。</p>
+     *
+     * @param strResumeText 简历正文
+     * @return 简历修改建议
+     * @author NobuNo
+     * @date 2026-04-14
+     */
     private List<ResumeAnalysisResultDTO.Suggestion> buildSuggestions(String strResumeText) {
         ResumeAnalysisResultDTO.Suggestion cplSuggestionProject = new ResumeAnalysisResultDTO.Suggestion();
         cplSuggestionProject.setCategory("项目");

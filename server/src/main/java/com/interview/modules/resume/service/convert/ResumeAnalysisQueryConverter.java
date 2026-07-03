@@ -12,7 +12,11 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.List;
 
 /**
- * 简历分析结果查询转换器，负责实体到分析结果 DTO 的转换。
+ * 文件功能说明
+ * <p>负责简历分析结果查询转换。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-20
  */
 @Slf4j
 public class ResumeAnalysisQueryConverter {
@@ -21,7 +25,14 @@ public class ResumeAnalysisQueryConverter {
     }
 
     /**
-     * 将分析结果实体转换为接口返回 DTO。
+     * 功能说明
+     * <p>转换简历分析结果。</p>
+     *
+     * @param tblResumeAnalysisEntity 简历分析实体
+     * @param objectMapper JSON 转换器
+     * @return 简历分析结果
+     * @author NobuNo
+     * @date 2026-04-20
      */
     public static ResumeAnalysisDTO convertToResumeAnalysisDTO(
             ResumeAnalysisEntity tblResumeAnalysisEntity,
@@ -56,6 +67,17 @@ public class ResumeAnalysisQueryConverter {
         return cplResumeAnalysisDTO;
     }
 
+    /**
+     * 功能说明
+     * <p>解析简历优点。</p>
+     *
+     * @param strStrengthsJson 优点 JSON 字符串
+     * @param objectMapper JSON 转换器
+     * @return 简历优点列表
+     * @throws JacksonException 当 JSON 解析失败时抛出
+     * @author NobuNo
+     * @date 2026-04-20
+     */
     private static List<String> parseStrengths(
             String strStrengthsJson,
             ObjectMapper objectMapper) throws JacksonException {
@@ -67,6 +89,17 @@ public class ResumeAnalysisQueryConverter {
         });
     }
 
+    /**
+     * 功能说明
+     * <p>解析简历修改建议。</p>
+     *
+     * @param strSuggestionsJson 建议 JSON 字符串
+     * @param objectMapper JSON 转换器
+     * @return 简历修改建议列表
+     * @throws JacksonException 当 JSON 解析失败时抛出
+     * @author NobuNo
+     * @date 2026-04-20
+     */
     private static List<ResumeAnalysisDTO.Suggestion> parseSuggestions(
             String strSuggestionsJson,
             ObjectMapper objectMapper) throws JacksonException {

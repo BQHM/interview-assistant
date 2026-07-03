@@ -6,7 +6,8 @@ import lombok.Data;
 
 /**
  * 面试单题答案评估结果 DTO。
- * 用于承接 AI 对单道面试题答案的结构化评估结果。
+ * 用于承接 AI 或规则兜底对单道面试题答案生成的结构化评估结果，
+ * 在评估服务和答案持久化逻辑之间传递，不直接作为接口响应返回。
  */
 @Data
 public class InterviewAnswerEvaluationDTO {

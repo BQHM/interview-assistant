@@ -26,8 +26,13 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-
-
+/**
+ * 文件功能说明
+ * <p>负责面试历史查询和删除业务逻辑。</p>
+ *
+ * @author NobuNo
+ * @date 2026-06-29
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,8 +44,12 @@ public class InterviewHistoryService {
     private final InterviewAnswerRepository interviewAnswerRepository;
 
     /**
-     * 查询面试历史列表。
-     * 当前只组装列表页需要的摘要字段，避免把 questionsJson 暴露给列表接口。
+     * 功能说明
+     * <p>查询面试历史列表。</p>
+     *
+     * @return 面试历史列表
+     * @author NobuNo
+     * @date 2026-06-29
      */
     public List<InterviewSessionListItemDTO> getHistory() {
 
@@ -59,10 +68,14 @@ public class InterviewHistoryService {
         return lstInterviewSessionListItemDTO;
     }
 
-        /**
-     * 查询面试历史详情。
-     * questionsJson 保存题目快照，interview_answers 保存用户答案。
-     * 这里会把题目和答案按 questionIndex 聚合成详情返回。
+    /**
+     * 功能说明
+     * <p>查询面试历史详情。</p>
+     *
+     * @param strSessionId 面试会话编号
+     * @return 面试历史详情
+     * @author NobuNo
+     * @date 2026-06-29
      */
     public InterviewDetailDTO getInterviewDetail(String strSessionId) {
         // 根据会话ID查询面试会话
@@ -97,9 +110,13 @@ public class InterviewHistoryService {
         return cplInterviewDetailDTO;
     }
 
-        /**
-     * 删除面试会话。
-     * 当前需要先删除 interview_answers 中的答案记录，再删除 interview_sessions 中的会话记录。
+    /**
+     * 功能说明
+     * <p>删除面试会话。</p>
+     *
+     * @param strSessionId 面试会话编号
+     * @author NobuNo
+     * @date 2026-06-29
      */
     @Transactional
     public void deleteInterview(String strSessionId) {
@@ -122,5 +139,4 @@ public class InterviewHistoryService {
 
         log.info("删除面试会话成功: sessionId={}", strSessionId);
     }
-    
 }

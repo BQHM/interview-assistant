@@ -5,7 +5,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * 简历分析相关配置，负责绑定提示词模板路径等参数。
+ * 文件功能说明
+ * <p>负责简历分析配置绑定。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-16
  */
 @Data
 @Component

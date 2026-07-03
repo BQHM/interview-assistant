@@ -22,7 +22,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 /**
- * 封装对 RustFS / S3 的文件上传、删除和查询操作。
+ * 文件功能说明
+ * <p>负责文件对象存储操作。</p>
+ *
+ * @author NobuNo
+ * @date 2026-03-18
  */
 @Slf4j
 @Service
@@ -33,36 +37,67 @@ public class FileStorageService {
     private final StorageConfigProperties storageConfig;
 
     /**
-     * 上传简历文件
+     * 功能说明
+     * <p>上传简历文件。</p>
+     *
+     * @param file 简历文件
+     * @param contentType 文件内容类型
+     * @return 文件存储键
+     * @author NobuNo
+     * @date 2026-03-18
      */
     public String uploadResume(MultipartFile file , String contentType) {
         return uploadFile(file, contentType,"resumes");
     }
 
     /**
-     * 删除简历文件
+     * 功能说明
+     * <p>删除简历文件。</p>
+     *
+     * @param fileKey 文件存储键
+     * @author NobuNo
+     * @date 2026-03-18
      */
     public void deleteResume(String fileKey) {
         deleteFile(fileKey);
     }
 
     /**
-     * 上传知识库文件
+     * 功能说明
+     * <p>上传知识库文件。</p>
+     *
+     * @param file 知识库文件
+     * @param contentType 文件内容类型
+     * @return 文件存储键
+     * @author NobuNo
+     * @date 2026-03-18
      */
     public String uploadKnowledgeBase(MultipartFile file,String contentType) {
         return uploadFile(file, contentType,"knowledgebases");
     }
 
     /**
-     * 删除知识库文件
+     * 功能说明
+     * <p>删除知识库文件。</p>
+     *
+     * @param fileKey 文件存储键
+     * @author NobuNo
+     * @date 2026-03-18
      */
     public void deleteKnowledgeBase(String fileKey) {
         deleteFile(fileKey);
     }
 
     /**
-     * 通用文件上传方法。
-     * prefix 用来区分简历、知识库等不同业务目录。
+     * 功能说明
+     * <p>上传通用文件。</p>
+     *
+     * @param file 上传文件
+     * @param contentType 文件内容类型
+     * @param prefix 存储目录前缀
+     * @return 文件存储键
+     * @author NobuNo
+     * @date 2026-03-18
      */
     private String uploadFile(MultipartFile file,String contentType, String prefix) {
         String originalFilename = file.getOriginalFilename();
@@ -89,7 +124,14 @@ public class FileStorageService {
 
 
     /**
-      * 生成对象存储中的 key，避免直接使用原始文件名造成冲突。
+     * 功能说明
+     * <p>生成文件存储键。</p>
+     *
+     * @param originalFilename 原始文件名
+     * @param prefix 存储目录前缀
+     * @return 文件存储键
+     * @author NobuNo
+     * @date 2026-03-18
      */
     private String generateFileKey(String originalFilename, String prefix) {
         LocalDateTime now = LocalDateTime.now();
@@ -100,7 +142,13 @@ public class FileStorageService {
     }
 
     /**
-     * 将原始文件名规整成更适合对象存储 key 的安全字符串。
+     * 功能说明
+     * <p>清理文件名。</p>
+     *
+     * @param fileName 文件名
+     * @return 安全文件名
+     * @author NobuNo
+     * @date 2026-03-18
      */
     private String sanitizeFilename(String fileName) {
         if (fileName == null || fileName.isEmpty()){
@@ -110,7 +158,13 @@ public class FileStorageService {
     }
 
     /**
-     * 将中文文件名尽量转成拼音，减少对象存储 key 中的特殊字符。
+     * 功能说明
+     * <p>将中文文件名转换为拼音。</p>
+     *
+     * @param input 原始字符串
+     * @return 拼音字符串
+     * @author NobuNo
+     * @date 2026-03-18
      */
     private String convertToPinyin(String input){
         HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
@@ -134,6 +188,15 @@ public class FileStorageService {
         return result.toString();
     }
 
+    /**
+     * 功能说明
+     * <p>清理文件名字符。</p>
+     *
+     * @param ch 原始字符
+     * @return 安全字符
+     * @author NobuNo
+     * @date 2026-03-18
+     */
     private char sanitizeChar(char ch){
         if ((ch>='a' && ch<='z')||(ch>='A' && ch<='Z')||(ch>='0' && ch<='9')||ch=='.'||ch=='_'||ch=='-'){
             return ch;
@@ -141,6 +204,15 @@ public class FileStorageService {
         return '_';
     }
 
+    /**
+     * 功能说明
+     * <p>首字母大写。</p>
+     *
+     * @param str 原始字符串
+     * @return 处理后的字符串
+     * @author NobuNo
+     * @date 2026-03-18
+     */
     private String capitalize(String str){
         if (str == null || str.isEmpty()){
             return str;
@@ -149,7 +221,12 @@ public class FileStorageService {
     }
 
     /**
-     * 通用文件删除方法。
+     * 功能说明
+     * <p>删除通用文件。</p>
+     *
+     * @param fileKey 文件存储键
+     * @author NobuNo
+     * @date 2026-03-18
      */
     private void deleteFile(String fileKey) {
         // 空键直接跳过
@@ -178,7 +255,13 @@ public class FileStorageService {
     }
 
     /**
-     * 检查文件是否存在
+     * 功能说明
+     * <p>检查文件是否存在。</p>
+     *
+     * @param fileKey 文件存储键
+     * @return 文件是否存在
+     * @author NobuNo
+     * @date 2026-03-18
      */
     public boolean fileExists(String fileKey) {
         try {
@@ -197,7 +280,13 @@ public class FileStorageService {
     }
 
     /**
-     * 获取文件大小（字节）
+     * 功能说明
+     * <p>获取文件大小。</p>
+     *
+     * @param fileKey 文件存储键
+     * @return 文件大小
+     * @author NobuNo
+     * @date 2026-03-18
      */
     public long getFileSize(String fileKey) {
         try {
@@ -213,7 +302,11 @@ public class FileStorageService {
     }
 
     /**
-     * 确保存储桶存在
+     * 功能说明
+     * <p>确保存储桶存在。</p>
+     *
+     * @author NobuNo
+     * @date 2026-03-18
      */
     public void ensureBucketExists() {
         try {

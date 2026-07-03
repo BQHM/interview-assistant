@@ -4,7 +4,11 @@ import com.interview.modules.resume.model.dto.ResumeUploadResponseDTO;
 import com.interview.modules.resume.model.entity.ResumeEntity;
 
 /**
- * 简历上传转换器，负责上传场景下的返回 DTO 组装。
+ * 文件功能说明
+ * <p>负责简历上传 DTO 转换。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-20
  */
 public class ResumeUploadConverter {
 
@@ -12,7 +16,14 @@ public class ResumeUploadConverter {
     }
 
     /**
-     * 将简历实体转换为上传接口返回 DTO。
+     * 功能说明
+     * <p>转换简历上传响应。</p>
+     *
+     * @param tblResumeEntity 简历实体
+     * @param boolIsDuplicate 是否重复简历
+     * @return 简历上传响应
+     * @author NobuNo
+     * @date 2026-04-20
      */
     public static ResumeUploadResponseDTO convertToResumeUploadResponseDTO(
             ResumeEntity tblResumeEntity,

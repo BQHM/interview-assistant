@@ -22,7 +22,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 简历查询服务，负责简历详情查询与简历列表查询。
+ * 文件功能说明
+ * <p>负责简历查询业务逻辑。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-09
  */
 @Slf4j
 @Service
@@ -33,8 +37,13 @@ public class ResumeQueryService {
     private final ResumeAnalysisRepository resumeAnalysisRepository;
 
     /**
-     * 根据简历主键查询简历详情。
-     * 查询命中时返回详情 DTO，未命中时抛出明确业务异常。
+     * 功能说明
+     * <p>根据简历编号查询详情。</p>
+     *
+     * @param lngResumeId 简历编号
+     * @return 简历详情
+     * @author NobuNo
+     * @date 2026-04-09
      */
     public ResumeDetailDTO getById(Long lngResumeId) {
 
@@ -60,7 +69,12 @@ public class ResumeQueryService {
     }
 
     /**
-     * 查询简历列表，返回按上传时间倒序排列的简历摘要信息。
+     * 功能说明
+     * <p>查询简历列表。</p>
+     *
+     * @return 简历列表
+     * @author NobuNo
+     * @date 2026-04-09
      */
     public List<ResumeListItemDTO> listResumes() {
         log.info("开始查询简历列表");

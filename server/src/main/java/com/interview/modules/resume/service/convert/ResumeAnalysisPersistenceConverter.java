@@ -9,7 +9,11 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * 简历分析结果持久化转换器，负责分析结果 DTO 到实体的转换。
+ * 文件功能说明
+ * <p>负责简历分析结果持久化转换。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-20
  */
 public class ResumeAnalysisPersistenceConverter {
 
@@ -17,7 +21,15 @@ public class ResumeAnalysisPersistenceConverter {
     }
 
     /**
-     * 将结构化分析结果转换为持久化实体。
+     * 功能说明
+     * <p>转换简历分析实体。</p>
+     *
+     * @param tblResumeEntity 简历实体
+     * @param cplResumeAnalysisResultDTO 简历分析结果
+     * @param objectMapper JSON 转换器
+     * @return 简历分析实体
+     * @author NobuNo
+     * @date 2026-04-20
      */
     public static ResumeAnalysisEntity convertToResumeAnalysisEntity(
             ResumeEntity tblResumeEntity,

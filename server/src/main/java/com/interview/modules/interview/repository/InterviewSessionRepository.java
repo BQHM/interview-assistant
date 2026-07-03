@@ -10,26 +10,47 @@ import com.interview.modules.interview.model.InterviewSessionStatus;
 import com.interview.modules.interview.model.entity.InterviewSessionEntity;
 
 /**
- * 面试会话 Repository，负责和 interview_sessions 表交互。
+ * 文件功能说明
+ * <p>负责面试会话数据访问。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-20
  */
 @Repository
 public interface InterviewSessionRepository extends JpaRepository<InterviewSessionEntity, Long> {
 
     /**
-     * 根据会话ID查询面试会话。
+     * 功能说明
+     * <p>根据会话编号查询面试会话。</p>
+     *
+     * @param strSessionId 面试会话编号
+     * @return 面试会话实体
+     * @author NobuNo
+     * @date 2026-04-20
      */
     Optional<InterviewSessionEntity> findBySessionId(String strSessionId);
 
     /**
-     * 根据简历ID查询最近一条未完成的面试会话。
-     * 未完成状态包括 CREATED 和 IN_PROGRESS，按创建时间倒序取最新一条。
+     * 功能说明
+     * <p>查询简历最近一条指定状态的面试会话。</p>
+     *
+     * @param lngResumeId 简历编号
+     * @param lstStatus 会话状态列表
+     * @return 面试会话实体
+     * @author NobuNo
+     * @date 2026-04-20
      */
     Optional<InterviewSessionEntity> findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
             Long lngResumeId,
             List<InterviewSessionStatus> lstStatus);
 
     /**
-     * 按创建时间倒序查询所有面试会话。
+     * 功能说明
+     * <p>按创建时间倒序查询面试会话。</p>
+     *
+     * @return 面试会话列表
+     * @author NobuNo
+     * @date 2026-04-20
      */
     List<InterviewSessionEntity> findAllByOrderByCreatedAtDesc();
 }

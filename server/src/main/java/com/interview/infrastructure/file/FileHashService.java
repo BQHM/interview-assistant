@@ -10,13 +10,23 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * 基于文件内容计算稳定哈希，用于简历去重。
+ * 文件功能说明
+ * <p>负责计算上传文件哈希。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-09
  */
 @Service
 public class FileHashService {
 
     /**
-     * 当前使用 SHA-256，保证同一文件内容得到相同哈希值。
+     * 功能说明
+     * <p>计算文件哈希。</p>
+     *
+     * @param file 上传文件
+     * @return 文件哈希
+     * @author NobuNo
+     * @date 2026-04-09
      */
     public String calculate(MultipartFile file) {
         if (file == null || file.isEmpty()) {

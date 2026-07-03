@@ -28,6 +28,13 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * 文件功能说明
+ * <p>负责面试报告生成业务逻辑。</p>
+ *
+ * @author NobuNo
+ * @date 2026-06-29
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,8 +45,13 @@ public class InterviewReportService {
     private final ObjectMapper objectMapper;
 
     /**
-     * 生成整场面试的规则版报告。
-     * 当前先基于题目与答案生成统计、评分和总结，后续再升级为 AI 报告。
+     * 功能说明
+     * <p>生成面试报告。</p>
+     *
+     * @param strSessionId 面试会话编号
+     * @return 面试报告信息
+     * @author NobuNo
+     * @date 2026-06-29
      */
     @Transactional(readOnly = true)
     public InterviewReportDTO generateReport(String strSessionId) {
@@ -71,8 +83,9 @@ public class InterviewReportService {
         }
 
         // 获取某场面试下的全部答案
-        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository
-                .findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
+        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
+
+        // 填充用户答案
         InterviewQuestionAnswerAggregator.fillUserAnswers(lstInterviewQuestionDTO, lstInterviewAnswerEntity);
 
         Integer intAnsweredQuestions = 0;// 已回答题目数量
@@ -80,6 +93,7 @@ public class InterviewReportService {
 
         List<InterviewReportQuestionDTO> lstInterviewReportQuestionDTO = new ArrayList<>();
 
+        // 遍历所有题目，填充已回答题目数量、总分数和单题报告
         for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
             String strUserAnswer = cplInterviewQuestionDTO.getUserAnswer(); // 用户答案
             boolean bolAnswered = strUserAnswer != null && !strUserAnswer.trim().isEmpty(); // 是否已回答
@@ -89,9 +103,7 @@ public class InterviewReportService {
             }
 
             // 获取对应的答案记录
-            InterviewAnswerEntity tblMatchedAnswerEntity = findAnswerByQuestionIndex(
-                    lstInterviewAnswerEntity,
-                    cplInterviewQuestionDTO.getQuestionIndex());
+            InterviewAnswerEntity tblMatchedAnswerEntity = findAnswerByQuestionIndex(lstInterviewAnswerEntity, cplInterviewQuestionDTO.getQuestionIndex());
 
             Integer intScore;// 单题分数
             String strEvaluation;// 单题点评
@@ -104,8 +116,7 @@ public class InterviewReportService {
                 // 已生成评分
                 intScore = tblMatchedAnswerEntity.getScore();
                 // 处理点评
-                if (tblMatchedAnswerEntity.getFeedback() == null
-                        || tblMatchedAnswerEntity.getFeedback().trim().isEmpty()) {
+                if (tblMatchedAnswerEntity.getFeedback() == null || tblMatchedAnswerEntity.getFeedback().trim().isEmpty()) {
                     strEvaluation = "已生成评分，但暂无详细点评。";
                 } else {
                     strEvaluation = tblMatchedAnswerEntity.getFeedback();
@@ -126,15 +137,22 @@ public class InterviewReportService {
             cplInterviewReportQuestionDTO.setAnswered(bolAnswered); // 是否已回答
             cplInterviewReportQuestionDTO.setEvaluation(strEvaluation); // 单题点评
             cplInterviewReportQuestionDTO.setScore(intScore); // 单题分数
-
+            cplInterviewReportQuestionDTO.setReferenceAnswer(null);
+            cplInterviewReportQuestionDTO.setKeyPoints(List.of());
+            if (tblMatchedAnswerEntity != null) {
+                cplInterviewReportQuestionDTO.setReferenceAnswer(tblMatchedAnswerEntity.getReferenceAnswer());
+                cplInterviewReportQuestionDTO.setKeyPoints(parseKeyPoints(tblMatchedAnswerEntity.getKeyPointsJson()));
+            }
             lstInterviewReportQuestionDTO.add(cplInterviewReportQuestionDTO);
         }
+
         // 5. 统计整场面试的已答题数和未答题数。
         Integer intUnansweredQuestions = tblInterviewSessionEntity.getTotalQuestions() - intAnsweredQuestions;
 
         // 6. 生成整场面试的整体评价。
         String strOverallEvaluation;
 
+        // 处理未作答情况
         if (intAnsweredQuestions == 0) {
             strOverallEvaluation = "本次模拟面试尚未形成有效回答，建议先完成全部题目再查看报告。";
         } else if (intUnansweredQuestions > 0) {
@@ -158,27 +176,27 @@ public class InterviewReportService {
         cplInterviewReportDTO.setTotalQuestions(tblInterviewSessionEntity.getTotalQuestions()); // 题目总数
         cplInterviewReportDTO.setAnsweredQuestions(intAnsweredQuestions); // 已回答题数
         cplInterviewReportDTO.setUnansweredQuestions(intUnansweredQuestions); // 未回答题数
-        cplInterviewReportDTO.setCompleted(
-                InterviewSessionStatus.COMPLETED.equals(tblInterviewSessionEntity.getStatus())); // 是否已完成
+        cplInterviewReportDTO.setCompleted(COMPLETED.equals(tblInterviewSessionEntity.getStatus())); // 是否已完成
         cplInterviewReportDTO.setOverallEvaluation(strOverallEvaluation); // 整体评价
         cplInterviewReportDTO.setQuestionReports(lstInterviewReportQuestionDTO); // 单题报告列表
         cplInterviewReportDTO.setGeneratedAt(LocalDateTime.now()); // 报告生成时间
 
-        log.info("生成面试报告成功: sessionId={}, answeredQuestions={}, totalQuestions={}",
-                strSessionId,
-                intAnsweredQuestions,
-                tblInterviewSessionEntity.getTotalQuestions());
-
+        log.info("生成面试报告成功: sessionId={}, answeredQuestions={}, totalQuestions={}", strSessionId, intAnsweredQuestions, tblInterviewSessionEntity.getTotalQuestions());
         return cplInterviewReportDTO;
 
     }
 
     /**
-     * 根据题目索引查找对应的答案记录。
+     * 功能说明
+     * <p>根据题目索引查找答案记录。</p>
+     *
+     * @param lstInterviewAnswerEntity 答案记录列表
+     * @param intQuestionIndex 题目索引
+     * @return 答案记录
+     * @author NobuNo
+     * @date 2026-06-29
      */
-    private InterviewAnswerEntity findAnswerByQuestionIndex(
-            List<InterviewAnswerEntity> lstInterviewAnswerEntity,
-            Integer intQuestionIndex) {
+    private InterviewAnswerEntity findAnswerByQuestionIndex(List<InterviewAnswerEntity> lstInterviewAnswerEntity, Integer intQuestionIndex) {
 
         for (InterviewAnswerEntity tblInterviewAnswerEntity : lstInterviewAnswerEntity) {
             if (intQuestionIndex.equals(tblInterviewAnswerEntity.getQuestionIndex())) {
@@ -187,5 +205,27 @@ public class InterviewReportService {
         }
 
         return null;
+    }
+
+    /**
+     * 功能说明
+     * <p>解析答案关键点。</p>
+     *
+     * @param strKeyPointsJson 关键点 JSON 字符串
+     * @return 关键点列表
+     * @author NobuNo
+     * @date 2026-06-29
+     */
+    private List<String> parseKeyPoints(String strKeyPointsJson) {
+        if (strKeyPointsJson == null || strKeyPointsJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(strKeyPointsJson, new TypeReference<List<String>>() {
+            });
+        } catch (JacksonException e) {
+            log.warn("面试答案关键点反序列化失败: keyPointsJson={}", strKeyPointsJson, e);
+            return List.of();
+        }
     }
 }

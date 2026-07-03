@@ -9,7 +9,8 @@ import lombok.Data;
 
 /**
  * 面试历史详情 DTO。
- * 当前用于展示会话基础信息，以及 questionsJson 中保存的题目和答案快照。
+ * 用于 GET /api/interviews/{sessionId}/details，返回一场面试的基础信息、
+ * 题目快照以及已从答案表聚合回来的用户答案，适合历史详情页展示。
  */
 @Data
 public class InterviewDetailDTO {

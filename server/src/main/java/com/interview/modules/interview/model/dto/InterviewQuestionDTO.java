@@ -5,7 +5,8 @@ import lombok.Data;
 
 /**
  * 面试问题 DTO。
- * 当前版本用于表示一条生成后的基础面试题信息。
+ * 用于表示一场面试中的单道题目快照。
+ * 创建会话时会写入 questionsJson，查询会话、当前题和历史详情时也复用该结构。
  */
 @Data
 public class InterviewQuestionDTO {

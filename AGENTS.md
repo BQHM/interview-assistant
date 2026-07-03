@@ -197,6 +197,46 @@ com.interview/
 - 注释解释“为什么这样做”，不要解释显而易见的语句。
 - 保持代码风格与当前文件一致；不要为了个人偏好做全文件格式化。
 
+### 6.4 Java 注释规则
+
+- 业务相关类和方法注释使用简短统一模板，不写大段背景说明。
+- 业务相关范围包括 Controller、Service、Repository、Converter、Infrastructure 支撑类以及业务工具类。
+- 类前注释第一行固定写“文件功能说明”，第二行用 `<p>负责 xxx。</p>` 简短说明文件职责。
+- 方法前注释第一行固定写“功能说明”，第二行用 `<p>xxx。</p>` 简短说明方法职责。
+- 类注释和方法注释统一使用作者 `NobuNo`。
+- `@date` 必须使用当前文件的创建日期，不允许直接使用当天日期或最后修改日期；如果无法读取文件创建日期，再说明原因并使用 Git 首次加入日期。
+- 方法注释必须包含所有形参的 `@param`。
+- 非 `void` 方法必须包含 `@return`；`void` 方法和构造方法不要写 `@return`。
+- 显式声明或需要说明的异常使用 `@throws`。
+- DTO、Entity、Request、Response 中的字段说明保持字段语义注释，不要套用“功能说明”方法模板。
+- 示例：
+
+```java
+/**
+ * 文件功能说明
+ * <p>负责用户业务逻辑。</p>
+ *
+ * @author NobuNo
+ * @date 2026-04-02
+ */
+public class UserService {
+
+    /**
+     * 功能说明
+     * <p>根据用户编号查询用户信息。</p>
+     *
+     * @param userId 用户编号
+     * @return 用户信息
+     * @throws IllegalArgumentException 当用户编号为空时抛出
+     * @author NobuNo
+     * @date 2026-04-02
+     */
+    public UserDTO getUser(Long userId) {
+        // ...
+    }
+}
+```
+
 ***
 
 ## 七、异常、响应与日志
@@ -355,4 +395,3 @@ mvn spring-boot:run
 - 对上传文件、AI 输入、外部接口返回都按不可信输入处理。
 
 ***
-
