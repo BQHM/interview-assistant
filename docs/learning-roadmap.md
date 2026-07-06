@@ -199,6 +199,13 @@
 - API、types、components、pages 分层。
 - 前后端联调和错误提示。
 
+**常见联调细节：**
+
+- 本地开发时，前端 Vite 默认运行在 `http://localhost:5173`，后端 Spring Boot 默认运行在 `http://localhost:8080`，端口不同会触发浏览器跨域限制。
+- `interview-guide` 的处理方式是双保险：前端在 `frontend/vite.config.ts` 中配置 Vite dev server proxy，把 `/api` 请求代理到 `http://localhost:8080`；后端也通过 `CorsConfig` + `CorsProperties` 显式允许本地前端来源。
+- 当前 `interview-assistant` 前端 MVP 阶段优先采用 Vite proxy：前端 Axios 只请求相对路径 `/api/...`，例如 `/api/resumes`，由 Vite 转发到后端，避免浏览器跨域问题。
+- 面试表达：前端开发环境用 Vite 启动在 5173 端口，后端 Spring Boot 在 8080 端口。为了避免跨域，在 `vite.config.ts` 配置 dev server proxy，将 `/api` 请求代理到 `http://localhost:8080`。前端 Axios 请求只写相对路径 `/api/resumes`，由 Vite 转发到后端。
+
 **参考项目：**
 
 - `interview-guide/frontend/src/App.tsx`
