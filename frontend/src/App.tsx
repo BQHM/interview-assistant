@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
+import ResumeDetailPage from './pages/ResumeDetailPage';
 import ResumeListPage from './pages/ResumeListPage';
 import ResumeUploadPage from './pages/ResumeUploadPage';
 
@@ -11,6 +12,7 @@ function App() {
           <Route index element={<Navigate to="/resumes" replace />} />
           <Route path="resumes" element={<ResumeListPage />} />
           <Route path="upload" element={<ResumeUploadPage />} />
+          <Route path="resumes/:id" element={<ResumeDetailPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
