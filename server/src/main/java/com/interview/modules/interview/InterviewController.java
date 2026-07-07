@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
  * <p>负责面试模块接口入口。</p>
  *
  * @author NobuNo
- * @date 2026-04-20
+ * @since 2026-04-20
  */
 @RestController
 @RequestMapping("/api/interviews")
@@ -51,7 +51,7 @@ public class InterviewController {
      * @param cplCreateInterviewRequest 创建面试请求
      * @return 面试会话信息
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @PostMapping
     public Result<InterviewSessionDTO> createInterview(
@@ -68,7 +68,7 @@ public class InterviewController {
      * @param sessionId 面试会话编号
      * @return 面试会话信息
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @GetMapping("/{sessionId}")
     public Result<InterviewSessionDTO> getInterviewSession(@PathVariable String sessionId) {
@@ -83,7 +83,7 @@ public class InterviewController {
      * @param cplSubmitAnswerRequest 提交答案请求
      * @return 提交答案结果
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @PostMapping("/answer")
     public Result<SubmitAnswerResponse> submitAnswer(
@@ -100,7 +100,7 @@ public class InterviewController {
      * @param sessionId 面试会话编号
      * @return 面试报告信息
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @GetMapping("/{sessionId}/report")
     public Result<InterviewReportDTO> getInterviewReport(@PathVariable String sessionId) {
@@ -115,7 +115,7 @@ public class InterviewController {
      * @param sessionId 面试会话编号
      * @return 当前面试题信息
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @GetMapping("/{sessionId}/question")
     public Result<CurrentQuestionResponseDTO> getCurrentQuestion(@PathVariable String sessionId) {
@@ -131,7 +131,7 @@ public class InterviewController {
      * @param strSessionId 面试会话编号
      * @return 空结果
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @PostMapping("/{sessionId}/complete")
     public Result<Void> completeInterview(@PathVariable("sessionId") String strSessionId) {
@@ -146,7 +146,7 @@ public class InterviewController {
      * @param lngResumeId 简历编号
      * @return 未完成面试会话信息
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @GetMapping("/unfinished/{resumeId}")
     public Result<InterviewSessionDTO> findUnfinishedSessionByResumeId(@PathVariable("resumeId") Long lngResumeId) {
@@ -163,7 +163,7 @@ public class InterviewController {
      * @param cplSaveAnswerRequest 暂存答案请求
      * @return 空结果
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @PutMapping("/{sessionId}/answers")
     public Result<Void> saveAnswer(@PathVariable("sessionId") String strSessionId,
@@ -178,7 +178,7 @@ public class InterviewController {
      *
      * @return 面试历史列表
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @GetMapping
     public Result<List<InterviewSessionListItemDTO>> getHistory() {
@@ -193,7 +193,7 @@ public class InterviewController {
      * @param sessionId 面试会话编号
      * @return 面试历史详情
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @GetMapping("/{sessionId}/details")
     public Result<InterviewDetailDTO> getInterviewDetail(@PathVariable String sessionId) {
@@ -208,7 +208,7 @@ public class InterviewController {
      * @param sessionId 面试会话编号
      * @return 空结果
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     @DeleteMapping("/{sessionId}")
     public Result<Void> deleteInterview(@PathVariable String sessionId) {

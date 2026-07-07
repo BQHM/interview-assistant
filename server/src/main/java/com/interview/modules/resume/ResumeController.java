@@ -19,7 +19,7 @@ import java.util.List;
  * <p>负责简历模块接口入口。</p>
  *
  * @author NobuNo
- * @date 2026-04-02
+ * @since 2026-04-02
  */
 @RestController
 @RequestMapping("/api/resumes")
@@ -37,7 +37,7 @@ public class ResumeController {
      * @param file 简历文件
      * @return 简历上传结果
      * @author NobuNo
-     * @date 2026-04-02
+     * @since 2026-04-02
      */
     @PostMapping("/upload")
     public Result<ResumeUploadResponseDTO> upload(@RequestParam("file") MultipartFile file) {
@@ -59,7 +59,7 @@ public class ResumeController {
      * @param id 简历编号
      * @return 简历详情
      * @author NobuNo
-     * @date 2026-04-02
+     * @since 2026-04-02
      */
     @GetMapping("/{id}")
     public Result<ResumeDetailDTO> getById(@PathVariable Long id) {
@@ -74,7 +74,7 @@ public class ResumeController {
      * @param id 简历编号
      * @return 简历分析结果
      * @author NobuNo
-     * @date 2026-04-02
+     * @since 2026-04-02
      */
     @GetMapping("/{id}/analysis")
     public Result<ResumeAnalysisDTO> getResumeAnalysisById(@PathVariable Long id) {
@@ -88,7 +88,7 @@ public class ResumeController {
      *
      * @return 简历列表
      * @author NobuNo
-     * @date 2026-04-02
+     * @since 2026-04-02
      */
     @GetMapping
     public Result<List<ResumeListItemDTO>> listResumes() {

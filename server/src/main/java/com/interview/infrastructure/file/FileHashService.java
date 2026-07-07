@@ -14,7 +14,7 @@ import java.security.NoSuchAlgorithmException;
  * <p>负责计算上传文件哈希。</p>
  *
  * @author NobuNo
- * @date 2026-04-09
+ * @since 2026-04-09
  */
 @Service
 public class FileHashService {
@@ -26,7 +26,7 @@ public class FileHashService {
      * @param file 上传文件
      * @return 文件哈希
      * @author NobuNo
-     * @date 2026-04-09
+     * @since 2026-04-09
      */
     public String calculate(MultipartFile file) {
         if (file == null || file.isEmpty()) {

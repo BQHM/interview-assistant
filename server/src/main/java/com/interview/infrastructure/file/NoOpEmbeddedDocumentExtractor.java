@@ -13,7 +13,7 @@ import java.io.InputStream;
  * <p>负责跳过 Tika 嵌入文档解析。</p>
  *
  * @author NobuNo
- * @date 2026-04-03
+ * @since 2026-04-03
  */
 public class NoOpEmbeddedDocumentExtractor implements EmbeddedDocumentExtractor {
 
@@ -24,7 +24,7 @@ public class NoOpEmbeddedDocumentExtractor implements EmbeddedDocumentExtractor 
      * @param metadata 文档元数据
      * @return 是否解析嵌入文档
      * @author NobuNo
-     * @date 2026-04-03
+     * @since 2026-04-03
      */
     @Override
     public boolean shouldParseEmbedded(Metadata metadata) {
@@ -42,7 +42,7 @@ public class NoOpEmbeddedDocumentExtractor implements EmbeddedDocumentExtractor 
      * @throws SAXException 当 SAX 处理失败时抛出
      * @throws IOException 当输入流读取失败时抛出
      * @author NobuNo
-     * @date 2026-04-03
+     * @since 2026-04-03
      */
     @Override
     public void parseEmbedded(InputStream stream, ContentHandler handler, Metadata metadata, boolean outputHtml) throws SAXException, IOException {

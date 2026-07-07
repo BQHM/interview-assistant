@@ -13,7 +13,7 @@ import tools.jackson.databind.ObjectMapper;
  * <p>负责简历分析结果持久化转换。</p>
  *
  * @author NobuNo
- * @date 2026-04-20
+ * @since 2026-04-20
  */
 public class ResumeAnalysisPersistenceConverter {
 
@@ -29,7 +29,7 @@ public class ResumeAnalysisPersistenceConverter {
      * @param objectMapper JSON 转换器
      * @return 简历分析实体
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     public static ResumeAnalysisEntity convertToResumeAnalysisEntity(
             ResumeEntity tblResumeEntity,

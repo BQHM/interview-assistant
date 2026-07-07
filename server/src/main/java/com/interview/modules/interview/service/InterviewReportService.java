@@ -33,7 +33,7 @@ import tools.jackson.databind.ObjectMapper;
  * <p>负责面试报告生成业务逻辑。</p>
  *
  * @author NobuNo
- * @date 2026-06-29
+ * @since 2026-06-29
  */
 @Service
 @RequiredArgsConstructor
@@ -51,7 +51,7 @@ public class InterviewReportService {
      * @param strSessionId 面试会话编号
      * @return 面试报告信息
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     @Transactional(readOnly = true)
     public InterviewReportDTO generateReport(String strSessionId) {
@@ -194,7 +194,7 @@ public class InterviewReportService {
      * @param intQuestionIndex 题目索引
      * @return 答案记录
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     private InterviewAnswerEntity findAnswerByQuestionIndex(List<InterviewAnswerEntity> lstInterviewAnswerEntity, Integer intQuestionIndex) {
 
@@ -214,7 +214,7 @@ public class InterviewReportService {
      * @param strKeyPointsJson 关键点 JSON 字符串
      * @return 关键点列表
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     private List<String> parseKeyPoints(String strKeyPointsJson) {
         if (strKeyPointsJson == null || strKeyPointsJson.isBlank()) {

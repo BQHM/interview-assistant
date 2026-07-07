@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>负责简历上传业务逻辑。</p>
  *
  * @author NobuNo
- * @date 2026-04-08
+ * @since 2026-04-08
  */
 @Slf4j
 @Service
@@ -49,7 +49,7 @@ public class ResumeUploadService {
      * @param file 简历文件
      * @return 简历上传结果
      * @author NobuNo
-     * @date 2026-04-08
+     * @since 2026-04-08
      */
     @Transactional
     public ResumeUploadResponseDTO uploadAndSave(MultipartFile file) {

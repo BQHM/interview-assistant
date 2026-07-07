@@ -22,7 +22,7 @@ import com.interview.modules.interview.model.entity.InterviewAnswerEntity;
  * <p>负责面试答案评估业务逻辑。</p>
  *
  * @author NobuNo
- * @date 2026-06-29
+ * @since 2026-06-29
  */
 @Service
 public class InterviewAnswerEvaluationService {
@@ -57,7 +57,7 @@ public class InterviewAnswerEvaluationService {
      * @param resourceLoader 资源加载器
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     public InterviewAnswerEvaluationService(ChatClient.Builder chatClientBuilder, ResourceLoader resourceLoader)
             throws IOException {
@@ -78,7 +78,7 @@ public class InterviewAnswerEvaluationService {
      * @param tblInterviewAnswerEntity 答案实体
      * @return 答案评估结果
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     public InterviewAnswerEvaluationDTO evaluateAnswer(InterviewAnswerEntity tblInterviewAnswerEntity) {
         // 极端保护：如果调用方传入 null，就按“未作答”处理，避免空指针异常。
@@ -125,7 +125,7 @@ public class InterviewAnswerEvaluationService {
      *
      * @return 空答案评估结果
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     private InterviewAnswerEvaluationDTO buildEmptyAnswerEvaluation() {
         InterviewAnswerEvaluationDTO cplInterviewAnswerEvaluationDTO = new InterviewAnswerEvaluationDTO();
@@ -149,7 +149,7 @@ public class InterviewAnswerEvaluationService {
      * @param tblInterviewAnswerEntity 答案实体
      * @return AI 评估结果
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     private InterviewAnswerEvaluationDTO evaluateByAi(InterviewAnswerEntity tblInterviewAnswerEntity) {
         // 渲染 system prompt。当前 system prompt 没有变量，所以直接 render()。
@@ -198,7 +198,7 @@ public class InterviewAnswerEvaluationService {
      * @param tblInterviewAnswerEntity 答案实体
      * @return 规则版评估结果
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     private InterviewAnswerEvaluationDTO buildRuleBasedEvaluation(InterviewAnswerEntity tblInterviewAnswerEntity) {
         InterviewAnswerEvaluationDTO cplInterviewAnswerEvaluationDTO = new InterviewAnswerEvaluationDTO();
@@ -225,7 +225,7 @@ public class InterviewAnswerEvaluationService {
      * @param strUserAnswer 用户答案
      * @return 规则版评分
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     private int calculateRuleBasedScore(String strUserAnswer) {
         if (strUserAnswer == null || strUserAnswer.trim().isEmpty()) {
@@ -269,7 +269,7 @@ public class InterviewAnswerEvaluationService {
      * @param arrKeywords 关键词数组
      * @return 是否包含关键词
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     private boolean containsAny(String strText, String... arrKeywords) {
         for (String strKeyword : arrKeywords) {
@@ -287,7 +287,7 @@ public class InterviewAnswerEvaluationService {
      * @param intScore 评分
      * @return 文字反馈
      * @author NobuNo
-     * @date 2026-06-29
+     * @since 2026-06-29
      */
     private String buildRuleBasedFeedback(int intScore) {
         if (intScore >= 85) {

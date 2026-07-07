@@ -39,7 +39,7 @@ import tools.jackson.databind.ObjectMapper;
  * <p>负责面试会话创建、答题、交卷等业务逻辑。</p>
  *
  * @author NobuNo
- * @date 2026-05-28
+ * @since 2026-05-28
  */
 @Slf4j
 @Service
@@ -60,7 +60,7 @@ public class InterviewSessionService {
      * @param cplCreateInterviewRequest 创建面试请求
      * @return 面试会话信息
      * @author NobuNo
-     * @date 2026-05-28
+     * @since 2026-05-28
      */
     public InterviewSessionDTO createInterview(CreateInterviewRequest cplCreateInterviewRequest) {
         log.info("开始创建面试会话: resumeId={}, questionCount={}",
@@ -130,7 +130,7 @@ public class InterviewSessionService {
      * @param strSessionId 面试会话编号
      * @return 面试会话信息
      * @author NobuNo
-     * @date 2026-05-28
+     * @since 2026-05-28
      */
     @Transactional(readOnly = true)
     public InterviewSessionDTO getInterviewSession(String strSessionId) {
@@ -182,7 +182,7 @@ public class InterviewSessionService {
      * @param cplSubmitAnswerRequest 提交答案请求
      * @return 提交答案结果
      * @author NobuNo
-     * @date 2026-05-28
+     * @since 2026-05-28
      */
     public SubmitAnswerResponse submitAnswer(SubmitAnswerRequest cplSubmitAnswerRequest) {
         log.info("开始提交面试答案: sessionId={}, questionIndex={}",
@@ -295,7 +295,7 @@ public class InterviewSessionService {
      *
      * @param tblInterviewAnswerEntity 答案实体
      * @author NobuNo
-     * @date 2026-05-28
+     * @since 2026-05-28
      */
     private void fillAnswerEvaluation(InterviewAnswerEntity tblInterviewAnswerEntity) {
         InterviewAnswerEvaluationDTO cplEvaluationDTO = interviewAnswerEvaluationService
@@ -321,7 +321,7 @@ public class InterviewSessionService {
      * @param strSessionId 面试会话编号
      * @return 当前面试题信息
      * @author NobuNo
-     * @date 2026-05-28
+     * @since 2026-05-28
      */
     public CurrentQuestionResponseDTO getCurrentQuestion(String strSessionId) {
 
@@ -378,7 +378,7 @@ public class InterviewSessionService {
      *
      * @param strSessionId 面试会话编号
      * @author NobuNo
-     * @date 2026-05-28
+     * @since 2026-05-28
      */
     public void completeInterview(String strSessionId) {
         log.info("开始提前完成面试: sessionId={}", strSessionId);
@@ -407,7 +407,7 @@ public class InterviewSessionService {
      * @param lngResumeId 简历编号
      * @return 未完成面试会话信息
      * @author NobuNo
-     * @date 2026-05-28
+     * @since 2026-05-28
      */
     public InterviewSessionDTO findUnfinishedSessionByResumeId(Long lngResumeId) {
         log.info("开始查询未完成面试会话: resumeId={}", lngResumeId);
@@ -446,7 +446,7 @@ public class InterviewSessionService {
      * @param strSessionId 面试会话编号
      * @param cplSaveAnswerRequest 暂存答案请求
      * @author NobuNo
-     * @date 2026-05-28
+     * @since 2026-05-28
      */
     public void saveAnswer(String strSessionId, SaveAnswerRequest cplSaveAnswerRequest) {
         log.info("开始暂存面试答案: sessionId={}, questionIndex={}", strSessionId, cplSaveAnswerRequest.getQuestionIndex());

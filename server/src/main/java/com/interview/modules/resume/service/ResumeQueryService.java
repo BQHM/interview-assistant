@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>负责简历查询业务逻辑。</p>
  *
  * @author NobuNo
- * @date 2026-04-09
+ * @since 2026-04-09
  */
 @Slf4j
 @Service
@@ -43,7 +43,7 @@ public class ResumeQueryService {
      * @param lngResumeId 简历编号
      * @return 简历详情
      * @author NobuNo
-     * @date 2026-04-09
+     * @since 2026-04-09
      */
     public ResumeDetailDTO getById(Long lngResumeId) {
 
@@ -74,7 +74,7 @@ public class ResumeQueryService {
      *
      * @return 简历列表
      * @author NobuNo
-     * @date 2026-04-09
+     * @since 2026-04-09
      */
     public List<ResumeListItemDTO> listResumes() {
         log.info("开始查询简历列表");
