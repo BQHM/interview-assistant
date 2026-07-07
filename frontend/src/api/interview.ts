@@ -9,6 +9,8 @@ import type {
   InterviewReport,
 } from '../types/interview';
 
+// 面试模块 API 封装。
+// 这里的方法基本和后端 InterviewController 的接口一一对应。
 export const interviewApi = {
   /**
    * 创建面试会话
