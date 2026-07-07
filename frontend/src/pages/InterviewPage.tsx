@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import type { InterviewSession } from '../types/interview';
 
 export default function InterviewPage() {
     const { sessionId } = useParams();
+    const navigate = useNavigate();
     const [session, setSession] = useState<InterviewSession | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -65,7 +66,7 @@ export default function InterviewPage() {
                 const updatedSession = await interviewApi.getInterviewSession(session.sessionId);
                 setSession(updatedSession);
             } else {
-                alert('面试已完成');
+                alert('/interviews');
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : '提交答案失败');
