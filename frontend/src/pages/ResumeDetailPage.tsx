@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { interviewApi } from '../api/interview';
 import { resumeApi } from '../api/resume';
 import type { ResumeDetail } from '../types/resume';
 
 export default function ResumeDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [resume, setResume] = useState<ResumeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [creatingInterview, setCreatingInterview] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -31,6 +34,27 @@ export default function ResumeDetailPage() {
     loadResume();
   }, [id]);
 
+  const handleStartInterview = async () => {
+    if (!resume) {
+      return;
+    }
+
+    try {
+      setCreatingInterview(true);
+
+      const session = await interviewApi.createInterview({
+        resumeId: resume.id,
+        questionCount: 5,
+      });
+
+      navigate(`/interview/${session.sessionId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '创建面试失败');
+    } finally {
+      setCreatingInterview(false);
+    }
+  };
+
   if (loading) {
     return <div>加载中...</div>;
   }
@@ -47,7 +71,13 @@ export default function ResumeDetailPage() {
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-slate-800 mb-2">简历详情</h1>
       <p className="text-slate-500 mb-6">查看简历解析内容和分析状态</p>
-
+      <button
+        onClick={handleStartInterview}
+        disabled={creatingInterview}
+        className="mb-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+      >
+        {creatingInterview ? '创建中...' : '开始模拟面试'}
+      </button>
       <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">基础信息</h2>
         <div className="space-y-2 text-sm text-slate-600">

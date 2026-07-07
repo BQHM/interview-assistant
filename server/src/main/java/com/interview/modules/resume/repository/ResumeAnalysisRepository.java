@@ -12,7 +12,7 @@ import java.util.Optional;
  * <p>负责简历分析结果数据访问。</p>
  *
  * @author NobuNo
- * @date 2026-04-14
+ * @since 2026-04-14
  */
 @Repository
 public interface ResumeAnalysisRepository extends JpaRepository<ResumeAnalysisEntity, Long> {
@@ -24,7 +24,7 @@ public interface ResumeAnalysisRepository extends JpaRepository<ResumeAnalysisEn
      * @param lngResumeId 简历编号
      * @return 简历分析结果
      * @author NobuNo
-     * @date 2026-04-14
+     * @since 2026-04-14
      */
     Optional<ResumeAnalysisEntity> findByResumeId(Long lngResumeId);
 
@@ -35,7 +35,7 @@ public interface ResumeAnalysisRepository extends JpaRepository<ResumeAnalysisEn
      * @param lstResumeId 简历编号列表
      * @return 简历分析结果列表
      * @author NobuNo
-     * @date 2026-04-14
+     * @since 2026-04-14
      */
     List<ResumeAnalysisEntity> findByResumeIdIn(List<Long> lstResumeId);
 
@@ -46,7 +46,7 @@ public interface ResumeAnalysisRepository extends JpaRepository<ResumeAnalysisEn
      * @param lngResumeId 简历编号
      * @return 简历分析历史列表
      * @author NobuNo
-     * @date 2026-04-14
+     * @since 2026-04-14
      */
     List<ResumeAnalysisEntity> findByResumeIdOrderByAnalyzedAtDesc(Long lngResumeId);
 }

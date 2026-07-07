@@ -13,7 +13,7 @@ import java.io.IOException;
  * <p>负责解析上传文档文本。</p>
  *
  * @author NobuNo
- * @date 2026-04-08
+ * @since 2026-04-08
  */
 @RequiredArgsConstructor
 @Service
@@ -28,14 +28,13 @@ public class DocumentParseService {
      * @param file 简历文件
      * @return 简历文本
      * @author NobuNo
-     * @date 2026-04-08
+     * @since 2026-04-08
      */
     public String parseResume(MultipartFile file) {
         try {
             Tika tika = new Tika();
             String text = tika.parseToString(file.getInputStream());
-            String cleanedText = textCleaningService.clean(text);
-            return cleanedText;
+            return textCleaningService.clean(text);
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.RESUME_PARSE_FAILED, "读取简历文件失败");
         } catch (Exception e) {

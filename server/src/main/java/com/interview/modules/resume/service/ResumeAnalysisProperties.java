@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  * <p>负责简历分析配置绑定。</p>
  *
  * @author NobuNo
- * @date 2026-04-16
+ * @since 2026-04-16
  */
 @Data
 @Component

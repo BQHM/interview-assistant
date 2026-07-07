@@ -21,7 +21,7 @@ import java.util.Map;
  * <p>负责面试题生成业务逻辑。</p>
  *
  * @author NobuNo
- * @date 2026-07-02
+ * @since 2026-07-02
  */
 @Slf4j
 @Service
@@ -40,7 +40,7 @@ public class InterviewQuestionService {
      * @param resourceLoader 资源加载器
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
-     * @date 2026-07-02
+     * @since 2026-07-02
      */
     public InterviewQuestionService(ChatClient.Builder chatClientBuilder, ResourceLoader resourceLoader)
             throws IOException {
@@ -62,7 +62,7 @@ public class InterviewQuestionService {
      * @param intQuestionCount 题目数量
      * @return 面试题列表
      * @author NobuNo
-     * @date 2026-07-02
+     * @since 2026-07-02
      */
     public List<InterviewQuestionDTO> generateQuestions(String strResumeText, Integer intQuestionCount) {
         try {
@@ -89,7 +89,7 @@ public class InterviewQuestionService {
      * @param intQuestionCount 题目数量
      * @return AI 生成的题目列表
      * @author NobuNo
-     * @date 2026-07-02
+     * @since 2026-07-02
      */
     private List<InterviewQuestionDTO> generateQuestionsByAi(String strResumeText, Integer intQuestionCount) {
 
@@ -124,7 +124,7 @@ public class InterviewQuestionService {
      * @param intQuestionCount 题目数量
      * @return 规整后的题目列表
      * @author NobuNo
-     * @date 2026-07-02
+     * @since 2026-07-02
      */
     private List<InterviewQuestionDTO> normalizeGeneratedQuestions(
             List<InterviewQuestionDTO> lstAiQuestionDTO,
@@ -189,7 +189,7 @@ public class InterviewQuestionService {
      * @param intQuestionCount 题目数量
      * @return 规则版题目列表
      * @author NobuNo
-     * @date 2026-07-02
+     * @since 2026-07-02
      */
     private List<InterviewQuestionDTO> generateRuleBasedQuestions(String strResumeText, Integer intQuestionCount) {
 
@@ -278,7 +278,7 @@ public class InterviewQuestionService {
      * @param strCategory 题目分类
      * @return 面试题 DTO
      * @author NobuNo
-     * @date 2026-07-02
+     * @since 2026-07-02
      */
     private InterviewQuestionDTO createQuestion(
             Integer intQuestionIndex,
@@ -299,7 +299,7 @@ public class InterviewQuestionService {
      * <p>负责承接 AI 返回的题目列表。</p>
      *
      * @author NobuNo
-     * @date 2026-07-02
+     * @since 2026-07-02
      */
     @Data
     public static class QuestionListDTO {

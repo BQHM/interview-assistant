@@ -26,7 +26,7 @@ import java.util.UUID;
  * <p>负责文件对象存储操作。</p>
  *
  * @author NobuNo
- * @date 2026-03-18
+ * @since 2026-03-18
  */
 @Slf4j
 @Service
@@ -44,7 +44,7 @@ public class FileStorageService {
      * @param contentType 文件内容类型
      * @return 文件存储键
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     public String uploadResume(MultipartFile file , String contentType) {
         return uploadFile(file, contentType,"resumes");
@@ -56,7 +56,7 @@ public class FileStorageService {
      *
      * @param fileKey 文件存储键
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     public void deleteResume(String fileKey) {
         deleteFile(fileKey);
@@ -70,7 +70,7 @@ public class FileStorageService {
      * @param contentType 文件内容类型
      * @return 文件存储键
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     public String uploadKnowledgeBase(MultipartFile file,String contentType) {
         return uploadFile(file, contentType,"knowledgebases");
@@ -82,7 +82,7 @@ public class FileStorageService {
      *
      * @param fileKey 文件存储键
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     public void deleteKnowledgeBase(String fileKey) {
         deleteFile(fileKey);
@@ -97,7 +97,7 @@ public class FileStorageService {
      * @param prefix 存储目录前缀
      * @return 文件存储键
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     private String uploadFile(MultipartFile file,String contentType, String prefix) {
         String originalFilename = file.getOriginalFilename();
@@ -131,7 +131,7 @@ public class FileStorageService {
      * @param prefix 存储目录前缀
      * @return 文件存储键
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     private String generateFileKey(String originalFilename, String prefix) {
         LocalDateTime now = LocalDateTime.now();
@@ -148,7 +148,7 @@ public class FileStorageService {
      * @param fileName 文件名
      * @return 安全文件名
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     private String sanitizeFilename(String fileName) {
         if (fileName == null || fileName.isEmpty()){
@@ -164,7 +164,7 @@ public class FileStorageService {
      * @param input 原始字符串
      * @return 拼音字符串
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     private String convertToPinyin(String input){
         HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
@@ -195,7 +195,7 @@ public class FileStorageService {
      * @param ch 原始字符
      * @return 安全字符
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     private char sanitizeChar(char ch){
         if ((ch>='a' && ch<='z')||(ch>='A' && ch<='Z')||(ch>='0' && ch<='9')||ch=='.'||ch=='_'||ch=='-'){
@@ -211,7 +211,7 @@ public class FileStorageService {
      * @param str 原始字符串
      * @return 处理后的字符串
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     private String capitalize(String str){
         if (str == null || str.isEmpty()){
@@ -226,7 +226,7 @@ public class FileStorageService {
      *
      * @param fileKey 文件存储键
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     private void deleteFile(String fileKey) {
         // 空键直接跳过
@@ -261,7 +261,7 @@ public class FileStorageService {
      * @param fileKey 文件存储键
      * @return 文件是否存在
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     public boolean fileExists(String fileKey) {
         try {
@@ -286,7 +286,7 @@ public class FileStorageService {
      * @param fileKey 文件存储键
      * @return 文件大小
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     public long getFileSize(String fileKey) {
         try {
@@ -306,7 +306,7 @@ public class FileStorageService {
      * <p>确保存储桶存在。</p>
      *
      * @author NobuNo
-     * @date 2026-03-18
+     * @since 2026-03-18
      */
     public void ensureBucketExists() {
         try {

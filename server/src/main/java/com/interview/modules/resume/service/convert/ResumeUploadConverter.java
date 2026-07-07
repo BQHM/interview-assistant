@@ -8,7 +8,7 @@ import com.interview.modules.resume.model.entity.ResumeEntity;
  * <p>负责简历上传 DTO 转换。</p>
  *
  * @author NobuNo
- * @date 2026-04-20
+ * @since 2026-04-20
  */
 public class ResumeUploadConverter {
 
@@ -23,7 +23,7 @@ public class ResumeUploadConverter {
      * @param boolIsDuplicate 是否重复简历
      * @return 简历上传响应
      * @author NobuNo
-     * @date 2026-04-20
+     * @since 2026-04-20
      */
     public static ResumeUploadResponseDTO convertToResumeUploadResponseDTO(
             ResumeEntity tblResumeEntity,

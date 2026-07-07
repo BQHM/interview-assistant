@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
  * <p>负责上传文件基础校验。</p>
  *
  * @author NobuNo
- * @date 2026-04-08
+ * @since 2026-04-08
  */
 @Service
 @RequiredArgsConstructor
@@ -28,7 +28,7 @@ public class FileValidationService {
      * @param file 简历文件
      * @return 文件内容类型
      * @author NobuNo
-     * @date 2026-04-08
+     * @since 2026-04-08
      */
     public String validateResume(MultipartFile file) {
 
@@ -62,7 +62,7 @@ public class FileValidationService {
      *
      * @param contentType 文件内容类型
      * @author NobuNo
-     * @date 2026-04-08
+     * @since 2026-04-08
      */
     private void isSupportedResumeContentType(String contentType) {
         // 只支持以下类型
