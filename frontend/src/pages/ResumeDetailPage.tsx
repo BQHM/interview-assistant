@@ -81,6 +81,7 @@ export default function ResumeDetailPage() {
   if (!resume) {
     return <div>简历不存在</div>;
   }
+  const latestAnalysis = resume.analyses?.[0];
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -94,6 +95,41 @@ export default function ResumeDetailPage() {
       >
         {creatingInterview ? '创建中...' : '开始模拟面试'}
       </button>
+      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">AI 分析结果</h2>
+
+        {latestAnalysis ? (
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-slate-500">综合评分</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {latestAnalysis.overallScore}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-600">
+              <p>内容完整性：{latestAnalysis.contentScore}</p>
+              <p>结构清晰度：{latestAnalysis.structureScore}</p>
+              <p>技能匹配度：{latestAnalysis.skillMatchScore}</p>
+              <p>表达专业性：{latestAnalysis.expressionScore}</p>
+              <p>项目经验：{latestAnalysis.projectScore}</p>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-slate-700 mb-2">分析总结</p>
+              <p className="text-sm text-slate-600 leading-6">
+                {latestAnalysis.summary}
+              </p>
+            </div>
+
+            <p className="text-xs text-slate-400">
+              分析时间：{latestAnalysis.analyzedAt}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">暂无分析结果</p>
+        )}
+      </div>
       <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">基础信息</h2>
         <div className="space-y-2 text-sm text-slate-600">
