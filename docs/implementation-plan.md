@@ -401,8 +401,9 @@
 - [x] 报告优先读取答案表中的评估结果。
 - [x] 报告接口展示参考答案和关键点列表。
 - [x] 完成 AI 出题与报告接口的手工验收。
-- [ ] 可以开始前端核心页面联调。
-- [ ] 前端主链路可展示后，再开始 Skill 化和异步化。
+- [x] 可以开始前端核心页面联调。
+- [x] 前端主链路已完成第一版浏览器验收。
+- [ ] 前端体验补强后，再开始 Skill 化和异步化。
 
 ## Phase 6: 前端核心页面
 
@@ -412,15 +413,15 @@
 
 **Acceptance criteria:**
 
-- [ ] `frontend` 可以本地启动。
-- [ ] 安装 `react-router-dom`、`axios`、`lucide-react`。
-- [ ] 有左侧导航栏和右侧内容区。
-- [ ] 路由覆盖简历管理、上传简历、面试中心和面试记录。
+- [x] `frontend` 可以本地启动。
+- [x] 安装 `react-router-dom`、`axios`、`lucide-react`。
+- [x] 有左侧导航栏和右侧内容区。
+- [x] 路由覆盖简历管理、上传简历、面试中心和面试记录。
 
 **Verification:**
 
-- [ ] Build succeeds: `cd frontend && npm run build`。
-- [ ] Manual check: 浏览器打开 `http://localhost:5173`，可以切换核心页面。
+- [x] Build succeeds: `cd frontend && npm run build`。
+- [x] Manual check: 浏览器打开 `http://localhost:5173`，可以切换核心页面。
 
 **Dependencies:** Task 12
 
@@ -439,15 +440,15 @@
 
 **Acceptance criteria:**
 
-- [ ] `api/request.ts` 统一处理 `code/message/data`。
-- [ ] `api/resume.ts` 支持上传、列表、详情、分析查询。
-- [ ] `api/interview.ts` 支持创建面试、查询当前题、暂存、提交、报告和历史。
-- [ ] `types/resume.ts` 和 `types/interview.ts` 与当前后端 DTO 对齐。
+- [x] `api/request.ts` 统一处理 `code/message/data`。
+- [x] `api/resume.ts` 支持上传、列表、详情、分析查询。
+- [x] `api/interview.ts` 支持创建面试、查询当前题、提交、报告和历史。
+- [x] `types/resume.ts` 和 `types/interview.ts` 与当前后端 DTO 对齐。
 
 **Verification:**
 
-- [ ] Build succeeds: `cd frontend && npm run build`。
-- [ ] Manual check: 页面能正常调用至少一个后端列表接口。
+- [x] Build succeeds: `cd frontend && npm run build`。
+- [x] Manual check: 页面能正常调用后端简历列表接口。
 
 **Dependencies:** Task 13
 
@@ -464,16 +465,18 @@
 
 **Acceptance criteria:**
 
-- [ ] 用户可以上传简历。
-- [ ] 用户可以查看简历列表和分析详情。
-- [ ] 用户可以创建并完成文字面试。
-- [ ] 用户可以查看面试历史、详情和报告。
-- [ ] API 错误有基本提示。
+- [x] 用户可以上传简历。
+- [x] 用户可以查看简历列表和简历详情。
+- [x] 用户可以创建并完成文字面试。
+- [x] 用户可以查看面试历史和报告。
+- [x] API 错误有基本提示。
+- [ ] 简历详情页展示完整 AI 分析结果。
+- [ ] 面试记录页区分继续面试和查看报告。
 
 **Verification:**
 
-- [ ] Build succeeds: `cd frontend && npm run build`。
-- [ ] Manual check: 浏览器完成一条端到端流程。
+- [x] Build succeeds: `cd frontend && npm run build`。
+- [x] Manual check: 浏览器完成一条端到端流程。
 
 **Dependencies:** Task 14
 
