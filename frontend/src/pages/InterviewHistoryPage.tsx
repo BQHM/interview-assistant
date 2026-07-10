@@ -16,6 +16,18 @@ export default function InterviewHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+
+  const getStatusText = (status: string) => {
+    if (status === 'IN_PROGRESS') {
+      return '进行中';
+    }
+
+    if (status === 'COMPLETED') {
+      return '已完成';
+    }
+
+    return status;
+  };
   // 页面首次进入时加载历史记录。
   useEffect(() => {
     const loadHistory = async () => {
@@ -76,22 +88,31 @@ export default function InterviewHistoryPage() {
                 简历 ID：{session.resumeId}
               </p>
               <p className="text-sm text-slate-500">
-                进度：{session.currentQuestionIndex} / {session.totalQuestions}
+                已完成题数：{Math.min(session.currentQuestionIndex, session.totalQuestions)} / {session.totalQuestions}
               </p>
               <p className="text-sm text-slate-500">
-                状态：{session.status}
+                状态：{getStatusText(session.status)}
               </p>
               <p className="text-sm text-slate-500">
                 创建时间：{session.createdAt}
               </p>
 
               <div className="mt-4">
-                <Link
-                  to={`/interviews/${session.sessionId}/report`}
-                  className="text-sm text-blue-600 hover:text-blue-700"
-                >
-                  查看报告
-                </Link>
+                {session.status === 'IN_PROGRESS' ? (
+                  <Link
+                    to={`/interview/${session.sessionId}`}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    继续面试
+                  </Link>
+                ) : (
+                  <Link
+                    to={`/interviews/${session.sessionId}/report`}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    查看报告
+                  </Link>
+                )}
               </div>
             </div>
           ))}
