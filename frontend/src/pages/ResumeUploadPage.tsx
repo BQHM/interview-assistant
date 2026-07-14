@@ -1,8 +1,8 @@
+import { AlertCircle, CheckCircle, FileText, Loader2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Loader2, FileText, AlertCircle, CheckCircle } from 'lucide-react';
-import { resumeApi } from '../api/resume';
 import { getErrorMessage } from '../api/request';
+import { resumeApi } from '../api/resume';
 
 export default function ResumeUploadPage() {
   // 上传成功后需要跳转到详情页，所以这里引入 navigate。

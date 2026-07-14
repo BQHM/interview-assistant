@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { resumeApi } from '../api/resume';
-import type { ResumeDetail } from '../types/resume';
+import { ErrorNotice } from '../components/Feedback';
+import type { ResumeAnalysis, ResumeDetail } from '../types/resume';
+import { formatDateTime, formatFileSize } from '../utils/format';
 
 export default function ResumeDetailPage() {
   // id 来自路由 /resumes/:id，例如 /resumes/11。
@@ -16,6 +18,7 @@ export default function ResumeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [creatingInterview, setCreatingInterview] = useState(false);
+  const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
 
   // id 变化时重新加载简历详情。
   // 依赖数组 [id] 的意思是：只要路由里的 id 变化，就重新执行这个 effect。
@@ -30,8 +33,11 @@ export default function ResumeDetailPage() {
       try {
         setLoading(true);
         // 后端接口需要 number 类型的 id，所以这里把字符串 id 转成数字。
-        const data = await resumeApi.getResumeDetail(Number(id));
-        setResume(data);
+        const resumeData = await resumeApi.getResumeDetail(Number(id));
+        setResume(resumeData);
+
+        const analysisData = await resumeApi.getResumeAnalysis(Number(id));
+        setAnalysis(analysisData);
       } catch (err) {
         setError(err instanceof Error ? err.message : '加载简历详情失败');
       } finally {
@@ -74,14 +80,13 @@ export default function ResumeDetailPage() {
 
   // 有错误时显示错误信息。
   if (error) {
-    return <div className="text-red-600">{error}</div>;
-  }
+  return <ErrorNotice message={error} />;
+}
 
   // 没有错误但 resume 仍为空，说明后端没有返回有效数据。
   if (!resume) {
     return <div>简历不存在</div>;
   }
-  const latestAnalysis = resume.analyses?.[0];
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -98,32 +103,68 @@ export default function ResumeDetailPage() {
       <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">AI 分析结果</h2>
 
-        {latestAnalysis ? (
+        {analysis ? (
           <div className="space-y-4">
             <div>
               <p className="text-sm text-slate-500">综合评分</p>
               <p className="text-3xl font-bold text-blue-600">
-                {latestAnalysis.overallScore}
+                {analysis.overallScore}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-600">
-              <p>内容完整性：{latestAnalysis.contentScore}</p>
-              <p>结构清晰度：{latestAnalysis.structureScore}</p>
-              <p>技能匹配度：{latestAnalysis.skillMatchScore}</p>
-              <p>表达专业性：{latestAnalysis.expressionScore}</p>
-              <p>项目经验：{latestAnalysis.projectScore}</p>
+              <p>内容完整性：{analysis.scoreDetail.contentScore}</p>
+              <p>结构清晰度：{analysis.scoreDetail.structureScore}</p>
+              <p>技能匹配度：{analysis.scoreDetail.skillMatchScore}</p>
+              <p>表达专业性：{analysis.scoreDetail.expressionScore}</p>
+              <p>项目经验：{analysis.scoreDetail.projectScore}</p>
             </div>
 
             <div>
               <p className="text-sm font-medium text-slate-700 mb-2">分析总结</p>
               <p className="text-sm text-slate-600 leading-6">
-                {latestAnalysis.summary}
+                {analysis.summary}
               </p>
             </div>
-
+            <div>
+              <p className="text-sm font-medium text-slate-700 mb-2">简历亮点</p>
+              {analysis.strengths.length > 0 ? (
+                <ul className="list-disc space-y-1 pl-5 text-sm text-slate-600">
+                  {analysis.strengths.map((strength, index) => (
+                    <li key={index}>{strength}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-500">暂无亮点信息</p>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-700 mb-2">改进建议</p>
+              {analysis.suggestions.length > 0 ? (
+                <div className="space-y-3">
+                  {analysis.suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <p className="text-sm font-medium text-slate-800">
+                        {suggestion.category} · {suggestion.priority}
+                      </p>
+                      <p className="mt-2 text-sm text-slate-600">
+                        问题：{suggestion.issue}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">
+                        建议：{suggestion.recommendation}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">暂无改进建议</p>
+              )}
+            </div>
             <p className="text-xs text-slate-400">
-              分析时间：{latestAnalysis.analyzedAt}
+              分析时间：{formatDateTime(analysis.analyzedAt)}
             </p>
           </div>
         ) : (
@@ -134,10 +175,10 @@ export default function ResumeDetailPage() {
         <h2 className="text-lg font-semibold text-slate-800 mb-4">基础信息</h2>
         <div className="space-y-2 text-sm text-slate-600">
           <p>文件名：{resume.originalFilename}</p>
-          <p>文件大小：{resume.fileSize} 字节</p>
+          <p>文件大小：{formatFileSize(resume.fileSize)}</p>
           <p>文件类型：{resume.contentType}</p>
           <p>分析状态：{resume.analyzeStatus}</p>
-          <p>上传时间：{resume.uploadedAt}</p>
+          <p>上传时间：{formatDateTime(resume.uploadedAt)}</p>
         </div>
       </div>
 

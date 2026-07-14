@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
+import { EmptyState } from '../components/Feedback';
 import type { InterviewSessionListItem } from '../types/interview';
 
 export default function InterviewHistoryPage() {
@@ -70,9 +71,7 @@ export default function InterviewHistoryPage() {
 
       {/* 空数组显示空状态；有数据时渲染每一条历史面试卡片 */}
       {sessions.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          暂无面试记录
-        </div>
+        <EmptyState title="暂无面试记录" />
       ) : (
         <div className="space-y-4">
           {/* map 把 sessions 数组渲染成多张历史记录卡片 */}

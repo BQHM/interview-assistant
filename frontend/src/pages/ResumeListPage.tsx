@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { FileText, Loader2, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FileText, Plus, Loader2 } from 'lucide-react';
 import { resumeApi } from '../api/resume';
 import type { ResumeListItem } from '../types/resume';
 
