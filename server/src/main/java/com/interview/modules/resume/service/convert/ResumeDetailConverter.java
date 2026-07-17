@@ -13,7 +13,7 @@ import com.interview.modules.resume.model.entity.ResumeEntity;
  * <p>负责简历详情和列表 DTO 转换。</p>
  *
  * @author NobuNo
- * @since 2026-04-20
+ * @date 2026-04-20
  */
 public class ResumeDetailConverter {
 
@@ -27,7 +27,7 @@ public class ResumeDetailConverter {
      * @param tblResumeEntity 简历实体
      * @return 简历详情
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     public static ResumeDetailDTO convertToResumeDetailDTO(ResumeEntity tblResumeEntity) {
         ResumeDetailDTO cplResumeDetailDTO = new ResumeDetailDTO();
@@ -50,7 +50,7 @@ public class ResumeDetailConverter {
      * @param lstResumeAnalysisEntity 简历分析实体列表
      * @return 简历分析历史列表
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     public static List<ResumeDetailDTO.AnalysisHistoryDTO> convertToAnalysisHistoryDTO(
             List<ResumeAnalysisEntity> lstResumeAnalysisEntity) {
@@ -82,7 +82,7 @@ public class ResumeDetailConverter {
      * @param tblResumeAnalysisEntity 简历分析实体
      * @return 简历列表项
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     public static ResumeListItemDTO convertToResumeListItemDTO(
             ResumeEntity tblResumeEntity,

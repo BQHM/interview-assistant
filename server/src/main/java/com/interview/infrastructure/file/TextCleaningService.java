@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  * <p>负责清洗解析后的文本。</p>
  *
  * @author NobuNo
- * @since 2026-04-08
+ * @date 2026-04-08
  */
 @Service
 public class TextCleaningService {
@@ -24,7 +24,7 @@ public class TextCleaningService {
      * @param rawText 原始文本
      * @return 清洗后的文本
      * @author NobuNo
-     * @since 2026-04-08
+     * @date 2026-04-08
      */
     public String clean(String rawText){
 

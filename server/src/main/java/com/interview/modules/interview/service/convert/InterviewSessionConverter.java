@@ -12,7 +12,7 @@ import com.interview.modules.interview.model.entity.InterviewSessionEntity;
  * <p>负责面试会话 DTO 转换。</p>
  *
  * @author NobuNo
- * @since 2026-05-16
+ * @date 2026-05-16
  */
 public class InterviewSessionConverter {
 
@@ -26,7 +26,7 @@ public class InterviewSessionConverter {
      * @param tblInterviewSessionEntity 面试会话实体
      * @return 面试历史列表项
      * @author NobuNo
-     * @since 2026-05-16
+     * @date 2026-05-16
      */
     public static InterviewSessionListItemDTO convertToInterviewSessionListItemDTO(
             InterviewSessionEntity tblInterviewSessionEntity) {
@@ -49,7 +49,7 @@ public class InterviewSessionConverter {
      * @param lstInterviewQuestionDTO 面试题列表
      * @return 面试历史详情
      * @author NobuNo
-     * @since 2026-05-16
+     * @date 2026-05-16
      */
     public static InterviewDetailDTO convertToInterviewDetailDTO(
             InterviewSessionEntity tblInterviewSessionEntity,

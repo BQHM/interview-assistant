@@ -1,0 +1,17 @@
+displayName: Java 后端
+categories:
+  - key: JAVA
+    label: Java 基础
+    priority: CORE
+  - key: SPRING_BOOT
+    label: Spring Boot
+    priority: CORE
+  - key: MYSQL
+    label: MySQL
+    priority: NORMAL
+  - key: REDIS
+    label: Redis
+    priority: NORMAL
+  - key: PROJECT
+    label: 项目经验
+    priority: ALWAYS_ONE

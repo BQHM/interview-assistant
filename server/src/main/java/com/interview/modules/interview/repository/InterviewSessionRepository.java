@@ -14,7 +14,7 @@ import com.interview.modules.interview.model.entity.InterviewSessionEntity;
  * <p>负责面试会话数据访问。</p>
  *
  * @author NobuNo
- * @since 2026-04-20
+ * @date 2026-04-20
  */
 @Repository
 public interface InterviewSessionRepository extends JpaRepository<InterviewSessionEntity, Long> {
@@ -26,7 +26,7 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
      * @param strSessionId 面试会话编号
      * @return 面试会话实体
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     Optional<InterviewSessionEntity> findBySessionId(String strSessionId);
 
@@ -38,7 +38,7 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
      * @param lstStatus 会话状态列表
      * @return 面试会话实体
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     Optional<InterviewSessionEntity> findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
             Long lngResumeId,
@@ -50,7 +50,7 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
      *
      * @return 面试会话列表
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     List<InterviewSessionEntity> findAllByOrderByCreatedAtDesc();
 }

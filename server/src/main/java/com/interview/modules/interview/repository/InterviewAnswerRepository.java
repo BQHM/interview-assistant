@@ -14,7 +14,7 @@ import com.interview.modules.interview.model.entity.InterviewSessionEntity;
  * <p>负责面试答案数据访问。</p>
  *
  * @author NobuNo
- * @since 2026-05-18
+ * @date 2026-05-18
  */
 @Repository
 public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswerEntity, Long> {
@@ -27,7 +27,7 @@ public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswer
      * @param intQuestionIndex 题目索引
      * @return 面试答案实体
      * @author NobuNo
-     * @since 2026-05-18
+     * @date 2026-05-18
      */
     Optional<InterviewAnswerEntity> findBySessionAndQuestionIndex(InterviewSessionEntity tblInterviewSessionEntity,
                     Integer intQuestionIndex);
@@ -39,7 +39,7 @@ public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswer
      * @param tblInterviewSessionEntity 面试会话实体
      * @return 面试答案列表
      * @author NobuNo
-     * @since 2026-05-18
+     * @date 2026-05-18
      */
     List<InterviewAnswerEntity> findBySessionOrderByQuestionIndexAsc(
                     InterviewSessionEntity tblInterviewSessionEntity);
@@ -50,7 +50,7 @@ public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswer
      *
      * @param tblInterviewSessionEntity 面试会话实体
      * @author NobuNo
-     * @since 2026-05-18
+     * @date 2026-05-18
      */
     void deleteBySession(
                     InterviewSessionEntity tblInterviewSessionEntity);

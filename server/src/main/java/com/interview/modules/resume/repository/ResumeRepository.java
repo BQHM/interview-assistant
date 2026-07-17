@@ -12,7 +12,7 @@ import java.util.Optional;
  * <p>负责简历数据访问。</p>
  *
  * @author NobuNo
- * @since 2026-03-31
+ * @date 2026-03-31
  */
 @Repository
 public interface ResumeRepository extends JpaRepository<ResumeEntity, Long> {
@@ -24,7 +24,7 @@ public interface ResumeRepository extends JpaRepository<ResumeEntity, Long> {
      * @param fileHash 文件哈希
      * @return 简历实体
      * @author NobuNo
-     * @since 2026-03-31
+     * @date 2026-03-31
      */
     Optional<ResumeEntity> findByFileHash(String fileHash);
 
@@ -34,7 +34,7 @@ public interface ResumeRepository extends JpaRepository<ResumeEntity, Long> {
      *
      * @return 简历列表
      * @author NobuNo
-     * @since 2026-03-31
+     * @date 2026-03-31
      */
     List<ResumeEntity> findAllByOrderByUploadedAtDesc();
 
