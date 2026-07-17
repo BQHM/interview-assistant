@@ -1,8 +1,9 @@
-import { AlertCircle, CheckCircle, FileText, Loader2, Upload } from 'lucide-react';
+import { CheckCircle, FileText, Loader2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getErrorMessage } from '../api/request';
 import { resumeApi } from '../api/resume';
+import { ErrorNotice } from '../components/Feedback';
 
 export default function ResumeUploadPage() {
   // 上传成功后需要跳转到详情页，所以这里引入 navigate。
@@ -161,9 +162,8 @@ export default function ResumeUploadPage() {
 
       {/* 错误提示 */}
       {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-          <p className="text-red-600">{error}</p>
+        <div className="mt-6">
+          <ErrorNotice message={error} />
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { FileText, Loader2, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { resumeApi } from '../api/resume';
+import { EmptyState, ErrorNotice } from '../components/Feedback';
 import type { ResumeListItem } from '../types/resume';
 
 export default function ResumeListPage() {
@@ -82,8 +83,8 @@ export default function ResumeListPage() {
   // error 有值时，直接返回错误页面，并提供“重试”按钮重新调用 loadResumes。
   if (error) {
     return (
-      <div className="text-center py-10">
-        <p className="text-red-600 mb-4">{error}</p>
+      <div className="space-y-4">
+        <ErrorNotice message={error} />
         <button
           onClick={loadResumes}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -114,19 +115,7 @@ export default function ResumeListPage() {
 
       {/* 根据列表是否为空，分别显示空状态或简历卡片列表 */}
       {resumes.length === 0 ? (
-        // 空状态：没有简历时引导用户先上传。
-        <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
-          <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-slate-700 mb-2">暂无简历</h3>
-          <p className="text-slate-500 mb-6">上传您的第一份简历开始体验</p>
-          <Link
-            to="/upload"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            上传简历
-          </Link>
-        </div>
+        <EmptyState title='暂无简历' description='上传您的第一份简历开始体验' />
       ) : (
         <div className="space-y-4">
           {/* map 会把简历数组转换成多个卡片；key 帮 React 识别每一项是谁 */}
@@ -149,7 +138,9 @@ export default function ResumeListPage() {
                     </div>
                     {/* && 是条件渲染：只有 analyzeError 有值时才显示错误信息 */}
                     {resume.analyzeError && (
-                      <p className="text-sm text-red-600 mt-2">{resume.analyzeError}</p>
+                      <div className="mt-3">
+                        <ErrorNotice message={resume.analyzeError} />
+                      </div>
                     )}
                   </div>
                 </div>

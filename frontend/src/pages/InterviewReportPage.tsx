@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
+import { EmptyState, ErrorNotice } from '../components/Feedback';
 import type { InterviewReport } from '../types/interview';
+
 
 export default function InterviewReportPage() {
   // sessionId 来自路由 /interviews/:sessionId/report。
@@ -41,11 +43,11 @@ export default function InterviewReportPage() {
   }
 
   if (error) {
-    return <div className="text-red-600">{error}</div>;
+    return <ErrorNotice message={error} />;
   }
 
   if (!report) {
-    return <div>报告不存在</div>;
+    return <EmptyState title='报告不存在' description='请确认面试记录是否存在或是否已完成'/>;
   }
 
   return (
@@ -109,11 +111,10 @@ export default function InterviewReportPage() {
                 {questionReport.score} 分
               </span>
               <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  questionReport.answered
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-orange-50 text-orange-700'
-                }`}
+                className={`rounded-full px-3 py-1 text-xs font-medium ${questionReport.answered
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-orange-50 text-orange-700'
+                  }`}
               >
                 {questionReport.answered ? '已回答' : '未回答'}
               </span>

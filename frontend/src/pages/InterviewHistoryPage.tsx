@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
-import { EmptyState } from '../components/Feedback';
+import { EmptyState, ErrorNotice } from '../components/Feedback';
 import type { InterviewSessionListItem } from '../types/interview';
 
 export default function InterviewHistoryPage() {
@@ -54,7 +54,7 @@ export default function InterviewHistoryPage() {
 
   // 有错误时直接返回错误提示。
   if (error) {
-    return <div className="text-red-600">{error}</div>;
+    return <ErrorNotice message={error} />;
   }
 
   return (
