@@ -16,7 +16,7 @@ import java.util.List;
  * <p>负责简历分析结果查询转换。</p>
  *
  * @author NobuNo
- * @since 2026-04-20
+ * @date 2026-04-20
  */
 @Slf4j
 public class ResumeAnalysisQueryConverter {
@@ -32,7 +32,7 @@ public class ResumeAnalysisQueryConverter {
      * @param objectMapper JSON 转换器
      * @return 简历分析结果
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     public static ResumeAnalysisDTO convertToResumeAnalysisDTO(
             ResumeAnalysisEntity tblResumeAnalysisEntity,
@@ -76,7 +76,7 @@ public class ResumeAnalysisQueryConverter {
      * @return 简历优点列表
      * @throws JacksonException 当 JSON 解析失败时抛出
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     private static List<String> parseStrengths(
             String strStrengthsJson,
@@ -98,7 +98,7 @@ public class ResumeAnalysisQueryConverter {
      * @return 简历修改建议列表
      * @throws JacksonException 当 JSON 解析失败时抛出
      * @author NobuNo
-     * @since 2026-04-20
+     * @date 2026-04-20
      */
     private static List<ResumeAnalysisDTO.Suggestion> parseSuggestions(
             String strSuggestionsJson,

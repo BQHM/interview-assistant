@@ -23,7 +23,7 @@ import java.util.Map;
  * <p>负责简历分析业务逻辑。</p>
  *
  * @author NobuNo
- * @since 2026-04-14
+ * @date 2026-04-14
  */
 @Service
 public class ResumeGradingService {
@@ -43,7 +43,7 @@ public class ResumeGradingService {
      * @param resourceLoader 资源加载器
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     public ResumeGradingService(
             ChatClient.Builder chatClientBuilder,
@@ -68,7 +68,7 @@ public class ResumeGradingService {
      * @param resumeText 简历正文
      * @return 简历分析结果
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     public ResumeAnalysisResultDTO analyzeResume(String resumeText) {
 
@@ -96,7 +96,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 简历分析结果
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private ResumeAnalysisResultDTO analyzeByAi(String strResumeText) {
         String strSystemPrompt = systemPromptTemplate.render();
@@ -123,7 +123,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 简历分析结果
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private ResumeAnalysisResultDTO buildRuleBasedResult(String strResumeText) {
         ResumeAnalysisResultDTO cplResumeAnalysisResultDTO = new ResumeAnalysisResultDTO();
@@ -159,7 +159,7 @@ public class ResumeGradingService {
      * @param arrKeywords 关键词数组
      * @return 命中数量
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private int countMatches(String strResumeText, String... arrKeywords) {
         int intCount = 0;
@@ -179,7 +179,7 @@ public class ResumeGradingService {
      * @param arrKeywords 关键词数组
      * @return 是否包含关键词
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private boolean containsAny(String strResumeText, String... arrKeywords) {
         for (String strKeyword : arrKeywords) {
@@ -197,7 +197,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 内容评分
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private int scoreContent(String strResumeText) {
         int intScore;
@@ -225,7 +225,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 结构评分
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private int scoreStructure(String strResumeText) {
         int intSectionCount = countMatches(strResumeText, "教育", "项目", "工作经历", "技能", "实习");
@@ -248,7 +248,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 技能匹配评分
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private int scoreSkillMatch(String strResumeText) {
         int intSkillCount = countMatches(strResumeText, "Java", "Spring", "Spring Boot", "MySQL", "Redis", "Docker", "Linux", "Git");
@@ -271,7 +271,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 表达评分
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private int scoreExpression(String strResumeText) {
         boolean boolHasAction = containsAny(strResumeText, "负责", "设计", "实现", "优化", "重构");
@@ -293,7 +293,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 项目经验评分
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private int scoreProject(String strResumeText) {
         boolean boolHasProject = containsAny(strResumeText, "项目");
@@ -318,7 +318,7 @@ public class ResumeGradingService {
      * @param intOverallScore 综合评分
      * @return 分析总结
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private String buildSummary(int intOverallScore) {
         if (intOverallScore >= 75) {
@@ -337,7 +337,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 简历优点列表
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private List<String> buildStrengths(String strResumeText) {
         return List.of("具备基础简历结构", "包含一定技术关键词");
@@ -350,7 +350,7 @@ public class ResumeGradingService {
      * @param strResumeText 简历正文
      * @return 简历修改建议
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     private List<ResumeAnalysisResultDTO.Suggestion> buildSuggestions(String strResumeText) {
         ResumeAnalysisResultDTO.Suggestion cplSuggestionProject = new ResumeAnalysisResultDTO.Suggestion();

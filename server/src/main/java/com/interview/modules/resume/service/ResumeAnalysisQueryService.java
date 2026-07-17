@@ -20,7 +20,7 @@ import tools.jackson.databind.ObjectMapper;
  * <p>负责简历分析结果查询业务逻辑。</p>
  *
  * @author NobuNo
- * @since 2026-04-14
+ * @date 2026-04-14
  */
 @Slf4j
 @Service
@@ -37,7 +37,7 @@ public class ResumeAnalysisQueryService {
      * @param lngResumeId 简历编号
      * @return 简历分析结果
      * @author NobuNo
-     * @since 2026-04-14
+     * @date 2026-04-14
      */
     public ResumeAnalysisDTO getResumeAnalysis(Long lngResumeId) {
         log.info("开始查询简历分析结果: resumeId={}", lngResumeId);

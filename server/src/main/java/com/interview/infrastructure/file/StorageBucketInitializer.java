@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * <p>负责对象存储桶启动初始化。</p>
  *
  * @author NobuNo
- * @since 2026-07-03
+ * @date 2026-07-03
  */
 @Slf4j
 @Component
@@ -26,7 +26,7 @@ public class StorageBucketInitializer implements ApplicationRunner {
      *
      * @param args 启动参数
      * @author NobuNo
-     * @since 2026-07-03
+     * @date 2026-07-03
      */
     @Override
     public void run(ApplicationArguments args) {

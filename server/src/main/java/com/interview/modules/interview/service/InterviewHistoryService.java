@@ -31,7 +31,7 @@ import tools.jackson.databind.ObjectMapper;
  * <p>负责面试历史查询和删除业务逻辑。</p>
  *
  * @author NobuNo
- * @since 2026-06-29
+ * @date 2026-06-29
  */
 @Slf4j
 @Service
@@ -49,7 +49,7 @@ public class InterviewHistoryService {
      *
      * @return 面试历史列表
      * @author NobuNo
-     * @since 2026-06-29
+     * @date 2026-06-29
      */
     public List<InterviewSessionListItemDTO> getHistory() {
 
@@ -75,7 +75,7 @@ public class InterviewHistoryService {
      * @param strSessionId 面试会话编号
      * @return 面试历史详情
      * @author NobuNo
-     * @since 2026-06-29
+     * @date 2026-06-29
      */
     public InterviewDetailDTO getInterviewDetail(String strSessionId) {
         // 根据会话ID查询面试会话
@@ -116,7 +116,7 @@ public class InterviewHistoryService {
      *
      * @param strSessionId 面试会话编号
      * @author NobuNo
-     * @since 2026-06-29
+     * @date 2026-06-29
      */
     @Transactional
     public void deleteInterview(String strSessionId) {

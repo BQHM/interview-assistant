@@ -12,7 +12,7 @@ import java.io.InputStream;
  * <p>负责检测上传文件内容类型。</p>
  *
  * @author NobuNo
- * @since 2026-04-09
+ * @date 2026-04-09
  */
 @Service
 public class ContentTypeDetectionService {
@@ -26,7 +26,7 @@ public class ContentTypeDetectionService {
      * @param file 上传文件
      * @return 文件内容类型
      * @author NobuNo
-     * @since 2026-04-09
+     * @date 2026-04-09
      */
     public String detectContentType(MultipartFile file) {
         try (InputStream inputStream = file.getInputStream()) {

@@ -13,7 +13,7 @@ import java.io.IOException;
  * <p>负责解析上传文档文本。</p>
  *
  * @author NobuNo
- * @since 2026-04-08
+ * @date 2026-04-08
  */
 @RequiredArgsConstructor
 @Service
@@ -28,7 +28,7 @@ public class DocumentParseService {
      * @param file 简历文件
      * @return 简历文本
      * @author NobuNo
-     * @since 2026-04-08
+     * @date 2026-04-08
      */
     public String parseResume(MultipartFile file) {
         try {

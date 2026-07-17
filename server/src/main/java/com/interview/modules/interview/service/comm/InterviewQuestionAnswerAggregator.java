@@ -10,7 +10,7 @@ import com.interview.modules.interview.model.entity.InterviewAnswerEntity;
  * <p>负责面试题和答案聚合。</p>
  *
  * @author NobuNo
- * @since 2026-06-29
+ * @date 2026-06-29
  */
 public class InterviewQuestionAnswerAggregator {
 
@@ -24,7 +24,7 @@ public class InterviewQuestionAnswerAggregator {
      * @param lstInterviewQuestionDTO 面试题列表
      * @param lstInterviewAnswerEntity 面试答案列表
      * @author NobuNo
-     * @since 2026-06-29
+     * @date 2026-06-29
      */
     public static void fillUserAnswers(
             List<InterviewQuestionDTO> lstInterviewQuestionDTO,
