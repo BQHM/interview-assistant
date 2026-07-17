@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { resumeApi } from '../api/resume';
+import { EmptyState, ErrorNotice } from '../components/Feedback';
 import type { ResumeListItem } from '../types/resume';
 
 export default function InterviewCenterPage() {
@@ -84,9 +85,7 @@ export default function InterviewCenterPage() {
           </label>
 
           {resumes.length === 0 ? (
-            <div className="text-sm text-slate-500">
-              暂无简历，请先上传简历。
-            </div>
+            <EmptyState title='暂无简历' description='请先上传简历'/>
           ) : (
             // 这是受控表单：value 来自 selectedResumeId，onChange 负责更新 selectedResumeId。
             <select
@@ -122,9 +121,8 @@ export default function InterviewCenterPage() {
         </div>
 
         {error && (
-          // 创建面试失败或未选择简历时，在按钮上方显示错误。
-          <div className="mb-4 text-sm text-red-600">
-            {error}
+          <div className="mb-4">
+            <ErrorNotice message={error} />
           </div>
         )}
 

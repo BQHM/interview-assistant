@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { resumeApi } from '../api/resume';
-import { ErrorNotice } from '../components/Feedback';
+import { EmptyState, ErrorNotice } from '../components/Feedback';
 import type { ResumeAnalysis, ResumeDetail } from '../types/resume';
 import { formatDateTime, formatFileSize } from '../utils/format';
 
@@ -80,12 +80,12 @@ export default function ResumeDetailPage() {
 
   // 有错误时显示错误信息。
   if (error) {
-  return <ErrorNotice message={error} />;
-}
+    return <ErrorNotice message={error} />;
+  }
 
   // 没有错误但 resume 仍为空，说明后端没有返回有效数据。
   if (!resume) {
-    return <div>简历不存在</div>;
+    return <EmptyState title='简历不存在' description='请确认简历是否存在或是否已删除' />;
   }
 
   return (
@@ -168,7 +168,7 @@ export default function ResumeDetailPage() {
             </p>
           </div>
         ) : (
-          <p className="text-sm text-slate-500">暂无分析结果</p>
+          <EmptyState title='暂无分析结果' description='请先分析简历后查看结果' />
         )}
       </div>
       <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">

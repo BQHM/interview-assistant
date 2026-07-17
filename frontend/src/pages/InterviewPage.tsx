@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
+import { EmptyState, ErrorNotice } from '../components/Feedback';
 import type { InterviewSession } from '../types/interview';
+
+
 
 export default function InterviewPage() {
     // sessionId 来自路由 /interview/:sessionId，用来查询某一次面试会话。
@@ -47,11 +50,11 @@ export default function InterviewPage() {
     }
 
     if (error) {
-        return <div className="text-red-600">{error}</div>;
+        return <ErrorNotice message={error} />;
     }
 
     if (!session) {
-        return <div>面试会话不存在</div>;
+        return <EmptyState title='面试会话不存在' description='请确认面试会话是否存在或是否已删除' />;
     }
 
     // 提交当前题答案：后端保存答案、推进题号，并返回是否还有下一题。
