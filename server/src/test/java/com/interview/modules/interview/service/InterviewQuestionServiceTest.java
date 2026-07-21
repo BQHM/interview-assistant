@@ -114,8 +114,8 @@ class InterviewQuestionServiceTest {
                 """;
 
         when(chatClient.prompt()
-                .system(argThat(strPrompt -> strPrompt.contains("资深 Java 后端面试官")))
-                .user(argThat(strPrompt -> strPrompt.contains("JAVA")
+                .system(argThat((String strPrompt) -> strPrompt.contains("资深 Java 后端面试官")))
+                .user(argThat((String strPrompt) -> strPrompt.contains("JAVA")
                         && strPrompt.contains("核心方向，优先覆盖")
                         && strPrompt.contains("PROJECT")
                         && strPrompt.contains("必须至少生成 1 道题")))
