@@ -63,9 +63,11 @@ public class InterviewSessionService {
      * @date 2026-05-28
      */
     public InterviewSessionDTO createInterview(CreateInterviewRequest cplCreateInterviewRequest) {
-        log.info("开始创建面试会话: resumeId={}, questionCount={}",
+        log.info("开始创建面试会话: resumeId={}, questionCount={}, skillId={}",
                 cplCreateInterviewRequest.getResumeId(),
-                cplCreateInterviewRequest.getQuestionCount());
+                cplCreateInterviewRequest.getQuestionCount(),
+                cplCreateInterviewRequest.getSkillId()
+        );
 
         Optional<ResumeEntity> optResumeEntity = resumeRepository.findById(cplCreateInterviewRequest.getResumeId());
 
@@ -86,9 +88,10 @@ public class InterviewSessionService {
         ResumeEntity tblResumeEntity = optResumeEntity.get(); // 简历实体
         String strResumeText = tblResumeEntity.getResumeText(); // 简历正文
         Integer intQuestionCount = cplCreateInterviewRequest.getQuestionCount(); // 题目数量
+        String strSkillId = cplCreateInterviewRequest.getSkillId(); // 面试方向编号
 
         // 生成题目列表
-        List<InterviewQuestionDTO> lstInterviewQuestionDTO = interviewQuestionService.generateQuestions(strResumeText, intQuestionCount); // 题目列表
+        List<InterviewQuestionDTO> lstInterviewQuestionDTO = interviewQuestionService.generateQuestions(strResumeText, intQuestionCount, strSkillId); // 题目列表
 
         String strQuestionsJson;
         try {
@@ -443,7 +446,7 @@ public class InterviewSessionService {
      * 功能说明
      * <p>暂存面试答案。</p>
      *
-     * @param strSessionId 面试会话编号
+     * @param strSessionId         面试会话编号
      * @param cplSaveAnswerRequest 暂存答案请求
      * @author NobuNo
      * @date 2026-05-28

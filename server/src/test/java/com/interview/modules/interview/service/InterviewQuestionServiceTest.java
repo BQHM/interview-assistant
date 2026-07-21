@@ -1,9 +1,13 @@
 package com.interview.modules.interview.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -15,7 +19,12 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
+import com.interview.common.exception.BusinessException;
+import com.interview.common.exception.ErrorCode;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
+import com.interview.modules.interview.skill.InterviewSkillService;
+import com.interview.modules.interview.skill.model.InterviewSkillCategoryDTO;
+import com.interview.modules.interview.skill.model.InterviewSkillDTO;
 
 /**
  * 面试题生成服务测试。
@@ -87,10 +96,101 @@ class InterviewQuestionServiceTest {
                 .allSatisfy(strQuestion -> assertThat(strQuestion).isNotBlank());
     }
 
-    private InterviewQuestionService createService(ChatClient chatClient) throws IOException {
-        ChatClient.Builder chatClientBuilder = mock(ChatClient.Builder.class);
+    @Test
+    void generateQuestions_shouldInjectSkillPersonaAndCategoriesIntoPrompt() throws IOException {
+        ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
+        InterviewQuestionService interviewQuestionService = createService(chatClient);
+        String strAiResponse = """
+                {
+                  "questions": [
+                    {
+                      "questionIndex": 0,
+                      "question": "AI Skill 注入题",
+                      "type": "PROJECT",
+                      "category": "项目经验"
+                    }
+                  ]
+                }
+                """;
+
+        when(chatClient.prompt()
+                .system(argThat(strPrompt -> strPrompt.contains("资深 Java 后端面试官")))
+                .user(argThat(strPrompt -> strPrompt.contains("JAVA")
+                        && strPrompt.contains("核心方向，优先覆盖")
+                        && strPrompt.contains("PROJECT")
+                        && strPrompt.contains("必须至少生成 1 道题")))
+                .call()
+                .content()).thenReturn(strAiResponse);
+
+        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+                "熟悉 Java，并有真实项目经验。",
+                1,
+                "java-backend");
+
+        assertThat(lstQuestionDTO).hasSize(1);
+        assertThat(lstQuestionDTO.get(0).getQuestion()).isEqualTo("AI Skill 注入题");
+    }
+
+    @Test
+    void generateQuestions_shouldRejectUnknownSkillBeforeCallingAi() throws IOException {
+        ChatClient chatClient = mock(ChatClient.class);
+        InterviewSkillService interviewSkillService = mock(InterviewSkillService.class);
+        InterviewQuestionService interviewQuestionService = createService(
+                chatClient,
+                interviewSkillService);
+
+        when(interviewSkillService.getSkill("unknown"))
+                .thenThrow(new BusinessException(
+                        ErrorCode.BAD_REQUEST,
+                        "面试方向不存在: unknown"));
+
+        BusinessException exception = catchThrowableOfType(
+                () -> interviewQuestionService.generateQuestions(
+                        "熟悉 Spring Boot。",
+                        3,
+                        "unknown"),
+                BusinessException.class);
+
+        assertThat(exception.getCode()).isEqualTo(ErrorCode.BAD_REQUEST.getCode());
+        assertThat(exception.getMessage()).contains("面试方向不存在: unknown");
+        verify(chatClient, never()).prompt();
+    }
+
+    private InterviewQuestionService createService(
+            ChatClient chatClient
+    ) throws IOException {
+        InterviewSkillService interviewSkillService =
+                mock(InterviewSkillService.class);
+
+        InterviewSkillDTO skillDTO = new InterviewSkillDTO();
+        skillDTO.setId("java-backend");
+        skillDTO.setName("Java 后端");
+        skillDTO.setPersona("你是一名资深 Java 后端面试官。");
+        skillDTO.setCategories(List.of(
+                createCategory("JAVA", "Java 基础", "CORE"),
+                createCategory("PROJECT", "项目经验", "ALWAYS_ONE")
+        ));
+
+        when(interviewSkillService.getSkill("java-backend"))
+                .thenReturn(skillDTO);
+
+        return createService(chatClient, interviewSkillService);
+    }
+
+    private InterviewQuestionService createService(
+            ChatClient chatClient,
+            InterviewSkillService interviewSkillService
+    ) throws IOException {
+        ChatClient.Builder chatClientBuilder =
+                mock(ChatClient.Builder.class);
+
         when(chatClientBuilder.build()).thenReturn(chatClient);
-        return new InterviewQuestionService(chatClientBuilder, createResourceLoader());
+
+        return new InterviewQuestionService(
+                chatClientBuilder,
+                createResourceLoader(),
+                interviewSkillService
+        );
     }
 
     private ResourceLoader createResourceLoader() throws IOException {
@@ -103,10 +203,22 @@ class InterviewQuestionServiceTest {
         when(resourceLoader.getResource("classpath:prompts/interview-question-user.st"))
                 .thenReturn(userPromptResource);
         when(systemPromptResource.getContentAsString(StandardCharsets.UTF_8))
-                .thenReturn("你是一名严格但友好的技术面试官。");
+                .thenReturn("{persona}");
         when(userPromptResource.getContentAsString(StandardCharsets.UTF_8))
-                .thenReturn("请根据简历 {resumeText} 生成 {questionCount} 道题。");
+                .thenReturn("请根据简历 {resumeText} 生成 {questionCount} 道题。考察方向：{skillCategories}");
 
         return resourceLoader;
+    }
+
+    private InterviewSkillCategoryDTO createCategory(
+            String strKey,
+            String strLabel,
+            String strPriority
+    ) {
+        InterviewSkillCategoryDTO categoryDTO = new InterviewSkillCategoryDTO();
+        categoryDTO.setKey(strKey);
+        categoryDTO.setLabel(strLabel);
+        categoryDTO.setPriority(strPriority);
+        return categoryDTO;
     }
 }

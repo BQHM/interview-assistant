@@ -1,6 +1,7 @@
 package com.interview.modules.interview.model.request;
 
 import com.interview.common.annotation.FieldMeta;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,5 +30,13 @@ public class CreateInterviewRequest {
     @Min(value = 3, message = "题目数量最少为3")
     @Max(value = 10, message = "题目数量最多为10")
     private Integer questionCount;
+
+    /**
+     * 面试方向编号
+     * 用于指定本次面试采用的 Skill
+     */
+    @FieldMeta(name = "面试方向编号", desc = "用于指定本次面试采用的 Skill")
+    @NotBlank(message = "面试方向编号不能为空")
+    private String skillId = "java-backend";
 
 }

@@ -83,7 +83,7 @@ class InterviewSessionServiceTest {
         when(interviewSessionRepository.findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
                 eq(11L),
                 anyList())).thenReturn(Optional.empty());
-        when(interviewQuestionService.generateQuestions(tblResumeEntity.getResumeText(), 3))
+        when(interviewQuestionService.generateQuestions(tblResumeEntity.getResumeText(), 3, "java-backend"))
                 .thenReturn(lstQuestionDTO);
         when(interviewSessionRepository.save(any(InterviewSessionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -131,7 +131,7 @@ class InterviewSessionServiceTest {
         assertThat(cplSessionDTO.getCurrentQuestionIndex()).isEqualTo(1);
         assertThat(cplSessionDTO.getQuestions().get(0).getUserAnswer())
                 .isEqualTo("我会从项目模块和接口设计说明。");
-        verify(interviewQuestionService, never()).generateQuestions(any(), any());
+        verify(interviewQuestionService, never()).generateQuestions(any(), any(), any());
         verify(interviewSessionRepository, never()).save(any(InterviewSessionEntity.class));
     }
 
