@@ -40,8 +40,8 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param chatClientBuilder AI 客户端构建器
-     * @param resourceLoader    资源加载器
+     * @param chatClientBuilder     AI 客户端构建器
+     * @param resourceLoader        资源加载器
      * @param interviewSkillService 面试方向配置服务
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
@@ -122,11 +122,17 @@ public class InterviewQuestionService {
      */
     private List<InterviewQuestionDTO> generateQuestionsByAi(String strResumeText, Integer intQuestionCount, InterviewSkillDTO skillDTO) {
 
+        Integer intSafeQuestionCount = (intQuestionCount == null || intQuestionCount <= 0) ? 3 : intQuestionCount;
+
+        Map<String, Integer> mapAllocation = interviewSkillService.calculateAllocation(skillDTO.getCategories(), intSafeQuestionCount);
+
         Map<String, Object> mapVariables = new HashMap<>();
-        mapVariables.put("questionCount", intQuestionCount == null || intQuestionCount <= 0 ? 3 : intQuestionCount);
+        mapVariables.put("questionCount", intSafeQuestionCount);
         mapVariables.put("resumeText", strResumeText == null ? "" : strResumeText);
+
         // 构建面试方向分类说明
-        String strSkillCategorySection = buildSkillCategorySection(skillDTO.getCategories());
+        String strSkillCategorySection = buildSkillCategorySection(skillDTO.getCategories(), mapAllocation);
+
         mapVariables.put("skillCategories", strSkillCategorySection);
         Map<String, Object> mapSystemVariables = new HashMap<>();
         mapSystemVariables.put("persona", skillDTO.getPersona() == null ? "" : skillDTO.getPersona());
@@ -154,11 +160,12 @@ public class InterviewQuestionService {
      * <p>构建面试方向分类说明。</p>
      *
      * @param categories 面试方向分类列表
+     * @param allocation 分类题目数量
      * @return 面试方向分类说明
      * @author NobuNo
      * @date 2026-07-02
      */
-    private String buildSkillCategorySection(List<InterviewSkillCategoryDTO> categories) {
+    private String buildSkillCategorySection(List<InterviewSkillCategoryDTO> categories, Map<String, Integer> allocation) {
         if (categories == null || categories.isEmpty()) {
             return "未配置固定考察方向，请结合候选人简历生成题目。";
         }
@@ -171,6 +178,12 @@ public class InterviewQuestionService {
                     || category.getKey().isBlank()
                     || category.getLabel() == null
                     || category.getLabel().isBlank()) {
+                continue;
+            }
+
+            Integer categoryQuestionCount = allocation.getOrDefault(category.getKey(), 0);
+
+            if (categoryQuestionCount <= 0) {
                 continue;
             }
 
@@ -187,7 +200,9 @@ public class InterviewQuestionService {
                     .append(category.getKey())
                     .append("（")
                     .append(category.getLabel())
-                    .append("）：")
+                    .append("）：目标生成 ")
+                    .append(categoryQuestionCount)
+                    .append(" 道题，")
                     .append(priorityInstruction)
                     .append("\n");
         }
@@ -286,12 +301,11 @@ public class InterviewQuestionService {
             Integer intQuestionCount,
             InterviewSkillDTO skillDTO) {
 
-        String strSafeResumeText = null;// 简历文本
-        if (strResumeText == null) {
-            strSafeResumeText = "";
-        } else {
-            strSafeResumeText = strResumeText;
-        }
+        // 根据是否存在简历确定问题上下文
+        String strExperienceContext =
+                strResumeText == null || strResumeText.isBlank()
+                        ? "请结合你的实际经历"
+                        : "请结合你的简历或项目经历";
 
         Integer intSafeQuestionCount = null;// 面试问题数量
         if (intQuestionCount == null || intQuestionCount <= 0) {
@@ -299,63 +313,58 @@ public class InterviewQuestionService {
         } else {
             intSafeQuestionCount = intQuestionCount;
         }
+
+        // 计算题目分配
+        Map<String, Integer> mapAllocation = interviewSkillService.calculateAllocation(skillDTO.getCategories(), intSafeQuestionCount);
+
         List<InterviewQuestionDTO> lstInterviewQuestionDTO = new ArrayList<>();
 
-        // 添加通用问题
-        lstInterviewQuestionDTO.add(createQuestion(
-                0,
-                "请你介绍一下自己，并重点说明你在简历中提到的后端项目经验。",
-                "GENERAL",
-                "综合表达"));
+        List<String> lstQuestionFocus = List.of(
+                "核心原理",
+                "项目实践",
+                "问题排查",
+                "性能优化");
 
-        // 添加 Spring Boot 相关问题
-        if (strSafeResumeText.contains("Spring Boot")) {
-            lstInterviewQuestionDTO.add(createQuestion(
-                    lstInterviewQuestionDTO.size(),
-                    "请讲一下你在项目中是如何使用 Spring Boot 做模块划分和接口设计的？",
-                    "SPRING_BOOT",
-                    "Spring Boot"));
+        List<InterviewSkillCategoryDTO> lstCategoryDTO =
+                skillDTO.getCategories() == null
+                        ? List.of()
+                        : skillDTO.getCategories();
+
+        for (InterviewSkillCategoryDTO categoryDTO : lstCategoryDTO) {
+            if (categoryDTO == null
+                    || categoryDTO.getKey() == null
+                    || categoryDTO.getKey().isBlank()
+                    || categoryDTO.getLabel() == null
+                    || categoryDTO.getLabel().isBlank()) {
+                continue;
+            }
+
+            Integer intCategoryQuestionCount = mapAllocation.getOrDefault(categoryDTO.getKey(), 0);
+
+            for (int intQuestionIndex = 0; intQuestionIndex < intCategoryQuestionCount; intQuestionIndex++) {
+
+                String strFocus = lstQuestionFocus.get(intQuestionIndex % lstQuestionFocus.size());
+
+                String strQuestion = strExperienceContext + "，谈谈你在“" + categoryDTO.getLabel() + "”方向的" + strFocus + "。";
+
+                lstInterviewQuestionDTO.add(createQuestion(
+                        lstInterviewQuestionDTO.size(),
+                        strQuestion,
+                        categoryDTO.getKey(),
+                        categoryDTO.getLabel()));
+            }
         }
 
-        // 添加 MySQL 相关问题
-        if (strSafeResumeText.contains("MySQL")) {
-            lstInterviewQuestionDTO.add(createQuestion(
-                    lstInterviewQuestionDTO.size(),
-                    "你在项目中是如何设计 MySQL 索引并做 SQL 优化的？",
-                    "MYSQL",
-                    "MySQL"));
-        }
+        String strSkillName = skillDTO.getName() == null ? "当前面试方向" : skillDTO.getName();
 
-        // 添加 Redis 相关问题
-        if (strSafeResumeText.contains("Redis")) {
-            lstInterviewQuestionDTO.add(createQuestion(
-                    lstInterviewQuestionDTO.size(),
-                    "请介绍一下你在项目中使用 Redis 的场景，以及你是如何处理缓存一致性的？",
-                    "REDIS",
-                    "Redis"));
-        }
-
-        // 添加 Docker 相关问题
-        if (strSafeResumeText.contains("Docker")) {
-            lstInterviewQuestionDTO.add(createQuestion(
-                    lstInterviewQuestionDTO.size(),
-                    "你在项目中是怎么使用 Docker 的？它帮你解决了什么问题？",
-                    "DOCKER",
-                    "Docker"));
-        }
-
-        // 添加项目经验相关问题
         while (lstInterviewQuestionDTO.size() < intSafeQuestionCount) {
+            String strFocus = lstQuestionFocus.get(lstInterviewQuestionDTO.size() % lstQuestionFocus.size());
+
             lstInterviewQuestionDTO.add(createQuestion(
                     lstInterviewQuestionDTO.size(),
-                    "请结合你的项目经历，讲一个你实际解决过的技术问题，以及你的排查和优化过程。",
-                    "PROJECT",
-                    "项目经验"));
-        }
-
-        // 截取所需数量的问题
-        if (lstInterviewQuestionDTO.size() > intSafeQuestionCount) {
-            return lstInterviewQuestionDTO.subList(0, intSafeQuestionCount);
+                    strExperienceContext + "，说明你对" + strSkillName + "岗位" + strFocus + "的理解。",
+                    "GENERAL",
+                    strSkillName));
         }
 
         return lstInterviewQuestionDTO;

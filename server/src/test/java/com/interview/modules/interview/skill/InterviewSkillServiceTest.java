@@ -2,9 +2,11 @@ package com.interview.modules.interview.skill;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,5 +61,73 @@ class InterviewSkillServiceTest {
 
         assertThat(exception.getCode()).isEqualTo(ErrorCode.BAD_REQUEST.getCode());
         assertThat(exception.getMessage()).contains("面试方向不存在: unknown");
+    }
+
+    @Test
+    void calculateAllocation_shouldPrioritizeAlwaysOneAndCoreCategories() {
+        InterviewSkillDTO skillDTO = interviewSkillService.getSkill("java-backend");
+
+        Map<String, Integer> allocation = interviewSkillService.calculateAllocation(
+                skillDTO.getCategories(),
+                3);
+
+        assertThat(allocation).containsExactly(
+                entry("PROJECT", 1),
+                entry("JAVA", 1),
+                entry("SPRING_BOOT", 1));
+    }
+
+    @Test
+    void calculateAllocation_shouldDistributeRemainingQuestionsInRounds() {
+        InterviewSkillDTO skillDTO = interviewSkillService.getSkill("java-backend");
+
+        Map<String, Integer> allocation = interviewSkillService.calculateAllocation(
+                skillDTO.getCategories(),
+                8);
+
+        assertThat(allocation).containsExactly(
+                entry("PROJECT", 1),
+                entry("JAVA", 2),
+                entry("SPRING_BOOT", 2),
+                entry("MYSQL", 2),
+                entry("REDIS", 1));
+        int allocatedQuestionCount = allocation.values().stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+        assertThat(allocatedQuestionCount).isEqualTo(8);
+    }
+
+    @Test
+    void calculateAllocation_shouldTreatNullPriorityAsNormal() {
+        List<InterviewSkillCategoryDTO> categories = List.of(
+                createCategory("PROJECT", "项目经验", "ALWAYS_ONE"),
+                createCategory("GENERAL", "综合能力", null));
+
+        Map<String, Integer> allocation = interviewSkillService.calculateAllocation(categories, 3);
+
+        assertThat(allocation).containsExactly(
+                entry("PROJECT", 1),
+                entry("GENERAL", 2));
+    }
+
+    @Test
+    void calculateAllocation_shouldReturnEmptyMapForInvalidArguments() {
+        InterviewSkillDTO skillDTO = interviewSkillService.getSkill("java-backend");
+
+        assertThat(interviewSkillService.calculateAllocation(null, 3)).isEmpty();
+        assertThat(interviewSkillService.calculateAllocation(skillDTO.getCategories(), null)).isEmpty();
+        assertThat(interviewSkillService.calculateAllocation(skillDTO.getCategories(), 0)).isEmpty();
+    }
+
+    private InterviewSkillCategoryDTO createCategory(
+            String key,
+            String label,
+            String priority
+    ) {
+        InterviewSkillCategoryDTO categoryDTO = new InterviewSkillCategoryDTO();
+        categoryDTO.setKey(key);
+        categoryDTO.setLabel(label);
+        categoryDTO.setPriority(priority);
+        return categoryDTO;
     }
 }

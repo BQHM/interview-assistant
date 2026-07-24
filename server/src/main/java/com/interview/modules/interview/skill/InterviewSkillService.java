@@ -2,6 +2,7 @@ package com.interview.modules.interview.skill;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
+import com.interview.modules.interview.skill.model.InterviewSkillCategoryDTO;
 import com.interview.modules.interview.skill.model.InterviewSkillDTO;
 import com.interview.modules.interview.skill.model.InterviewSkillFrontMatterDefinition;
 import com.interview.modules.interview.skill.model.InterviewSkillMetaDefinition;
@@ -15,6 +16,8 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -70,6 +73,109 @@ public class InterviewSkillService {
         }
 
         return skillDTO;
+    }
+
+    /**
+     * 功能说明
+     * <p>根据分类优先级分配题目数量。</p>
+     *
+     * @param categories    面试方向分类列表
+     * @param questionCount 题目总数
+     * @return 分类题目数量
+     * @author NobuNo
+     * @date 2026-07-17
+     */
+    public Map<String, Integer> calculateAllocation(List<InterviewSkillCategoryDTO> categories, Integer questionCount) {
+
+        // 创建分配结果的 Map
+        Map<String, Integer> allocation = new LinkedHashMap<>();
+
+        // 如果分类列表为空或题目数量小于等于零，则返回空分配结果
+        if (categories == null || categories.isEmpty() || questionCount == null || questionCount <= 0) {
+            return allocation;
+        }
+
+        // 创建分类列表
+        List<InterviewSkillCategoryDTO> alwaysOneCategories = new ArrayList<>();
+        // 创建核心分类列表
+        List<InterviewSkillCategoryDTO> coreCategories = new ArrayList<>();
+        // 创建普通分类列表
+        List<InterviewSkillCategoryDTO> normalCategories = new ArrayList<>();
+
+        // 遍历面试方向分类列表
+        for (InterviewSkillCategoryDTO category : categories) {
+            // 跳过无效分类
+            if (category == null || category.getKey() == null || category.getKey().isBlank()) {
+                continue;
+            }
+
+            String priority = category.getPriority() == null ? "" : category.getPriority();
+
+            // 根据分类优先级进行分配
+            switch (priority) {
+                case "ALWAYS_ONE" -> alwaysOneCategories.add(category);// 始终分配一个题目
+                case "CORE" -> coreCategories.add(category);// 核心分类
+                default -> normalCategories.add(category);// 普通分类
+            }
+        }
+
+        // 创建剩余题目数量变量
+        int remaining = questionCount;
+
+        // 优先分配ALWAYS_ONE
+        for (InterviewSkillCategoryDTO category : alwaysOneCategories) {
+            if (remaining <= 0) {
+                break;
+            }
+
+            allocation.put(category.getKey(), 1);
+            remaining--;
+        }
+
+        // 然后分配CORE
+        for (InterviewSkillCategoryDTO category : coreCategories) {
+            if (remaining <= 0) {
+                break;
+            }
+
+            allocation.put(category.getKey(), 1);
+            remaining--;
+        }
+
+        // 最后分配NORMAL
+        for (InterviewSkillCategoryDTO category : normalCategories) {
+            if (remaining <= 0) {
+                break;
+            }
+
+            allocation.put(category.getKey(), 1);
+            remaining--;
+        }
+
+        // 继续轮询分配剩余题目，优先 CORE，再分配 NORMAL
+        while (remaining > 0
+                && (!coreCategories.isEmpty() || !normalCategories.isEmpty())) {
+
+            for (InterviewSkillCategoryDTO category : coreCategories) {
+                if (remaining <= 0) {
+                    break;
+                }
+
+                allocation.merge(category.getKey(), 1, Integer::sum);
+                remaining--;
+            }
+
+            for (InterviewSkillCategoryDTO category : normalCategories) {
+                if (remaining <= 0) {
+                    break;
+                }
+
+                allocation.merge(category.getKey(), 1, Integer::sum);
+                remaining--;
+            }
+        }
+
+        return allocation;
     }
 
     /**
