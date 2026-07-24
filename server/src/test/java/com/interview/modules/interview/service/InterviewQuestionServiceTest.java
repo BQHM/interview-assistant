@@ -2,6 +2,8 @@ package com.interview.modules.interview.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -32,7 +34,7 @@ import com.interview.modules.interview.skill.model.InterviewSkillDTO;
 class InterviewQuestionServiceTest {
 
     @Test
-    void generateQuestions_shouldUseRuleBasedFallbackWhenAiFails() throws IOException {
+    void generateQuestions_shouldUseSkillBasedFallbackWhenAiFails() throws IOException {
         ChatClient chatClient = mock(ChatClient.class);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
 
@@ -48,7 +50,34 @@ class InterviewQuestionServiceTest {
                 .containsExactly(0, 1, 2, 3);
         assertThat(lstQuestionDTO)
                 .extracting(InterviewQuestionDTO::getCategory)
-                .contains("Spring Boot", "MySQL", "Redis");
+                .containsExactly("Java 基础", "Java 基础", "Java 基础", "项目经验");
+        assertThat(lstQuestionDTO)
+                .extracting(InterviewQuestionDTO::getType)
+                .containsExactly("JAVA", "JAVA", "JAVA", "PROJECT");
+        assertThat(lstQuestionDTO)
+                .extracting(InterviewQuestionDTO::getQuestion)
+                .allSatisfy(strQuestion -> assertThat(strQuestion)
+                        .startsWith("请结合你的简历或项目经历，"))
+                .noneMatch(strQuestion -> strQuestion.contains(
+                        "请结合你的简历或项目经历请结合你的简历或项目经历"));
+    }
+
+    @Test
+    void generateQuestions_shouldUseActualExperienceContextWithoutResume() throws IOException {
+        ChatClient chatClient = mock(ChatClient.class);
+        InterviewQuestionService interviewQuestionService = createService(chatClient);
+
+        when(chatClient.prompt()).thenThrow(new IllegalStateException("AI unavailable"));
+
+        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+                "  ",
+                2);
+
+        assertThat(lstQuestionDTO).hasSize(2);
+        assertThat(lstQuestionDTO)
+                .extracting(InterviewQuestionDTO::getQuestion)
+                .allSatisfy(strQuestion -> assertThat(strQuestion)
+                        .startsWith("请结合你的实际经历，"));
     }
 
     @Test
@@ -108,6 +137,12 @@ class InterviewQuestionServiceTest {
                       "question": "AI Skill 注入题",
                       "type": "PROJECT",
                       "category": "项目经验"
+                    },
+                    {
+                      "questionIndex": 1,
+                      "question": "AI Java 分类题",
+                      "type": "JAVA",
+                      "category": "Java 基础"
                     }
                   ]
                 }
@@ -116,6 +151,7 @@ class InterviewQuestionServiceTest {
         when(chatClient.prompt()
                 .system(argThat((String strPrompt) -> strPrompt.contains("资深 Java 后端面试官")))
                 .user(argThat((String strPrompt) -> strPrompt.contains("JAVA")
+                        && strPrompt.contains("目标生成 1 道题")
                         && strPrompt.contains("核心方向，优先覆盖")
                         && strPrompt.contains("PROJECT")
                         && strPrompt.contains("必须至少生成 1 道题")))
@@ -124,10 +160,10 @@ class InterviewQuestionServiceTest {
 
         List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
                 "熟悉 Java，并有真实项目经验。",
-                1,
+                2,
                 "java-backend");
 
-        assertThat(lstQuestionDTO).hasSize(1);
+        assertThat(lstQuestionDTO).hasSize(2);
         assertThat(lstQuestionDTO.get(0).getQuestion()).isEqualTo("AI Skill 注入题");
     }
 
@@ -173,6 +209,13 @@ class InterviewQuestionServiceTest {
 
         when(interviewSkillService.getSkill("java-backend"))
                 .thenReturn(skillDTO);
+
+        InterviewSkillService allocationService = new InterviewSkillService(
+                mock(ResourceLoader.class));
+        when(interviewSkillService.calculateAllocation(anyList(), anyInt()))
+                .thenAnswer(invocation -> allocationService.calculateAllocation(
+                        invocation.getArgument(0),
+                        invocation.getArgument(1)));
 
         return createService(chatClient, interviewSkillService);
     }
