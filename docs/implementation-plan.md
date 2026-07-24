@@ -359,6 +359,40 @@
 
 **Estimated scope:** Medium: 3-5 files
 
+### Task 11.1: Skill 驱动出题工程化
+
+**Description:** 将同步 AI 出题从固定 Java Prompt 演进为资源化 Skill 驱动，统一 AI 出题和规则兜底使用的面试方向、分类优先级与题量配额。
+
+**Acceptance criteria:**
+
+- [x] 从 `resources/skills/*/SKILL.md` 和 `skill.meta.yml` 加载 Skill。
+- [x] 创建面试请求支持 `skillId`，默认使用 `java-backend`。
+- [x] System Prompt 注入 Skill Persona。
+- [x] 根据 `ALWAYS_ONE`、`CORE`、`NORMAL` 计算分类题量。
+- [x] User Prompt 注入分类目标题量。
+- [x] AI 失败或题量不足时，规则兜底按照 Skill 分类和配额补题。
+- [x] 覆盖 Skill 加载、非法 Skill、配额分配、Prompt 注入和规则兜底测试。
+- [ ] `InterviewSessionEntity` 持久化 `skillId`。
+- [ ] 未完成会话按 `resumeId + skillId + status` 查询和复用。
+- [ ] 历史列表和会话详情返回 `skillId`。
+- [ ] 增加第二个 Skill 和前端 Skill 选择。
+
+**Verification:**
+
+- [x] `InterviewSkillServiceTest` 和 `InterviewQuestionServiceTest` 共 12 个测试通过。
+- [ ] Manual check: 分别使用两个 Skill 创建面试，题目分类和规则兜底均符合所选方向。
+
+**Current limitation:** 当前只有 `java-backend` Skill；`skillId` 尚未保存到会话，按简历复用未完成会话时还不能区分不同面试方向。
+
+**Files touched:**
+
+- `server/src/main/java/com/interview/modules/interview/skill/*`
+- `server/src/main/java/com/interview/modules/interview/service/InterviewQuestionService.java`
+- `server/src/main/resources/skills/java-backend/*`
+- `server/src/main/resources/prompts/interview-question-*.st`
+- `server/src/test/java/com/interview/modules/interview/skill/InterviewSkillServiceTest.java`
+- `server/src/test/java/com/interview/modules/interview/service/InterviewQuestionServiceTest.java`
+
 ### Task 12: 实现同步版 AI 单题答案评估
 
 **Description:** 基于独立答案表，对每道已提交答案进行 AI 评估，生成单题分数、反馈、参考答案和关键点；AI 失败时使用规则版评估结果兜底。
@@ -403,7 +437,8 @@
 - [x] 完成 AI 出题与报告接口的手工验收。
 - [x] 可以开始前端核心页面联调。
 - [x] 前端主链路已完成第一版浏览器验收。
-- [ ] 前端体验补强后，再开始 Skill 化和异步化。
+- [x] Skill 出题核心第一阶段完成：资源加载、分类配额、Prompt 注入和规则兜底。
+- [ ] 完成会话 `skillId` 持久化、第二个 Skill 和前端方向选择后，再开始异步化。
 
 ## Phase 6: 前端核心页面
 
