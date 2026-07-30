@@ -75,10 +75,16 @@ public class InterviewSessionService {
             throw new BusinessException(ErrorCode.RESUME_NOT_FOUND, "简历不存在");
         }
 
-        // 同一份简历在当前阶段只保留一条未完成会话，避免重复创建多场并行面试。
+        String strSkillId = cplCreateInterviewRequest.getSkillId(); // 面试方向编号
+
+
+        // 同一份简历、同一面试方向只复用最近一条未完成会话。
         List<InterviewSessionStatus> lstUnfinishedStatus = List.of(InterviewSessionStatus.CREATED, InterviewSessionStatus.IN_PROGRESS);
-        Optional<InterviewSessionEntity> optUnfinishedInterviewSessionEntity = interviewSessionRepository.findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
-                cplCreateInterviewRequest.getResumeId(), lstUnfinishedStatus);
+
+        Optional<InterviewSessionEntity> optUnfinishedInterviewSessionEntity = interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
+                        cplCreateInterviewRequest.getResumeId(),
+                        strSkillId,
+                        lstUnfinishedStatus);
         if (optUnfinishedInterviewSessionEntity.isPresent()) {
             String strSessionId = optUnfinishedInterviewSessionEntity.get().getSessionId();
             log.info("检测到未完成面试会话，直接复用: resumeId={}, sessionId={}", cplCreateInterviewRequest.getResumeId(), strSessionId);
@@ -88,7 +94,6 @@ public class InterviewSessionService {
         ResumeEntity tblResumeEntity = optResumeEntity.get(); // 简历实体
         String strResumeText = tblResumeEntity.getResumeText(); // 简历正文
         Integer intQuestionCount = cplCreateInterviewRequest.getQuestionCount(); // 题目数量
-        String strSkillId = cplCreateInterviewRequest.getSkillId(); // 面试方向编号
 
         // 生成题目列表
         List<InterviewQuestionDTO> lstInterviewQuestionDTO = interviewQuestionService.generateQuestions(strResumeText, intQuestionCount, strSkillId); // 题目列表
@@ -104,6 +109,7 @@ public class InterviewSessionService {
         InterviewSessionEntity tblInterviewSessionEntity = new InterviewSessionEntity();
         tblInterviewSessionEntity.setSessionId(UUID.randomUUID().toString()); // 会话ID
         tblInterviewSessionEntity.setResume(tblResumeEntity); // 关联简历
+        tblInterviewSessionEntity.setSkillId(strSkillId); // 面试方向编号
         tblInterviewSessionEntity.setTotalQuestions(lstInterviewQuestionDTO.size()); // 题目总数
         tblInterviewSessionEntity.setCurrentQuestionIndex(0); // 当前题目索引
         tblInterviewSessionEntity.setStatus(InterviewSessionStatus.CREATED); // 会话状态

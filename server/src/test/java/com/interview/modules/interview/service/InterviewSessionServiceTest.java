@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -80,8 +81,9 @@ class InterviewSessionServiceTest {
         CreateInterviewRequest cplRequest = createInterviewRequest(11L, 3);
 
         when(resumeRepository.findById(11L)).thenReturn(Optional.of(tblResumeEntity));
-        when(interviewSessionRepository.findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
+        when(interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
                 eq(11L),
+                eq("java-backend"),
                 anyList())).thenReturn(Optional.empty());
         when(interviewQuestionService.generateQuestions(tblResumeEntity.getResumeText(), 3, "java-backend"))
                 .thenReturn(lstQuestionDTO);
@@ -98,6 +100,8 @@ class InterviewSessionServiceTest {
         assertThat(cplSessionDTO.getQuestions())
                 .extracting(InterviewQuestionDTO::getQuestionIndex)
                 .containsExactly(0, 1, 2);
+        verify(interviewSessionRepository).save(argThat(
+                sessionEntity -> "java-backend".equals(sessionEntity.getSkillId())));
     }
 
     @Test
@@ -115,8 +119,9 @@ class InterviewSessionServiceTest {
                 "我会从项目模块和接口设计说明。");
 
         when(resumeRepository.findById(11L)).thenReturn(Optional.of(tblResumeEntity));
-        when(interviewSessionRepository.findFirstByResumeIdAndStatusInOrderByCreatedAtDesc(
+        when(interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
                 eq(11L),
+                eq("java-backend"),
                 anyList())).thenReturn(Optional.of(tblExistingSessionEntity));
         when(interviewSessionRepository.findBySessionId("session-001"))
                 .thenReturn(Optional.of(tblExistingSessionEntity));

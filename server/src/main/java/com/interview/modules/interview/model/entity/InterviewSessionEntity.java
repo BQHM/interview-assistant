@@ -62,6 +62,14 @@ public class InterviewSessionEntity {
     private ResumeEntity resume;
 
     /**
+     * 面试方向编号
+     * 当前会话使用的面试方向
+     */
+    @Column(name = "skill_id", length = 64)
+    @FieldMeta(name = "面试方向编号", desc = "当前会话使用的面试方向")
+    private String skillId = "java-backend";
+
+    /**
      * 题目总数
      * 本次面试生成的题目总数量
      */
