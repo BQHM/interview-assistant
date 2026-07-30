@@ -46,6 +46,22 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
 
     /**
      * 功能说明
+     * <p>查询简历指定面试方向最近一条未完成会话。</p>
+     *
+     * @param lngResumeId 简历编号
+     * @param strSkillId 面试方向编号
+     * @param lstStatus 会话状态列表
+     * @return 面试会话实体
+     * @author NobuNo
+     * @date 2026-04-20
+     */
+    Optional<InterviewSessionEntity> findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
+            Long lngResumeId,
+            String strSkillId,
+            List<InterviewSessionStatus> lstStatus);
+
+    /**
+     * 功能说明
      * <p>按创建时间倒序查询面试会话。</p>
      *
      * @return 面试会话列表
