@@ -151,12 +151,12 @@
 - [x] 面试记录页根据状态区分“继续面试”和“查看报告”
 - [x] 简历详情页展示完整 AI 分析结果
 - [x] 前后端主链路浏览器验收通过
+- [x] 会话持久化 `skillId`，按 `resumeId + skillId + status` 复用未完成会话
 
 ### 进行中
 
 - [ ] 前端空状态、错误提示和时间格式展示继续完善
 - [ ] 补强核心 Service 单元测试
-- [ ] 会话持久化 `skillId`，按 `resumeId + skillId + status` 复用未完成会话
 
 ### 未完成
 
@@ -182,7 +182,7 @@
 
 - 一场面试对应一条 `InterviewSessionEntity`
 - `currentQuestionIndex` 表示下一道待答题的索引，而不是最近一道已答题索引
-- 创建面试时当前仍会复用同一简历最近一条未完成会话；会话尚未持久化 `skillId`，多 Skill 复用逻辑是下一步
+- 创建面试时按 `resumeId + skillId + status` 复用最近一条未完成会话，不同 Skill 可以创建独立会话
 - 创建面试时优先调用 `InterviewQuestionService`，根据 Skill Persona、分类和题量配额进行 AI 出题
 - AI 不可用或输出异常时，按照同一 Skill 分类配额生成规则兜底题
 - `questionsJson` 现在只承担题目快照职责，不再作为用户答案的唯一存储位置
@@ -358,14 +358,13 @@ http://localhost:5173
 
 当前项目仍处于教学式迭代阶段，建议按下面顺序继续推进：
 
-1. 完成会话级 Skill 闭环：持久化 `skillId`，并按 `resumeId + skillId + status` 复用未完成会话。
-2. 增加第二个 Skill 和前端面试方向选择，验证 Skill 扩展能力。
-3. 增加历史题目去重，并补强 AI 结构化输出重试与修复。
-4. 继续补强核心 Service 单元测试和前端体验。
-5. Redis 会话缓存和接口限流。
-6. Redis Stream 异步化简历分析和面试评估。
-7. PDF 报告导出。
-8. 知识库 / RAG。
+1. 增加第二个 Skill 和前端面试方向选择，验证 Skill 扩展能力。
+2. 增加历史题目去重，并补强 AI 结构化输出重试与修复。
+3. 继续补强核心 Service 单元测试和前端体验。
+4. Redis 会话缓存和接口限流。
+5. Redis Stream 异步化简历分析和面试评估。
+6. PDF 报告导出。
+7. 知识库 / RAG。
 
 ## 参考项目
 

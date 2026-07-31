@@ -127,6 +127,7 @@ public class InterviewSessionService {
         cplInterviewSessionDTO.setQuestions(lstInterviewQuestionDTO); // 题目列表
         cplInterviewSessionDTO.setStatus(tblSavedInterviewSessionEntity.getStatus()); // 会话状态
         cplInterviewSessionDTO.setCreatedAt(tblSavedInterviewSessionEntity.getCreatedAt()); // 创建时间
+        cplInterviewSessionDTO.setSkillId(tblSavedInterviewSessionEntity.getSkillId()); // 面试方向编号
 
         log.info("创建面试会话成功: sessionId={}", tblSavedInterviewSessionEntity.getSessionId());
         return cplInterviewSessionDTO;
@@ -175,6 +176,7 @@ public class InterviewSessionService {
         cplInterviewSessionDTO.setSessionId(tblInterviewSessionEntity.getSessionId()); // 会话ID
         cplInterviewSessionDTO.setResumeId(tblInterviewSessionEntity.getResume().getId()); // 简历ID
         cplInterviewSessionDTO.setTotalQuestions(tblInterviewSessionEntity.getTotalQuestions()); // 题目总数
+        cplInterviewSessionDTO.setSkillId(tblInterviewSessionEntity.getSkillId()); // 面试方向编号
         cplInterviewSessionDTO.setCurrentQuestionIndex(tblInterviewSessionEntity.getCurrentQuestionIndex()); // 当前题目索引
         cplInterviewSessionDTO.setQuestions(lstInterviewQuestionDTO); // 题目列表
         cplInterviewSessionDTO.setStatus(tblInterviewSessionEntity.getStatus()); // 会话状态

@@ -1,0 +1,17 @@
+displayName: 系统设计
+categories:
+  - key: SYSTEM_DESIGN_SCENARIO
+    label: 系统设计场景
+    priority: ALWAYS_ONE
+  - key: HIGH_AVAILABILITY
+    label: 高可用
+    priority: CORE
+  - key: DISTRIBUTED
+    label: 分布式
+    priority: CORE
+  - key: CACHE
+    label: 缓存设计
+    priority: NORMAL
+  - key: DB_DESIGN
+    label: 数据库设计
+    priority: NORMAL
