@@ -63,4 +63,11 @@ public class InterviewSessionDTO {
      */
     @FieldMeta(name = "创建时间", desc = "面试会话创建时间")
     private LocalDateTime createdAt;
+
+    /**
+     * 面试方向编号
+     * 当前面试会话使用的 Skill 编号
+     */
+    @FieldMeta(name = "面试方向编号", desc = "当前面试会话使用的 Skill 编号")
+    private String skillId;
 }
