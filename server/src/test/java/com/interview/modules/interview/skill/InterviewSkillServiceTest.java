@@ -44,13 +44,31 @@ class InterviewSkillServiceTest {
     }
 
     @Test
+    void getSkill_shouldLoadSystemDesignSkill() {
+        InterviewSkillDTO skillDTO = interviewSkillService.getSkill("system-design");
+
+        assertThat(skillDTO.getId()).isEqualTo("system-design");
+        assertThat(skillDTO.getName()).isEqualTo("系统设计");
+        assertThat(skillDTO.getDescription()).contains("系统设计");
+        assertThat(skillDTO.getPersona()).contains("系统设计技术面试官");
+        assertThat(skillDTO.getCategories())
+                .extracting(InterviewSkillCategoryDTO::getKey)
+                .containsExactly(
+                        "SYSTEM_DESIGN_SCENARIO",
+                        "HIGH_AVAILABILITY",
+                        "DISTRIBUTED",
+                        "CACHE",
+                        "DB_DESIGN");
+    }
+
+    @Test
     void getAllSkills_shouldReturnLoadedSkills() {
         List<InterviewSkillDTO> skillDTOList = interviewSkillService.getAllSkills();
 
         assertThat(skillDTOList).isNotEmpty();
         assertThat(skillDTOList)
                 .extracting(InterviewSkillDTO::getId)
-                .contains("java-backend");
+                .contains("java-backend", "system-design");
     }
 
     @Test
@@ -95,6 +113,20 @@ class InterviewSkillServiceTest {
                 .mapToInt(Integer::intValue)
                 .sum();
         assertThat(allocatedQuestionCount).isEqualTo(8);
+    }
+
+    @Test
+    void calculateAllocation_shouldPrioritizeSystemDesignScenarioAndCoreCategories() {
+        InterviewSkillDTO skillDTO = interviewSkillService.getSkill("system-design");
+
+        Map<String, Integer> allocation = interviewSkillService.calculateAllocation(
+                skillDTO.getCategories(),
+                3);
+
+        assertThat(allocation).containsExactly(
+                entry("SYSTEM_DESIGN_SCENARIO", 1),
+                entry("HIGH_AVAILABILITY", 1),
+                entry("DISTRIBUTED", 1));
     }
 
     @Test

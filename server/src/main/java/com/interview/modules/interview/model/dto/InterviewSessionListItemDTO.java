@@ -24,4 +24,9 @@ public class InterviewSessionListItemDTO {
     private InterviewSessionStatus status;
 
     private LocalDateTime createdAt;
+    /**
+     * 面试方向编号
+     * 当前面试会话使用的 Skill 编号
+     */
+    private String skillId;
 }

@@ -38,6 +38,7 @@ public class InterviewSessionConverter {
         cplInterviewSessionListItemDTO.setCurrentQuestionIndex(tblInterviewSessionEntity.getCurrentQuestionIndex());
         cplInterviewSessionListItemDTO.setStatus(tblInterviewSessionEntity.getStatus());
         cplInterviewSessionListItemDTO.setCreatedAt(tblInterviewSessionEntity.getCreatedAt());
+        cplInterviewSessionListItemDTO.setSkillId(tblInterviewSessionEntity.getSkillId());
         return cplInterviewSessionListItemDTO;
     }
 
@@ -63,6 +64,7 @@ public class InterviewSessionConverter {
         cplInterviewDetailDTO.setStatus(tblInterviewSessionEntity.getStatus());
         cplInterviewDetailDTO.setCreatedAt(tblInterviewSessionEntity.getCreatedAt());
         cplInterviewDetailDTO.setQuestions(lstInterviewQuestionDTO);
+        cplInterviewDetailDTO.setSkillId(tblInterviewSessionEntity.getSkillId());
         return cplInterviewDetailDTO;
     }
 }

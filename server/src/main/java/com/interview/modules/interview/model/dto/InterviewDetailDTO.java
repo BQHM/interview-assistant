@@ -28,4 +28,6 @@ public class InterviewDetailDTO {
     private LocalDateTime createdAt;
 
     private List<InterviewQuestionDTO> questions;
+
+    private String skillId;
 }
