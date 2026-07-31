@@ -94,6 +94,7 @@ class InterviewSessionServiceTest {
 
         assertThat(cplSessionDTO.getSessionId()).isNotBlank();
         assertThat(cplSessionDTO.getResumeId()).isEqualTo(11L);
+        assertThat(cplSessionDTO.getSkillId()).isEqualTo("java-backend");
         assertThat(cplSessionDTO.getTotalQuestions()).isEqualTo(3);
         assertThat(cplSessionDTO.getCurrentQuestionIndex()).isZero();
         assertThat(cplSessionDTO.getStatus()).isEqualTo(InterviewSessionStatus.CREATED);
@@ -132,6 +133,7 @@ class InterviewSessionServiceTest {
                 createInterviewRequest(11L, 3));
 
         assertThat(cplSessionDTO.getSessionId()).isEqualTo("session-001");
+        assertThat(cplSessionDTO.getSkillId()).isEqualTo("java-backend");
         assertThat(cplSessionDTO.getStatus()).isEqualTo(InterviewSessionStatus.IN_PROGRESS);
         assertThat(cplSessionDTO.getCurrentQuestionIndex()).isEqualTo(1);
         assertThat(cplSessionDTO.getQuestions().get(0).getUserAnswer())
