@@ -2,10 +2,13 @@ package com.interview.modules.interview.service;
 
 import static com.interview.modules.interview.model.InterviewSessionStatus.COMPLETED;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.interview.modules.interview.model.HistoricalQuestion;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,8 +80,8 @@ public class InterviewSessionService {
 
         String strSkillId = cplCreateInterviewRequest.getSkillId(); // 面试方向编号
 
-
-        // 同一份简历、同一面试方向只复用最近一条未完成会话。
+        // 第一步：同一份简历、同一面试方向只复用最近一条未完成会话。
+        // 这样用户重复点击“开始面试”时，不会意外创建多场相同的未完成面试。
         List<InterviewSessionStatus> lstUnfinishedStatus = List.of(InterviewSessionStatus.CREATED, InterviewSessionStatus.IN_PROGRESS);
 
         Optional<InterviewSessionEntity> optUnfinishedInterviewSessionEntity = interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
@@ -91,11 +94,24 @@ public class InterviewSessionService {
             return getInterviewSession(strSessionId);
         }
 
+        // 第二步：加载历史题目。
+        // 这些题目不会直接展示给用户，而是会在后续传给出题服务，提醒 AI 避免重复出题。
+        List<HistoricalQuestion> lstHistoricalQuestion =
+                getHistoricalQuestions(
+                        cplCreateInterviewRequest.getResumeId(),
+                        strSkillId);
+
+        log.info("解析历史面试题目完成: resumeId={}, skillId={}, questionCount={}",
+                cplCreateInterviewRequest.getResumeId(),
+                strSkillId,
+                lstHistoricalQuestion.size());
+
+        // 第三步：准备当前简历和本次面试的基本参数。
         ResumeEntity tblResumeEntity = optResumeEntity.get(); // 简历实体
         String strResumeText = tblResumeEntity.getResumeText(); // 简历正文
         Integer intQuestionCount = cplCreateInterviewRequest.getQuestionCount(); // 题目数量
 
-        // 生成题目列表
+        // 第四步：根据简历、Skill 和历史题目生成新的面试题。
         List<InterviewQuestionDTO> lstInterviewQuestionDTO = interviewQuestionService.generateQuestions(strResumeText, intQuestionCount, strSkillId); // 题目列表
 
         String strQuestionsJson;
@@ -527,6 +543,69 @@ public class InterviewSessionService {
         log.info("暂存面试答案成功: sessionId={}, questionIndex={}",
                 strSessionId,
                 cplSaveAnswerRequest.getQuestionIndex());
+    }
+
+    /**
+     * 功能说明
+     * <p>查询并提取同一简历、同一面试方向的历史题目。</p>
+     *
+     * <p>方法只保留题目内容和分类等出题所需信息，不修改历史会话数据。</p>
+     *
+     * @param lngResumeId 简历编号
+     * @param strSkillId 面试方向编号
+     * @return 去重后的历史题目列表
+     * @author NobuNo
+     * @date 2026-08-31
+     */
+    private List<HistoricalQuestion> getHistoricalQuestions(
+            Long lngResumeId,
+            String strSkillId) {
+        // 只读取最近 10 场同简历、同 Skill 的会话，避免历史数据过多导致查询和 Prompt 过大。
+        List<InterviewSessionEntity> sessionList =
+                interviewSessionRepository
+                        .findTop10ByResumeIdAndSkillIdOrderByCreatedAtDesc(
+                                lngResumeId,
+                                strSkillId);
+
+        // LinkedHashSet 同时具备“判断是否重复”和“保持原有顺序”两个作用。
+        LinkedHashSet<String> seenQuestionSet = new LinkedHashSet<>();
+        List<HistoricalQuestion> historicalQuestionList = new ArrayList<>();
+
+        for (InterviewSessionEntity sessionEntity : sessionList) {
+            // 每个会话的题目以 JSON 字符串保存，这里先还原成题目对象列表。
+            try {
+                List<InterviewQuestionDTO> questionList =
+                        objectMapper.readValue(
+                                sessionEntity.getQuestionsJson(),
+                                new TypeReference<List<InterviewQuestionDTO>>() {
+                                });
+
+                for (InterviewQuestionDTO questionDTO : questionList) {
+                    // 空题目没有去重价值，也不能作为有效的历史出题上下文。
+                    if (questionDTO == null
+                            || questionDTO.getQuestion() == null
+                            || questionDTO.getQuestion().isBlank()) {
+                        continue;
+                    }
+
+                    // add 返回 true 表示题目第一次出现；返回 false 表示已经存在，自动跳过重复题。
+                    if (seenQuestionSet.add(questionDTO.getQuestion())) {
+                        historicalQuestionList.add(
+                                new HistoricalQuestion(
+                                        questionDTO.getQuestion(),
+                                        questionDTO.getType(),
+                                        questionDTO.getCategory()));
+                    }
+                }
+            } catch (JacksonException e) {
+                log.warn(
+                        "解析历史面试题目失败: sessionId={}",
+                        sessionEntity.getSessionId(),
+                        e);
+            }
+        }
+
+        return historicalQuestionList;
     }
 
 }

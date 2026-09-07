@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { resumeApi } from '../api/resume';
+import { skillApi } from '../api/skill';
 import { EmptyState, ErrorNotice } from '../components/Feedback';
 import type { ResumeListItem } from '../types/resume';
+import type { InterviewSkill } from '../types/skill';
 
 export default function InterviewCenterPage() {
   // 创建面试成功后，需要跳转到答题页。
@@ -18,28 +20,40 @@ export default function InterviewCenterPage() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
+  const [skills, setSkills] = useState<InterviewSkill[]>([]);
+  const [selectedSkillId, setSelectedSkillId] = useState('java-backend');
 
   // 页面进入时先加载简历列表；如果有简历，默认选中第一份。
   // 这样用户进入页面后不需要手动选择，也能直接开始面试。
   useEffect(() => {
-    const loadResumes = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        const data = await resumeApi.getResumeList();
-        setResumes(data);
+        setError('');
 
-        if (data.length > 0) {
-          // select 的 value 用字符串，所以这里把 number id 转成 string。
-          setSelectedResumeId(String(data[0].id));
+        const [resumeData, skillData] = await Promise.all([
+          resumeApi.getResumeList(),
+          skillApi.listSkills(),
+        ]);
+
+        setResumes(resumeData);
+        setSkills(skillData);
+
+        if (resumeData.length > 0) {
+          setSelectedResumeId(String(resumeData[0].id));
+        }
+
+        if (skillData.length > 0) {
+          setSelectedSkillId(skillData[0].id);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : '加载简历列表失败');
+        setError(err instanceof Error ? err.message : '加载面试数据失败');
       } finally {
         setLoading(false);
       }
     };
 
-    loadResumes();
+    loadData();
   }, []);
 
   // 调用后端创建面试会话，成功后跳转到 /interview/{sessionId} 答题页。
@@ -56,6 +70,7 @@ export default function InterviewCenterPage() {
       const session = await interviewApi.createInterview({
         resumeId: Number(selectedResumeId),
         questionCount,
+        skillId: selectedSkillId,
       });
 
       navigate(`/interview/${session.sessionId}`);
@@ -85,7 +100,7 @@ export default function InterviewCenterPage() {
           </label>
 
           {resumes.length === 0 ? (
-            <EmptyState title='暂无简历' description='请先上传简历'/>
+            <EmptyState title='暂无简历' description='请先上传简历' />
           ) : (
             // 这是受控表单：value 来自 selectedResumeId，onChange 负责更新 selectedResumeId。
             <select
@@ -105,13 +120,30 @@ export default function InterviewCenterPage() {
 
         <div className="mb-5">
           <label className="block text-sm font-medium text-slate-700 mb-2">
+            面试方向
+          </label>
+
+          <select
+            value={selectedSkillId}
+            onChange={(event) => setSelectedSkillId(event.target.value)}
+            className="w-full border border-slate-300 rounded-lg p-2 text-sm"
+          >
+            {skills.map((skill) => (
+              <option key={skill.id} value={skill.id}>
+                {skill.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-slate-700 mb-2">
             题目数量
           </label>
 
           <select
             value={questionCount}
-            // select 取出来的是字符串，所以这里要 Number(...) 转回数字。
-            onChange={(e) => setQuestionCount(Number(e.target.value))}
+            onChange={(event) => setQuestionCount(Number(event.target.value))}
             className="w-full border border-slate-300 rounded-lg p-2 text-sm"
           >
             <option value={3}>3 题</option>
@@ -129,7 +161,12 @@ export default function InterviewCenterPage() {
         <button
           onClick={handleStartInterview}
           // 正在创建或没有简历时禁用按钮。
-          disabled={starting || resumes.length === 0}
+          disabled={
+            starting ||
+            resumes.length === 0 ||
+            skills.length === 0 ||
+            !selectedSkillId
+          }
           className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
           {/* 根据 starting 切换按钮文案，告诉用户请求正在进行 */}
