@@ -88,14 +88,15 @@ public class InterviewQuestionService {
      * @date 2026-07-02
      */
     public List<InterviewQuestionDTO> generateQuestions(String strResumeText, Integer intQuestionCount, String strSkillId) {
+        // 先读取 Skill 配置，后续的 AI 出题和规则兜底都必须使用同一个面试方向。
         InterviewSkillDTO skillDTO = interviewSkillService.getSkill(strSkillId);
         log.debug("开始生成面试题: skillId={}, skillName={}", skillDTO.getId(), skillDTO.getName());
         try {
-            // 尝试使用 AI 生成问题
+            // 优先使用 AI 生成问题，便于结合简历内容产生更有针对性的题目。
             List<InterviewQuestionDTO> lstAiQuestionDTO = generateQuestionsByAi(strResumeText, intQuestionCount, skillDTO);
 
             if (!lstAiQuestionDTO.isEmpty()) {
-                // 返回归一化处理后的问题列表
+                // AI 返回的题号、类型或题目数量可能不稳定，先统一整理后再返回。
                 return normalizeGeneratedQuestions(
                         lstAiQuestionDTO,
                         strResumeText,
@@ -106,6 +107,7 @@ public class InterviewQuestionService {
             log.warn("AI 出题失败，fallback to rule-based question generation", e);
         }
 
+        // AI 调用失败或返回空结果时，使用规则题保证面试主流程仍然可以继续。
         return generateRuleBasedQuestions(strResumeText, intQuestionCount, skillDTO);
     }
 
@@ -122,8 +124,10 @@ public class InterviewQuestionService {
      */
     private List<InterviewQuestionDTO> generateQuestionsByAi(String strResumeText, Integer intQuestionCount, InterviewSkillDTO skillDTO) {
 
+        // 后端约束题目数量为正数；这里再次设置默认值，保护 Service 被其他调用方直接使用时的行为。
         Integer intSafeQuestionCount = (intQuestionCount == null || intQuestionCount <= 0) ? 3 : intQuestionCount;
 
+        // 根据 Skill 的分类优先级计算每个分类应分配的题目数量，并把结果写入 Prompt。
         Map<String, Integer> mapAllocation = interviewSkillService.calculateAllocation(skillDTO.getCategories(), intSafeQuestionCount);
 
         Map<String, Object> mapVariables = new HashMap<>();
@@ -140,12 +144,14 @@ public class InterviewQuestionService {
         String strSystemPrompt = systemPromptTemplate.render(mapSystemVariables) + "\n\n" + outputConverter.getFormat();
         String strUserPrompt = userPromptTemplate.render(mapVariables);
 
+        // 发起一次同步 AI 请求；调用方会捕获网络异常、认证失败和结构化解析失败。
         String strRawContent = chatClient.prompt()
                 .system(strSystemPrompt)
                 .user(strUserPrompt)
                 .call()
                 .content();
 
+        // 将 AI 返回的 JSON 转成 Java DTO，后续才能进行数量规整和业务校验。
         QuestionListDTO cplQuestionListDTO = outputConverter.convert(strRawContent);
 
         if (cplQuestionListDTO == null || cplQuestionListDTO.getQuestions() == null) {
@@ -232,6 +238,7 @@ public class InterviewQuestionService {
             Integer intQuestionCount,
             InterviewSkillDTO skillDTO) {
 
+        // 无论 AI 返回什么题号，最终都由程序重新按 0、1、2... 编号，保证前端按顺序答题。
         Integer intSafeQuestionCount = intQuestionCount == null || intQuestionCount <= 0 ? 3 : intQuestionCount;
 
         List<InterviewQuestionDTO> lstNormalizedQuestionDTO = new ArrayList<>();
@@ -241,6 +248,7 @@ public class InterviewQuestionService {
                 break;
             }
 
+            // 跳过 AI 返回的空对象或空题目，避免无效数据进入会话快照。
             if (cplQuestionDTO == null || cplQuestionDTO.getQuestion() == null
                     || cplQuestionDTO.getQuestion().isBlank()) {
                 continue;
@@ -263,6 +271,7 @@ public class InterviewQuestionService {
                     strCategory));
         }
 
+        // AI 题目不足时，用当前 Skill 的规则题补齐，确保最终题量满足请求。
         if (lstNormalizedQuestionDTO.size() < intSafeQuestionCount) {
             List<InterviewQuestionDTO> lstRuleBasedQuestionDTO = generateRuleBasedQuestions(
                     strResumeText,

@@ -63,6 +63,9 @@ export default function ResumeDetailPage() {
         resumeId: resume.id,
         // 这里先固定 5 题；如果要让用户选择题数，可以从 InterviewCenterPage 发起。
         questionCount: 5,
+        // 简历详情页暂时默认使用 Java 后端方向。
+        // 需要选择其他方向时，从模拟面试中心进入。
+        skillId: 'java-backend',
       });
 
       navigate(`/interview/${session.sessionId}`);

@@ -26,6 +26,7 @@ export interface InterviewSession {
   sessionId: string;
   // 这场面试基于哪份简历创建。
   resumeId: number;
+  skillId: string;
   // 总题目数。
   totalQuestions: number;
   // 当前题目下标，从 0 开始；如果等于 totalQuestions，说明已经答完。
@@ -42,6 +43,7 @@ export interface InterviewSession {
 export interface InterviewSessionListItem {
   sessionId: string;
   resumeId: number;
+  skillId: string;
   totalQuestions: number;
   currentQuestionIndex: number;
   status: InterviewSessionStatus;
@@ -53,7 +55,8 @@ export interface CreateInterviewRequest {
   // 用哪份简历创建面试。
   resumeId: number;
   // 希望生成几道题；问号表示不传时由后端使用默认值。
-  questionCount?: number;
+  questionCount: number;
+  skillId: string;
 }
 
 // 提交答案请求，对应提交当前题答案。

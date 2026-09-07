@@ -13,6 +13,7 @@
 - 当前 `questionsJson` 只保留题目快照；用户答案已经拆到独立答案表。
 - AI 出题先采用同步调用 + 规则兜底，后续再演进为 Skill 驱动、题目去重和缓存/异步策略。
 - AI 面试评估先采用同步调用 + 规则兜底，链路跑通后再异步化。
+- 参考项目新版已提供历史题目摘要去重、请求幂等、Redis 会话缓存、多维限流、Redis Stream 异步评估、Flyway 和 CI；当前项目按学习阶段拆分实现，不一次性迁移这些能力。
 
 ## Phase 1: 工程基线整理
 
@@ -375,19 +376,40 @@
 - [x] `InterviewSessionEntity` 持久化 `skillId`。
 - [x] 未完成会话按 `resumeId + skillId + status` 查询和复用。
 - [x] 历史列表和会话详情返回 `skillId`。
-- [ ] 增加第二个 Skill 和前端 Skill 选择。
+- [x] 增加第二个 Skill 和前端 Skill 选择。
 
 **Verification:**
 
 - [x] `InterviewSkillServiceTest` 和 `InterviewQuestionServiceTest` 共 12 个测试通过。
-- [ ] Manual check: 分别使用两个 Skill 创建面试，题目分类和规则兜底均符合所选方向。
+- [x] Manual check: 已分别使用 `java-backend` 和 `system-design` 创建面试；不同 Skill 创建独立会话，`system-design` 完成 8 题答题和报告验收。
 
-**Current limitation:** 当前只有 `java-backend` Skill；会话已经持久化 `skillId` 并支持按面试方向复用，尚未通过第二个 Skill 验证多方向扩展能力。
+**Current limitation:** 两个 Skill 的前端选择和主链路已完成；历史题目去重、结构化输出重试和异步化仍未实现。
 
 **Files touched:**
 
 - `server/src/main/java/com/interview/modules/interview/skill/*`
 - `server/src/main/java/com/interview/modules/interview/service/InterviewQuestionService.java`
+
+### Next batch: 历史题目去重最小闭环
+
+**目标：** 新建同一简历、同一 Skill 的面试时，读取最近历史主问题，精确去重后将历史摘要注入 AI Prompt；AI 题目不足时继续使用当前规则兜底补齐。
+
+**实现顺序：**
+
+1. 在 `InterviewSessionRepository` 增加按 `resumeId + skillId` 查询最近会话的方法。
+2. 在面试服务中解析历史会话的 `questionsJson`，排除追问并使用 `LinkedHashSet` 精确去重。
+3. 在 `InterviewQuestionService` 增加历史题目 Prompt 区块，并限制历史摘要数量，避免 Prompt 无界增长。
+4. 补充无历史、同 Skill 历史、不同 Skill 隔离、AI 题量不足补题等单元测试。
+
+**本批次不做：** Redis、向量相似度、pgvector 语义去重、语音面试、知识库和多 Provider。
+
+**验收标准：**
+
+- [ ] 新建面试时能够读取同一简历、同一 Skill 的最近历史题目。
+- [ ] 历史题目在程序侧完成精确去重，追问不参与去重。
+- [ ] 历史题目摘要进入 AI Prompt，且不同 Skill/不同简历互不污染。
+- [ ] AI 返回题量不足或失败时，最终题目数量和题号仍然正确。
+- [ ] 相关单元测试通过，前端构建不回归。
 - `server/src/main/resources/skills/java-backend/*`
 - `server/src/main/resources/prompts/interview-question-*.st`
 - `server/src/test/java/com/interview/modules/interview/skill/InterviewSkillServiceTest.java`
@@ -438,7 +460,8 @@
 - [x] 可以开始前端核心页面联调。
 - [x] 前端主链路已完成第一版浏览器验收。
 - [x] Skill 出题核心第一阶段完成：资源加载、分类配额、Prompt 注入和规则兜底。
-- [ ] 增加第二个 Skill 和前端方向选择后，再开始异步化。
+- [x] 增加第二个 Skill、前端方向选择并完成双方向端到端验收。
+- [ ] 在题目去重、结构化输出重试和核心测试补强后，再开始异步化。
 
 ## Phase 6: 前端核心页面
 

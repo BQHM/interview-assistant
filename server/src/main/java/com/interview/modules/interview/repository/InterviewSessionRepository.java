@@ -69,4 +69,18 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
      * @date 2026-04-20
      */
     List<InterviewSessionEntity> findAllByOrderByCreatedAtDesc();
+
+    /**
+     * 功能说明
+     * <p>查询同一简历、同一面试方向的最近历史会话。</p>
+     *
+     * @param lngResumeId 简历编号
+     * @param strSkillId 面试方向编号
+     * @return 最近历史会话列表
+     * @author NobuNo
+     * @date 2026-08-31
+     */
+    List<InterviewSessionEntity> findTop10ByResumeIdAndSkillIdOrderByCreatedAtDesc(
+            Long lngResumeId,
+            String strSkillId);
 }
