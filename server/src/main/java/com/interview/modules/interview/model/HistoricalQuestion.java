@@ -9,9 +9,9 @@ package com.interview.modules.interview.model;
  *
  * @param question 历史题目正文
  * @param type     历史题目类型
- * @param category 历史题目分类
+ * @param topicSummary 历史题目分类
  * @author NobuNo
  * @date 2026-08-31
  */
-public record HistoricalQuestion(String question, String type, String category) {
+public record HistoricalQuestion(String question, String type, String topicSummary) {
 }

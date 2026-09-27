@@ -45,4 +45,6 @@ public class InterviewQuestionDTO {
      */
     @FieldMeta(name = "用户答案", desc = "当前用户对这道面试题提交的回答内容")
     private String userAnswer;
+
+    private String topicSummary;
 }
