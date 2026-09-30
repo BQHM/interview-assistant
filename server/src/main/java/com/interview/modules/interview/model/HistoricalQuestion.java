@@ -9,7 +9,7 @@ package com.interview.modules.interview.model;
  *
  * @param question 历史题目正文
  * @param type     历史题目类型
- * @param topicSummary 历史题目分类
+ * @param topicSummary 知识点摘要
  * @author NobuNo
  * @date 2026-08-31
  */

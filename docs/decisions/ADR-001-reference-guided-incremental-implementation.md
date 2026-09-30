@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-`interview-assistant` 是用户边学习边开发的智能面试助手项目，参考完整开源项目 `D:\work\work_space\Project\interview-guide`。参考项目已经具备完整平台能力，包括：
+`interview-assistant` 是用户边学习边开发的智能面试助手项目，参考完整开源项目 `https://gitee.com/SnailClimb/interview-guide`（远程仓库，本地不保存其源码）。参考项目已经具备完整平台能力，包括：
 
 - 简历上传、解析、AI 分析、PDF 导出。
 - 文字模拟面试、Skill 出题、AI 评估、历史详情、报告导出。

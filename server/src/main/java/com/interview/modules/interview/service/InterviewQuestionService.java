@@ -1,5 +1,6 @@
 package com.interview.modules.interview.service;
 
+import com.interview.modules.interview.model.HistoricalQuestion;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
 import com.interview.modules.interview.skill.InterviewSkillService;
 import com.interview.modules.interview.skill.model.InterviewSkillCategoryDTO;
@@ -78,7 +79,7 @@ public class InterviewQuestionService {
 
     /**
      * 功能说明
-     * <p>根据面试方向生成面试题。</p>
+     * <p>根据面试方向生成面试题，不参考历史题目。</p>
      *
      * @param strResumeText    简历文本
      * @param intQuestionCount 题目数量
@@ -88,6 +89,22 @@ public class InterviewQuestionService {
      * @date 2026-07-02
      */
     public List<InterviewQuestionDTO> generateQuestions(String strResumeText, Integer intQuestionCount, String strSkillId) {
+        return generateQuestions(strResumeText, intQuestionCount, strSkillId, List.of());
+    }
+
+    /**
+     * 功能说明
+     * <p>根据面试方向和历史题目生成面试题。</p>
+     *
+     * @param strResumeText         简历文本
+     * @param intQuestionCount      题目数量
+     * @param strSkillId            面试方向编号
+     * @param lstHistoricalQuestion 同一简历、同一面试方向的历史题目
+     * @return 面试题列表
+     * @author NobuNo
+     * @date 2026-07-02
+     */
+    public List<InterviewQuestionDTO> generateQuestions(String strResumeText, Integer intQuestionCount, String strSkillId, List<HistoricalQuestion> lstHistoricalQuestion) {
         // 先读取 Skill 配置，后续的 AI 出题和规则兜底都必须使用同一个面试方向。
         InterviewSkillDTO skillDTO = interviewSkillService.getSkill(strSkillId);
         log.debug("开始生成面试题: skillId={}, skillName={}", skillDTO.getId(), skillDTO.getName());
