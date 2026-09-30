@@ -55,6 +55,10 @@ public class InterviewSessionService {
     private final InterviewAnswerRepository interviewAnswerRepository;
     private final InterviewAnswerEvaluationService interviewAnswerEvaluationService;
     private final InterviewQuestionService interviewQuestionService;
+    /**
+     * 注入提示词的历史题目上限，避免历史越长提示词越大
+     */
+    private static final int MAX_HISTORICAL_QUESTIONS = 60;
 
     /**
      * 功能说明
@@ -85,9 +89,9 @@ public class InterviewSessionService {
         List<InterviewSessionStatus> lstUnfinishedStatus = List.of(InterviewSessionStatus.CREATED, InterviewSessionStatus.IN_PROGRESS);
 
         Optional<InterviewSessionEntity> optUnfinishedInterviewSessionEntity = interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
-                        cplCreateInterviewRequest.getResumeId(),
-                        strSkillId,
-                        lstUnfinishedStatus);
+                cplCreateInterviewRequest.getResumeId(),
+                strSkillId,
+                lstUnfinishedStatus);
         if (optUnfinishedInterviewSessionEntity.isPresent()) {
             String strSessionId = optUnfinishedInterviewSessionEntity.get().getSessionId();
             log.info("检测到未完成面试会话，直接复用: resumeId={}, sessionId={}", cplCreateInterviewRequest.getResumeId(), strSessionId);
@@ -97,14 +101,10 @@ public class InterviewSessionService {
         // 第二步：加载历史题目。
         // 这些题目不会直接展示给用户，而是会在后续传给出题服务，提醒 AI 避免重复出题。
         List<HistoricalQuestion> lstHistoricalQuestion =
-                getHistoricalQuestions(
-                        cplCreateInterviewRequest.getResumeId(),
-                        strSkillId);
+                getHistoricalQuestions(cplCreateInterviewRequest.getResumeId(), strSkillId);
 
         log.info("解析历史面试题目完成: resumeId={}, skillId={}, questionCount={}",
-                cplCreateInterviewRequest.getResumeId(),
-                strSkillId,
-                lstHistoricalQuestion.size());
+                cplCreateInterviewRequest.getResumeId(), strSkillId, lstHistoricalQuestion.size());
 
         // 第三步：准备当前简历和本次面试的基本参数。
         ResumeEntity tblResumeEntity = optResumeEntity.get(); // 简历实体
@@ -112,7 +112,7 @@ public class InterviewSessionService {
         Integer intQuestionCount = cplCreateInterviewRequest.getQuestionCount(); // 题目数量
 
         // 第四步：根据简历、Skill 和历史题目生成新的面试题。
-        List<InterviewQuestionDTO> lstInterviewQuestionDTO = interviewQuestionService.generateQuestions(strResumeText, intQuestionCount, strSkillId); // 题目列表
+        List<InterviewQuestionDTO> lstInterviewQuestionDTO = interviewQuestionService.generateQuestions(strResumeText, intQuestionCount, strSkillId, lstHistoricalQuestion); // 题目列表
 
         String strQuestionsJson;
         try {
@@ -549,23 +549,18 @@ public class InterviewSessionService {
      * 功能说明
      * <p>查询并提取同一简历、同一面试方向的历史题目。</p>
      *
-     * <p>方法只保留题目内容和分类等出题所需信息，不修改历史会话数据。</p>
+     * <p>方法只保留题目正文、题目类型和知识点摘要等出题所需信息，不修改历史会话数据。</p>
      *
      * @param lngResumeId 简历编号
-     * @param strSkillId 面试方向编号
+     * @param strSkillId  面试方向编号
      * @return 去重后的历史题目列表
      * @author NobuNo
      * @date 2026-08-31
      */
-    private List<HistoricalQuestion> getHistoricalQuestions(
-            Long lngResumeId,
-            String strSkillId) {
+    private List<HistoricalQuestion> getHistoricalQuestions(Long lngResumeId, String strSkillId) {
         // 只读取最近 10 场同简历、同 Skill 的会话，避免历史数据过多导致查询和 Prompt 过大。
         List<InterviewSessionEntity> sessionList =
-                interviewSessionRepository
-                        .findTop10ByResumeIdAndSkillIdOrderByCreatedAtDesc(
-                                lngResumeId,
-                                strSkillId);
+                interviewSessionRepository.findTop10ByResumeIdAndSkillIdOrderByCreatedAtDesc(lngResumeId, strSkillId);
 
         // LinkedHashSet 同时具备“判断是否重复”和“保持原有顺序”两个作用。
         LinkedHashSet<String> seenQuestionSet = new LinkedHashSet<>();
@@ -581,31 +576,27 @@ public class InterviewSessionService {
                                 });
 
                 for (InterviewQuestionDTO questionDTO : questionList) {
+                    // 收集够了就不再继续
+                    if (historicalQuestionList.size() >= MAX_HISTORICAL_QUESTIONS) {
+                        break;
+                    }
+
                     // 空题目没有去重价值，也不能作为有效的历史出题上下文。
-                    if (questionDTO == null
-                            || questionDTO.getQuestion() == null
-                            || questionDTO.getQuestion().isBlank()) {
+                    if (questionDTO == null || questionDTO.getQuestion() == null || questionDTO.getQuestion().isBlank()) {
                         continue;
                     }
 
                     // add 返回 true 表示题目第一次出现；返回 false 表示已经存在，自动跳过重复题。
                     if (seenQuestionSet.add(questionDTO.getQuestion())) {
                         historicalQuestionList.add(
-                                new HistoricalQuestion(
-                                        questionDTO.getQuestion(),
-                                        questionDTO.getType(),
-                                        questionDTO.getCategory()));
+                                new HistoricalQuestion(questionDTO.getQuestion(), questionDTO.getType(), questionDTO.getTopicSummary()));
                     }
                 }
             } catch (JacksonException e) {
-                log.warn(
-                        "解析历史面试题目失败: sessionId={}",
-                        sessionEntity.getSessionId(),
-                        e);
+                log.warn("解析历史面试题目失败: sessionId={}", sessionEntity.getSessionId(), e);
             }
         }
 
         return historicalQuestionList;
     }
-
 }

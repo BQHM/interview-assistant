@@ -46,5 +46,10 @@ public class InterviewQuestionDTO {
     @FieldMeta(name = "用户答案", desc = "当前用户对这道面试题提交的回答内容")
     private String userAnswer;
 
+    /**
+     * 知识点摘要
+     * 当前题目对应的知识点摘要内容
+     */
+    @FieldMeta(name = "知识点摘要", desc = "它是 10 字以内、用于历史去重")
     private String topicSummary;
 }

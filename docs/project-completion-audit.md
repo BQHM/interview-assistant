@@ -7,7 +7,7 @@
 ## 参考基线
 
 - 当前项目：`D:\work\work_space\Project\interview-assistant`
-- 参考项目：`D:\work\work_space\Project\interview-guide`
+- 参考项目：远程仓库 `https://gitee.com/SnailClimb/interview-guide`（默认分支 `master`），本地不保存其源码
 - 对比方式：按模块、接口、数据模型、工程能力和学习价值进行对比。
 
 ## 总体结论
