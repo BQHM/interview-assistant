@@ -4,6 +4,14 @@
 
 通过逐步实现 `interview-assistant`，掌握一个 Spring Boot + Spring AI 智能面试平台从 MVP 到完整项目的演进过程。学习重点不是“抄完 reference”，而是理解每个模块为什么这样拆、什么时候该引入复杂度、如何验证功能是否可靠。
 
+## 参考项目路径说明
+
+本文档中标注为「**参考项目：**」的小节，路径都属于远程仓库 [`SnailClimb/interview-guide`](https://gitee.com/SnailClimb/interview-guide)（默认分支 `master`），不是本地目录，也不需要本地克隆。
+
+- 路径相对于该仓库根目录，例如 `app/src/main/java/interview/guide/modules/interview`。
+- 在线阅读某个文件：`https://gitee.com/SnailClimb/interview-guide/blob/master/<路径>`
+- 读取文件原文：`https://raw.giteeusercontent.com/SnailClimb/interview-guide/raw/master/<路径>`
+
 ## 总体学习路径
 
 ```text
@@ -38,9 +46,9 @@
 
 **参考项目：**
 
-- `interview-guide/README.md`
-- `interview-guide/docker-compose.dev.yml`
-- `interview-guide/app/src/main/resources/application.yml`
+- `README.md`
+- `docker-compose.dev.yml`
+- `app/src/main/resources/application.yml`
 
 **当前项目关注文件：**
 
@@ -80,9 +88,9 @@
 
 **参考项目：**
 
-- `interview-guide/app/src/main/java/interview/guide/modules/resume`
-- `interview-guide/app/src/main/java/interview/guide/modules/resume/listener`
-- `interview-guide/app/src/main/java/interview/guide/infrastructure/file`
+- `app/src/main/java/interview/guide/modules/resume`
+- `app/src/main/java/interview/guide/modules/resume/listener`
+- `app/src/main/java/interview/guide/infrastructure/file`
 
 **学习重点：**
 
@@ -129,11 +137,11 @@
 
 **参考项目：**
 
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/InterviewController.java`
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/service/InterviewHistoryService.java`
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/model/InterviewAnswerEntity.java`
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/model/SessionListItemDTO.java`
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/model/InterviewDetailDTO.java`
+- `app/src/main/java/interview/guide/modules/interview/InterviewController.java`
+- `app/src/main/java/interview/guide/modules/interview/service/InterviewHistoryService.java`
+- `app/src/main/java/interview/guide/modules/interview/model/InterviewAnswerEntity.java`
+- `app/src/main/java/interview/guide/modules/interview/model/SessionListItemDTO.java`
+- `app/src/main/java/interview/guide/modules/interview/model/InterviewDetailDTO.java`
 
 **学习重点：**
 
@@ -164,7 +172,7 @@
 
 - 创建会话、提交答案、提前交卷、生成报告都有测试。
 - 非法状态和资源不存在都有测试。
-- 每次改面试模块前后都能跑 `mvn test`。
+- 每次改面试模块前后都能在 IDEA 里跑通全部单元测试。
 
 ## Phase 4：AI 出题与 AI 面试评估
 
@@ -180,9 +188,9 @@
 
 **参考项目：**
 
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/skill`
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/service/InterviewQuestionService.java`
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/service/AnswerEvaluationService.java`
+- `app/src/main/java/interview/guide/modules/interview/skill`
+- `app/src/main/java/interview/guide/modules/interview/service/InterviewQuestionService.java`
+- `app/src/main/java/interview/guide/modules/interview/service/AnswerEvaluationService.java`
 
 **当前阶段简化建议：**
 
@@ -213,12 +221,12 @@
 
 **参考项目：**
 
-- `interview-guide/frontend/src/App.tsx`
-- `interview-guide/frontend/src/components/Layout.tsx`
-- `interview-guide/frontend/src/api/request.ts`
-- `interview-guide/frontend/src/pages/UploadPage.tsx`
-- `interview-guide/frontend/src/pages/HistoryPage.tsx`
-- `interview-guide/frontend/src/pages/InterviewHubPage.tsx`
+- `frontend/src/App.tsx`
+- `frontend/src/components/Layout.tsx`
+- `frontend/src/api/request.ts`
+- `frontend/src/pages/UploadPage.tsx`
+- `frontend/src/pages/HistoryPage.tsx`
+- `frontend/src/pages/InterviewHubPage.tsx`
 
 **推荐页面顺序：**
 
@@ -272,9 +280,9 @@
 
 **参考项目：**
 
-- `interview-guide/app/src/main/java/interview/guide/common/async`
-- `interview-guide/app/src/main/java/interview/guide/infrastructure/redis`
-- `interview-guide/app/src/main/java/interview/guide/common/annotation/RateLimit.java`
+- `app/src/main/java/interview/guide/common/async`
+- `app/src/main/java/interview/guide/infrastructure/redis`
+- `app/src/main/java/interview/guide/common/annotation/RateLimit.java`
 
 **推荐落地顺序：**
 
@@ -298,9 +306,9 @@
 
 **参考项目：**
 
-- `interview-guide/app/src/main/java/interview/guide/infrastructure/export`
-- `interview-guide/app/src/main/java/interview/guide/modules/resume/ResumeController.java`
-- `interview-guide/app/src/main/java/interview/guide/modules/interview/InterviewController.java`
+- `app/src/main/java/interview/guide/infrastructure/export`
+- `app/src/main/java/interview/guide/modules/resume/ResumeController.java`
+- `app/src/main/java/interview/guide/modules/interview/InterviewController.java`
 
 ## Phase 8：知识库与 RAG
 
@@ -317,7 +325,7 @@
 
 **参考项目：**
 
-- `interview-guide/app/src/main/java/interview/guide/modules/knowledgebase`
+- `app/src/main/java/interview/guide/modules/knowledgebase`
 
 **前置条件：**
 
@@ -331,8 +339,8 @@
 
 **参考项目：**
 
-- `interview-guide/app/src/main/java/interview/guide/modules/interviewschedule`
-- `interview-guide/frontend/src/pages` 中面试日程相关页面
+- `app/src/main/java/interview/guide/modules/interviewschedule`
+- `frontend/src/pages` 中面试日程相关页面
 
 **学习重点：**
 
@@ -347,7 +355,7 @@
 
 **参考项目：**
 
-- `interview-guide/app/src/main/java/interview/guide/modules/voiceinterview`
+- `app/src/main/java/interview/guide/modules/voiceinterview`
 
 **学习重点：**
 

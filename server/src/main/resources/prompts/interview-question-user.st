@@ -4,6 +4,8 @@
 
 {skillCategories}
 
+{historicalSection}
+
 简历内容如下：
 
 {resumeText}
