@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -105,12 +106,14 @@ public class InterviewQuestionService {
      * @date 2026-07-02
      */
     public List<InterviewQuestionDTO> generateQuestions(String strResumeText, Integer intQuestionCount, String strSkillId, List<HistoricalQuestion> lstHistoricalQuestion) {
+
+
         // 先读取 Skill 配置，后续的 AI 出题和规则兜底都必须使用同一个面试方向。
         InterviewSkillDTO skillDTO = interviewSkillService.getSkill(strSkillId);
         log.debug("开始生成面试题: skillId={}, skillName={}", skillDTO.getId(), skillDTO.getName());
         try {
             // 优先使用 AI 生成问题，便于结合简历内容产生更有针对性的题目。
-            List<InterviewQuestionDTO> lstAiQuestionDTO = generateQuestionsByAi(strResumeText, intQuestionCount, skillDTO);
+            List<InterviewQuestionDTO> lstAiQuestionDTO = generateQuestionsByAi(strResumeText, intQuestionCount, skillDTO, lstHistoricalQuestion);
 
             if (!lstAiQuestionDTO.isEmpty()) {
                 // AI 返回的题号、类型或题目数量可能不稳定，先统一整理后再返回。
@@ -132,14 +135,15 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>调用 AI 生成面试题。</p>
      *
-     * @param strResumeText    简历文本
-     * @param intQuestionCount 题目数量
-     * @param skillDTO         面试方向配置
+     * @param strResumeText         简历文本
+     * @param intQuestionCount      题目数量
+     * @param skillDTO              面试方向配置
+     * @param lstHistoricalQuestion 同一简历、同一面试方向的历史题目
      * @return AI 生成的题目列表
      * @author NobuNo
      * @date 2026-07-02
      */
-    private List<InterviewQuestionDTO> generateQuestionsByAi(String strResumeText, Integer intQuestionCount, InterviewSkillDTO skillDTO) {
+    private List<InterviewQuestionDTO> generateQuestionsByAi(String strResumeText, Integer intQuestionCount, InterviewSkillDTO skillDTO, List<HistoricalQuestion> lstHistoricalQuestion) {
 
         // 后端约束题目数量为正数；这里再次设置默认值，保护 Service 被其他调用方直接使用时的行为。
         Integer intSafeQuestionCount = (intQuestionCount == null || intQuestionCount <= 0) ? 3 : intQuestionCount;
@@ -153,8 +157,11 @@ public class InterviewQuestionService {
 
         // 构建面试方向分类说明
         String strSkillCategorySection = buildSkillCategorySection(skillDTO.getCategories(), mapAllocation);
-
         mapVariables.put("skillCategories", strSkillCategorySection);
+        // 构建历史考点说明，提醒 AI 避免重复出题
+        String strHistoricalSection = buildHistoricalSection(lstHistoricalQuestion);
+        mapVariables.put("historicalSection", strHistoricalSection);
+
         Map<String, Object> mapSystemVariables = new HashMap<>();
         mapSystemVariables.put("persona", skillDTO.getPersona() == null ? "" : skillDTO.getPersona());
 
@@ -235,6 +242,48 @@ public class InterviewQuestionService {
         }
 
         return sectionBuilder.toString().trim();
+    }
+
+    /**
+     * 功能说明
+     * <p>构建已考知识点说明，提醒 AI 避免重复出题。</p>
+     *
+     * @param lstHistoricalQuestion 历史题目列表
+     * @return 已考知识点说明
+     * @author NobuNo
+     * @date 2026-07-02
+     */
+    private String buildHistoricalSection(List<HistoricalQuestion> lstHistoricalQuestion) {
+        if (lstHistoricalQuestion == null || lstHistoricalQuestion.isEmpty()) {
+            return "暂无历史提问";
+        }
+
+        Map<String, List<String>> mapGroupedSummary = new LinkedHashMap<>();
+
+        for (HistoricalQuestion cplHistoricalQuestion : lstHistoricalQuestion) {
+
+            // 类型为空就归到默认类型
+            String strType = (cplHistoricalQuestion.type() != null && !cplHistoricalQuestion.type().isBlank())
+                    ? cplHistoricalQuestion.type() : "GENERAL";
+
+            // 摘要优先；没有摘要就截断题目正文兜底
+            String strSummary = cplHistoricalQuestion.topicSummary();
+            if (strSummary == null || strSummary.isBlank()) {
+                String strQuestion = cplHistoricalQuestion.question();
+                strSummary = strQuestion.length() > 30 ? strQuestion.substring(0, 30) + "…" : strQuestion;
+            }
+
+            // 放进分组：没有该类型就先建一个空列表
+            mapGroupedSummary.computeIfAbsent(strType, k -> new ArrayList<>()).add(strSummary);
+        }
+
+        StringBuilder sectionBuilder = new StringBuilder("已考过的知识点（避免重复出题）：\n");
+
+        for (Map.Entry<String, List<String>> entry : mapGroupedSummary.entrySet()) {
+            sectionBuilder.append("- ").append(entry.getKey()).append(": ").append(String.join(", ", entry.getValue())).append('\n');
+        }
+
+        return sectionBuilder.toString();
     }
 
     /**
@@ -433,4 +482,6 @@ public class InterviewQuestionService {
     public static class QuestionListDTO {
         private List<InterviewQuestionDTO> questions;
     }
+
+
 }

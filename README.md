@@ -370,4 +370,4 @@ http://localhost:5173
 
 ## 参考项目
 
-同一工作区下的 `interview-guide/` 是完整参考实现，后续扩展能力时应优先对照该项目的模块划分和演进顺序。
+参考实现是远程仓库 [`SnailClimb/interview-guide`](https://gitee.com/SnailClimb/interview-guide)（默认分支 `master`），本地不保存其源码。后续扩展能力时，应通过远程仓库对照该项目的模块划分和演进顺序。
