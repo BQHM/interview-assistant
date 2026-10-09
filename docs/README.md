@@ -1,15 +1,15 @@
-# interview-assistant docs
+# interview-assistant 文档索引
 
 本目录用于记录 `interview-assistant` 的学习路线、完成度对比、实施计划和关键架构决策。项目以远程仓库 `https://gitee.com/SnailClimb/interview-guide` 为参考实现，但不会机械复制参考项目代码，而是按学习和真实开发节奏逐步靠齐。
 
 ## 文档阅读顺序
 
-1. `project-completion-audit.md`：先了解当前已经完成什么、还缺什么、和参考项目差距在哪里。
-2. `learning-roadmap.md`：再按阶段学习，每个阶段都有目标、参考文件和验收方式。
-3. `implementation-plan.md`：实际开发时按任务推进，每个任务都有验收标准和验证方法。
+1. `项目完成度审计.md`：先了解当前已经完成什么、还缺什么、和参考项目差距在哪里。
+2. `学习路线图.md`：再按阶段学习，每个阶段都有目标、参考文件和验收方式。
+3. `实施计划.md`：实际开发时按任务推进，每个任务都有验收标准和验证方法。
 4. `README.md`：查看当前启动方式、Postman 验收顺序和浏览器验收顺序。
-5. `decisions/ADR-001-reference-guided-incremental-implementation.md`：理解为什么采用“参考项目驱动 + 分阶段演进”的方式。
-6. `decisions/ADR-002-frontend-reference-first.md`：理解为什么前端先对齐 `interview-guide`，项目完整后再差异化。
+5. `decisions/ADR-001-参考项目驱动的渐进式实现路线.md`：理解为什么采用“参考项目驱动 + 分阶段演进”的方式。
+6. `decisions/ADR-002-前端参考优先实现.md`：理解为什么前端先对齐 `interview-guide`，项目完整后再差异化。
 
 ## 当前项目定位
 
