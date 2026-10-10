@@ -126,6 +126,40 @@ class InterviewQuestionServiceTest {
     }
 
     @Test
+    void generateQuestions_shouldPreserveTopicSummaryFromAiResponse() throws IOException {
+        ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
+        InterviewQuestionService interviewQuestionService = createService(chatClient);
+        String strAiResponse = """
+                {
+                  "questions": [
+                    {
+                      "questionIndex": 8,
+                      "question": "请说明 Java 线程池核心参数的作用。",
+                      "type": "JAVA",
+                      "category": "Java 基础",
+                      "topicSummary": "Java线程池参数"
+                    }
+                  ]
+                }
+                """;
+
+        when(chatClient.prompt()
+                .system(anyString())
+                .user(anyString())
+                .call()
+                .content()).thenReturn(strAiResponse);
+
+        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+                "熟悉 Java 并发编程。",
+                1,
+                "java-backend");
+
+        assertThat(lstQuestionDTO).hasSize(1);
+        assertThat(lstQuestionDTO.get(0).getQuestionIndex()).isZero();
+        assertThat(lstQuestionDTO.get(0).getTopicSummary()).isEqualTo("Java线程池参数");
+    }
+
+    @Test
     void generateQuestions_shouldInjectSkillPersonaAndCategoriesIntoPrompt() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
