@@ -334,7 +334,8 @@ public class InterviewQuestionService {
                     lstNormalizedQuestionDTO.size(),
                     cplQuestionDTO.getQuestion(),
                     strType,
-                    strCategory));
+                    strCategory,
+                    cplQuestionDTO.getTopicSummary()));
         }
 
         // AI 题目不足时，用当前 Skill 的规则题补齐，确保最终题量满足请求。
@@ -450,9 +451,38 @@ public class InterviewQuestionService {
      * <p>创建单道面试题对象。</p>
      *
      * @param intQuestionIndex 题目索引
-     * @param strQuestion      题目内容
-     * @param strType          题目类型
-     * @param strCategory      题目分类
+     * @param strQuestion 题目内容
+     * @param strType 题目类型
+     * @param strCategory 题目分类
+     * @param strTopicSummary 知识点摘要
+     * @return 面试题 DTO
+     * @author NobuNo
+     * @date 2026-07-02
+     */
+    private InterviewQuestionDTO createQuestion(
+            Integer intQuestionIndex,
+            String strQuestion,
+            String strType,
+            String strCategory,
+            String strTopicSummary) {
+
+        InterviewQuestionDTO cplInterviewQuestionDTO = new InterviewQuestionDTO();
+        cplInterviewQuestionDTO.setQuestionIndex(intQuestionIndex);
+        cplInterviewQuestionDTO.setQuestion(strQuestion);
+        cplInterviewQuestionDTO.setType(strType);
+        cplInterviewQuestionDTO.setCategory(strCategory);
+        cplInterviewQuestionDTO.setTopicSummary(strTopicSummary);
+        return cplInterviewQuestionDTO;
+    }
+
+    /**
+     * 功能说明
+     * <p>创建不包含知识点摘要的面试题对象。</p>
+     *
+     * @param intQuestionIndex 题目索引
+     * @param strQuestion 题目内容
+     * @param strType 题目类型
+     * @param strCategory 题目分类
      * @return 面试题 DTO
      * @author NobuNo
      * @date 2026-07-02
@@ -463,12 +493,12 @@ public class InterviewQuestionService {
             String strType,
             String strCategory) {
 
-        InterviewQuestionDTO cplInterviewQuestionDTO = new InterviewQuestionDTO();
-        cplInterviewQuestionDTO.setQuestionIndex(intQuestionIndex);
-        cplInterviewQuestionDTO.setQuestion(strQuestion);
-        cplInterviewQuestionDTO.setType(strType);
-        cplInterviewQuestionDTO.setCategory(strCategory);
-        return cplInterviewQuestionDTO;
+        return createQuestion(
+                intQuestionIndex,
+                strQuestion,
+                strType,
+                strCategory,
+                null);
     }
 
     /**
