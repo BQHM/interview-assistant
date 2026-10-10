@@ -54,7 +54,7 @@
 | ---- | ---- | ---- |
 | React | 18.x | 前端 UI 框架 |
 | TypeScript | - | 前端类型约束 |
-| Vite | 8.x | 前端构建工具 |
+| Vite | 5.x | 前端构建工具 |
 | React Router | - | 页面路由 |
 | Axios | - | 接口请求封装 |
 | lucide-react | - | 图标库 |
@@ -154,15 +154,16 @@
 - [x] 会话持久化 `skillId`，按 `resumeId + skillId + status` 复用未完成会话
 - [x] 两个 Skill 前端可选择：`java-backend` 和 `system-design`
 - [x] 双方向端到端验收：创建会话、题目分配、逐题答题和报告生成
+- [x] 历史题目查询、`topicSummary` 摘要、精确去重和 Prompt 注入
 
 ### 进行中
 
 - [ ] 前端空状态、错误提示和时间格式展示继续完善
 - [ ] 补强核心 Service 单元测试
+- [ ] 历史题目去重专项测试和双方向人工复验
 
 ### 未完成
 
-- [ ] 历史题目去重
 - [ ] AI 结构化输出重试与修复
 - [ ] Redis 会话缓存
 - [ ] 异步任务流转
@@ -185,6 +186,8 @@
 - `currentQuestionIndex` 表示下一道待答题的索引，而不是最近一道已答题索引
 - 创建面试时按 `resumeId + skillId + status` 复用最近一条未完成会话，不同 Skill 可以创建独立会话
 - 创建面试时优先调用 `InterviewQuestionService`，根据 Skill Persona、分类和题量配额进行 AI 出题
+- 创建新面试时读取同一简历、同一 Skill 最近 10 场会话的题目快照，使用 `topicSummary` 作为历史考点上下文
+- 历史题目按完整题面精确去重，最多保留 60 条摘要，并按题型分组后注入 AI Prompt
 - AI 不可用或输出异常时，按照同一 Skill 分类配额生成规则兜底题
 - `questionsJson` 现在只承担题目快照职责，不再作为用户答案的唯一存储位置
 - `saveAnswer` 只更新指定题目的草稿答案，不推进 `currentQuestionIndex`
@@ -359,12 +362,13 @@ http://localhost:5173
 
 当前项目仍处于教学式迭代阶段，建议按下面顺序继续推进：
 
-1. 增加历史题目去重，并补强 AI 结构化输出重试与修复。
-2. 继续补强核心 Service 单元测试和前端体验。
-3. Redis 会话缓存和接口限流。
-4. Redis Stream 异步化简历分析和面试评估。
-5. PDF 报告导出。
-6. 知识库 / RAG。
+1. 为历史题目查询、摘要注入和去重补充专项单元测试与人工验收。
+2. 补强 AI 结构化输出重试与修复，继续完善前端空状态、错误提示和时间展示。
+3. 修正前端 `InterviewSessionStatus`，补齐后端实际返回的 `CREATED` 状态。
+4. Redis 会话缓存、请求幂等和接口限流。
+5. Redis Stream 异步化简历分析和面试评估。
+6. PDF 报告导出。
+7. 知识库 / RAG。
 
 当前参考项目 `interview-guide` 已进一步实现历史题目摘要去重、Redis 会话缓存、请求幂等、Redis Stream 异步评估、多维原子限流、Flyway 数据库迁移和前后端 CI。当前项目先采用同步调用和 `ddl-auto: update` 作为学习阶段简化方案，按“历史题目去重 -> AI 输出稳定性 -> 测试补强 -> Redis/异步化”的顺序逐步靠齐。
 
