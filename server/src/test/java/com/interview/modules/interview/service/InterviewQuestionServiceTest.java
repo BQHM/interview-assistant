@@ -23,6 +23,8 @@ import org.springframework.core.io.ResourceLoader;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
+import com.interview.infrastructure.ai.StructuredOutputInvoker;
+import com.interview.infrastructure.ai.StructuredOutputProperties;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
 import com.interview.modules.interview.skill.InterviewSkillService;
 import com.interview.modules.interview.skill.model.InterviewSkillCategoryDTO;
@@ -226,6 +228,40 @@ class InterviewQuestionServiceTest {
         verify(chatClient, never()).prompt();
     }
 
+    @Test
+    void generateQuestions_shouldRetryWithStricterPromptWhenAiReturnsInvalidJson() throws IOException {
+        ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
+        InterviewQuestionService interviewQuestionService = createService(chatClient);
+        String strAiResponse = """
+                {
+                  "questions": [
+                    {
+                      "questionIndex": 0,
+                      "question": "AI 重试后题目",
+                      "type": "JAVA",
+                      "category": "Java 基础",
+                      "topicSummary": "重试成功"
+                    }
+                  ]
+                }
+                """;
+
+        // 第一次返回非法 JSON，第二次返回合法 JSON；只有重试真的发生，最终才能拿到 AI 题目。
+        when(chatClient.prompt()
+                .system(anyString())
+                .user(anyString())
+                .call()
+                .content()).thenReturn("这不是合法的 JSON", strAiResponse);
+
+        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+                "熟悉 Java 并发编程。",
+                1,
+                "java-backend");
+
+        assertThat(lstQuestionDTO).hasSize(1);
+        assertThat(lstQuestionDTO.get(0).getQuestion()).isEqualTo("AI 重试后题目");
+    }
+
     private InterviewQuestionService createService(
             ChatClient chatClient
     ) throws IOException {
@@ -266,7 +302,8 @@ class InterviewQuestionServiceTest {
         return new InterviewQuestionService(
                 chatClientBuilder,
                 createResourceLoader(),
-                interviewSkillService
+                interviewSkillService,
+                new StructuredOutputInvoker(new StructuredOutputProperties())
         );
     }
 

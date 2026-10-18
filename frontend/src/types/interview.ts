@@ -1,6 +1,6 @@
 // 面试会话状态。
 // IN_PROGRESS 表示还在答题，COMPLETED 表示整场面试已经完成。
-export type InterviewSessionStatus = 'IN_PROGRESS' | 'COMPLETED';
+export type InterviewSessionStatus = 'CREATED' | 'IN_PROGRESS' | 'COMPLETED';
 
 // 面试题，对应后端生成的一道题目快照。
 export interface InterviewQuestion {

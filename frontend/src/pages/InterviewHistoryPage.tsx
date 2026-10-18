@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { EmptyState, ErrorNotice } from '../components/Feedback';
-import type { InterviewSessionListItem } from '../types/interview';
+import type { InterviewSessionListItem, InterviewSessionStatus } from '../types/interview';
 
 export default function InterviewHistoryPage() {
   // useLocation 可以读取上一个页面跳转时传过来的 state。
@@ -17,18 +17,12 @@ export default function InterviewHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-
-  const getStatusText = (status: string) => {
-    if (status === 'IN_PROGRESS') {
-      return '进行中';
-    }
-
-    if (status === 'COMPLETED') {
-      return '已完成';
-    }
-
-    return status;
+  const STATUS_TEXT: Record<InterviewSessionStatus, string> = {
+    CREATED: '未开始',
+    IN_PROGRESS: '进行中',
+    COMPLETED: '已完成',
   };
+
   // 页面首次进入时加载历史记录。
   useEffect(() => {
     const loadHistory = async () => {
@@ -90,14 +84,14 @@ export default function InterviewHistoryPage() {
                 已完成题数：{Math.min(session.currentQuestionIndex, session.totalQuestions)} / {session.totalQuestions}
               </p>
               <p className="text-sm text-slate-500">
-                状态：{getStatusText(session.status)}
+                状态：{STATUS_TEXT[session.status]}
               </p>
               <p className="text-sm text-slate-500">
                 创建时间：{session.createdAt}
               </p>
 
               <div className="mt-4">
-                {session.status === 'IN_PROGRESS' ? (
+                {session.status !== 'COMPLETED' ? (
                   <Link
                     to={`/interview/${session.sessionId}`}
                     className="text-sm text-blue-600 hover:text-blue-700"
