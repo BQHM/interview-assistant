@@ -1,5 +1,7 @@
 package com.interview.modules.interview.service;
 
+import com.interview.common.exception.ErrorCode;
+import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.modules.interview.model.HistoricalQuestion;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
 import com.interview.modules.interview.skill.InterviewSkillService;
@@ -37,6 +39,7 @@ public class InterviewQuestionService {
     private final PromptTemplate userPromptTemplate;
     private final BeanOutputConverter<QuestionListDTO> outputConverter;
     private final InterviewSkillService interviewSkillService;
+    private final StructuredOutputInvoker structuredOutputInvoker;
 
     /**
      * 功能说明
@@ -52,9 +55,10 @@ public class InterviewQuestionService {
     public InterviewQuestionService(
             ChatClient.Builder chatClientBuilder,
             ResourceLoader resourceLoader,
-            InterviewSkillService interviewSkillService
+            InterviewSkillService interviewSkillService, StructuredOutputInvoker structuredOutputInvoker
     ) throws IOException {
         this.chatClient = chatClientBuilder.build();
+        this.structuredOutputInvoker = structuredOutputInvoker;
         this.outputConverter = new BeanOutputConverter<>(QuestionListDTO.class);
         this.systemPromptTemplate = new PromptTemplate(
                 resourceLoader.getResource("classpath:prompts/interview-question-system.st").getContentAsString(StandardCharsets.UTF_8));
@@ -165,20 +169,16 @@ public class InterviewQuestionService {
         Map<String, Object> mapSystemVariables = new HashMap<>();
         mapSystemVariables.put("persona", skillDTO.getPersona() == null ? "" : skillDTO.getPersona());
 
-        String strSystemPrompt = systemPromptTemplate.render(mapSystemVariables) + "\n\n" + outputConverter.getFormat();
+        String strSystemPromptWithFormat = systemPromptTemplate.render(mapSystemVariables) + "\n\n" + outputConverter.getFormat();
         String strUserPrompt = userPromptTemplate.render(mapVariables);
 
-        // 发起一次同步 AI 请求；调用方会捕获网络异常、认证失败和结构化解析失败。
-        String strRawContent = chatClient.prompt()
-                .system(strSystemPrompt)
-                .user(strUserPrompt)
-                .call()
-                .content();
+        // 交给统一的结构化输出调用器：失败会按配置重试；重试仍失败抛 BusinessException，由上层 catch 降级到规则题。
+        QuestionListDTO cplQuestionListDTO = structuredOutputInvoker.invoke(
+                chatClient, strSystemPromptWithFormat, strUserPrompt, outputConverter,
+                ErrorCode.AI_STRUCTURED_OUTPUT_FAILED, "AI 出题结构化解析失败：", "AI 出题");
 
-        // 将 AI 返回的 JSON 转成 Java DTO，后续才能进行数量规整和业务校验。
-        QuestionListDTO cplQuestionListDTO = outputConverter.convert(strRawContent);
-
-        if (cplQuestionListDTO == null || cplQuestionListDTO.getQuestions() == null) {
+        // invoke 不会返回 null，这里只防御 questions 字段缺失。
+        if (cplQuestionListDTO.getQuestions() == null) {
             return List.of();
         }
 
@@ -451,10 +451,10 @@ public class InterviewQuestionService {
      * <p>创建单道面试题对象。</p>
      *
      * @param intQuestionIndex 题目索引
-     * @param strQuestion 题目内容
-     * @param strType 题目类型
-     * @param strCategory 题目分类
-     * @param strTopicSummary 知识点摘要
+     * @param strQuestion      题目内容
+     * @param strType          题目类型
+     * @param strCategory      题目分类
+     * @param strTopicSummary  知识点摘要
      * @return 面试题 DTO
      * @author NobuNo
      * @date 2026-07-02
@@ -480,9 +480,9 @@ public class InterviewQuestionService {
      * <p>创建不包含知识点摘要的面试题对象。</p>
      *
      * @param intQuestionIndex 题目索引
-     * @param strQuestion 题目内容
-     * @param strType 题目类型
-     * @param strCategory 题目分类
+     * @param strQuestion      题目内容
+     * @param strType          题目类型
+     * @param strCategory      题目分类
      * @return 面试题 DTO
      * @author NobuNo
      * @date 2026-07-02
