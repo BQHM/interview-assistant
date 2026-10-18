@@ -23,35 +23,35 @@ public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswer
      * 功能说明
      * <p>查询某道题的答案。</p>
      *
-     * @param tblInterviewSessionEntity 面试会话实体
-     * @param intQuestionIndex 题目索引
+     * @param interviewSessionEntity 面试会话实体
+     * @param questionIndex 题目索引
      * @return 面试答案实体
      * @author NobuNo
      * @date 2026-05-18
      */
-    Optional<InterviewAnswerEntity> findBySessionAndQuestionIndex(InterviewSessionEntity tblInterviewSessionEntity,
-                    Integer intQuestionIndex);
+    Optional<InterviewAnswerEntity> findBySessionAndQuestionIndex(InterviewSessionEntity interviewSessionEntity,
+                    Integer questionIndex);
 
     /**
      * 功能说明
      * <p>查询会话下的全部答案。</p>
      *
-     * @param tblInterviewSessionEntity 面试会话实体
+     * @param interviewSessionEntity 面试会话实体
      * @return 面试答案列表
      * @author NobuNo
      * @date 2026-05-18
      */
     List<InterviewAnswerEntity> findBySessionOrderByQuestionIndexAsc(
-                    InterviewSessionEntity tblInterviewSessionEntity);
+                    InterviewSessionEntity interviewSessionEntity);
 
     /**
      * 功能说明
      * <p>删除会话下的全部答案。</p>
      *
-     * @param tblInterviewSessionEntity 面试会话实体
+     * @param interviewSessionEntity 面试会话实体
      * @author NobuNo
      * @date 2026-05-18
      */
     void deleteBySession(
-                    InterviewSessionEntity tblInterviewSessionEntity);
+                    InterviewSessionEntity interviewSessionEntity);
 }

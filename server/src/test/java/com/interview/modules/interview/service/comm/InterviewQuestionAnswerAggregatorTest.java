@@ -20,32 +20,32 @@ class InterviewQuestionAnswerAggregatorTest {
      */
     @Test
     void fillUserAnswers_shouldFillMatchedAnswersByQuestionIndex() {
-        List<InterviewQuestionDTO> lstInterviewQuestionDTO = new ArrayList<>();
+        List<InterviewQuestionDTO> interviewQuestionDTOs = new ArrayList<>();
 
-        InterviewQuestionDTO cplFirstQuestionDTO = new InterviewQuestionDTO();
-        cplFirstQuestionDTO.setQuestionIndex(0);
-        cplFirstQuestionDTO.setQuestion("请介绍一下自己");
-        lstInterviewQuestionDTO.add(cplFirstQuestionDTO);
+        InterviewQuestionDTO firstQuestionDTO = new InterviewQuestionDTO();
+        firstQuestionDTO.setQuestionIndex(0);
+        firstQuestionDTO.setQuestion("请介绍一下自己");
+        interviewQuestionDTOs.add(firstQuestionDTO);
 
-        InterviewQuestionDTO cplSecondQuestionDTO = new InterviewQuestionDTO();
-        cplSecondQuestionDTO.setQuestionIndex(1);
-        cplSecondQuestionDTO.setQuestion("请介绍 Spring Boot");
-        lstInterviewQuestionDTO.add(cplSecondQuestionDTO);
+        InterviewQuestionDTO secondQuestionDTO = new InterviewQuestionDTO();
+        secondQuestionDTO.setQuestionIndex(1);
+        secondQuestionDTO.setQuestion("请介绍 Spring Boot");
+        interviewQuestionDTOs.add(secondQuestionDTO);
 
-        List<InterviewAnswerEntity> lstInterviewAnswerEntity = new ArrayList<>();
+        List<InterviewAnswerEntity> interviewAnswerEntities = new ArrayList<>();
 
-        InterviewAnswerEntity tblFirstAnswerEntity = new InterviewAnswerEntity();
-        tblFirstAnswerEntity.setQuestionIndex(0);
-        tblFirstAnswerEntity.setUserAnswer("我是 Java 后端开发。");
-        lstInterviewAnswerEntity.add(tblFirstAnswerEntity);
+        InterviewAnswerEntity firstAnswerEntity = new InterviewAnswerEntity();
+        firstAnswerEntity.setQuestionIndex(0);
+        firstAnswerEntity.setUserAnswer("我是 Java 后端开发。");
+        interviewAnswerEntities.add(firstAnswerEntity);
 
         InterviewQuestionAnswerAggregator.fillUserAnswers(
-                lstInterviewQuestionDTO,
-                lstInterviewAnswerEntity);
+                interviewQuestionDTOs,
+                interviewAnswerEntities);
 
-        assertThat(lstInterviewQuestionDTO.get(0).getUserAnswer())
+        assertThat(interviewQuestionDTOs.get(0).getUserAnswer())
                 .isEqualTo("我是 Java 后端开发。");
-        assertThat(lstInterviewQuestionDTO.get(1).getUserAnswer())
+        assertThat(interviewQuestionDTOs.get(1).getUserAnswer())
                 .isNull();
     }
 }

@@ -23,48 +23,48 @@ public class InterviewSessionConverter {
      * 功能说明
      * <p>转换面试历史列表项。</p>
      *
-     * @param tblInterviewSessionEntity 面试会话实体
+     * @param interviewSessionEntity 面试会话实体
      * @return 面试历史列表项
      * @author NobuNo
      * @date 2026-05-16
      */
     public static InterviewSessionListItemDTO convertToInterviewSessionListItemDTO(
-            InterviewSessionEntity tblInterviewSessionEntity) {
+            InterviewSessionEntity interviewSessionEntity) {
 
-        InterviewSessionListItemDTO cplInterviewSessionListItemDTO = new InterviewSessionListItemDTO();
-        cplInterviewSessionListItemDTO.setSessionId(tblInterviewSessionEntity.getSessionId());
-        cplInterviewSessionListItemDTO.setResumeId(tblInterviewSessionEntity.getResume().getId());
-        cplInterviewSessionListItemDTO.setTotalQuestions(tblInterviewSessionEntity.getTotalQuestions());
-        cplInterviewSessionListItemDTO.setCurrentQuestionIndex(tblInterviewSessionEntity.getCurrentQuestionIndex());
-        cplInterviewSessionListItemDTO.setStatus(tblInterviewSessionEntity.getStatus());
-        cplInterviewSessionListItemDTO.setCreatedAt(tblInterviewSessionEntity.getCreatedAt());
-        cplInterviewSessionListItemDTO.setSkillId(tblInterviewSessionEntity.getSkillId());
-        return cplInterviewSessionListItemDTO;
+        InterviewSessionListItemDTO interviewSessionListItemDTO = new InterviewSessionListItemDTO();
+        interviewSessionListItemDTO.setSessionId(interviewSessionEntity.getSessionId());
+        interviewSessionListItemDTO.setResumeId(interviewSessionEntity.getResume().getId());
+        interviewSessionListItemDTO.setTotalQuestions(interviewSessionEntity.getTotalQuestions());
+        interviewSessionListItemDTO.setCurrentQuestionIndex(interviewSessionEntity.getCurrentQuestionIndex());
+        interviewSessionListItemDTO.setStatus(interviewSessionEntity.getStatus());
+        interviewSessionListItemDTO.setCreatedAt(interviewSessionEntity.getCreatedAt());
+        interviewSessionListItemDTO.setSkillId(interviewSessionEntity.getSkillId());
+        return interviewSessionListItemDTO;
     }
 
     /**
      * 功能说明
      * <p>转换面试历史详情。</p>
      *
-     * @param tblInterviewSessionEntity 面试会话实体
-     * @param lstInterviewQuestionDTO 面试题列表
+     * @param interviewSessionEntity 面试会话实体
+     * @param interviewQuestionDTOs 面试题列表
      * @return 面试历史详情
      * @author NobuNo
      * @date 2026-05-16
      */
     public static InterviewDetailDTO convertToInterviewDetailDTO(
-            InterviewSessionEntity tblInterviewSessionEntity,
-            List<InterviewQuestionDTO> lstInterviewQuestionDTO) {
+            InterviewSessionEntity interviewSessionEntity,
+            List<InterviewQuestionDTO> interviewQuestionDTOs) {
 
-        InterviewDetailDTO cplInterviewDetailDTO = new InterviewDetailDTO();
-        cplInterviewDetailDTO.setSessionId(tblInterviewSessionEntity.getSessionId());
-        cplInterviewDetailDTO.setResumeId(tblInterviewSessionEntity.getResume().getId());
-        cplInterviewDetailDTO.setTotalQuestions(tblInterviewSessionEntity.getTotalQuestions());
-        cplInterviewDetailDTO.setCurrentQuestionIndex(tblInterviewSessionEntity.getCurrentQuestionIndex());
-        cplInterviewDetailDTO.setStatus(tblInterviewSessionEntity.getStatus());
-        cplInterviewDetailDTO.setCreatedAt(tblInterviewSessionEntity.getCreatedAt());
-        cplInterviewDetailDTO.setQuestions(lstInterviewQuestionDTO);
-        cplInterviewDetailDTO.setSkillId(tblInterviewSessionEntity.getSkillId());
-        return cplInterviewDetailDTO;
+        InterviewDetailDTO interviewDetailDTO = new InterviewDetailDTO();
+        interviewDetailDTO.setSessionId(interviewSessionEntity.getSessionId());
+        interviewDetailDTO.setResumeId(interviewSessionEntity.getResume().getId());
+        interviewDetailDTO.setTotalQuestions(interviewSessionEntity.getTotalQuestions());
+        interviewDetailDTO.setCurrentQuestionIndex(interviewSessionEntity.getCurrentQuestionIndex());
+        interviewDetailDTO.setStatus(interviewSessionEntity.getStatus());
+        interviewDetailDTO.setCreatedAt(interviewSessionEntity.getCreatedAt());
+        interviewDetailDTO.setQuestions(interviewQuestionDTOs);
+        interviewDetailDTO.setSkillId(interviewSessionEntity.getSkillId());
+        return interviewDetailDTO;
     }
 }

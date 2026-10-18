@@ -48,17 +48,17 @@ public class InterviewController {
      * 功能说明
      * <p>创建面试会话。</p>
      *
-     * @param cplCreateInterviewRequest 创建面试请求
+     * @param createInterviewRequest 创建面试请求
      * @return 面试会话信息
      * @author NobuNo
      * @date 2026-04-20
      */
     @PostMapping
     public Result<InterviewSessionDTO> createInterview(
-            @Valid @RequestBody CreateInterviewRequest cplCreateInterviewRequest) {
+            @Valid @RequestBody CreateInterviewRequest createInterviewRequest) {
 
-        InterviewSessionDTO cplInterviewSessionDTO = interviewSessionService.createInterview(cplCreateInterviewRequest);
-        return Result.success(cplInterviewSessionDTO);
+        InterviewSessionDTO interviewSessionDTO = interviewSessionService.createInterview(createInterviewRequest);
+        return Result.success(interviewSessionDTO);
     }
 
     /**
@@ -72,25 +72,25 @@ public class InterviewController {
      */
     @GetMapping("/{sessionId}")
     public Result<InterviewSessionDTO> getInterviewSession(@PathVariable String sessionId) {
-        InterviewSessionDTO cplInterviewSessionDTO = interviewSessionService.getInterviewSession(sessionId);
-        return Result.success(cplInterviewSessionDTO);
+        InterviewSessionDTO interviewSessionDTO = interviewSessionService.getInterviewSession(sessionId);
+        return Result.success(interviewSessionDTO);
     }
 
     /**
      * 功能说明
      * <p>提交面试答案。</p>
      *
-     * @param cplSubmitAnswerRequest 提交答案请求
+     * @param submitAnswerRequest 提交答案请求
      * @return 提交答案结果
      * @author NobuNo
      * @date 2026-04-20
      */
     @PostMapping("/answer")
     public Result<SubmitAnswerResponse> submitAnswer(
-            @Valid @RequestBody SubmitAnswerRequest cplSubmitAnswerRequest) {
+            @Valid @RequestBody SubmitAnswerRequest submitAnswerRequest) {
 
-        SubmitAnswerResponse cplSubmitAnswerResponse = interviewSessionService.submitAnswer(cplSubmitAnswerRequest);
-        return Result.success(cplSubmitAnswerResponse);
+        SubmitAnswerResponse submitAnswerResponse = interviewSessionService.submitAnswer(submitAnswerRequest);
+        return Result.success(submitAnswerResponse);
     }
 
     /**
@@ -104,8 +104,8 @@ public class InterviewController {
      */
     @GetMapping("/{sessionId}/report")
     public Result<InterviewReportDTO> getInterviewReport(@PathVariable String sessionId) {
-        InterviewReportDTO cplInterviewReportDTO = interviewReportService.generateReport(sessionId);
-        return Result.success(cplInterviewReportDTO);
+        InterviewReportDTO interviewReportDTO = interviewReportService.generateReport(sessionId);
+        return Result.success(interviewReportDTO);
     }
 
     /**
@@ -119,23 +119,23 @@ public class InterviewController {
      */
     @GetMapping("/{sessionId}/question")
     public Result<CurrentQuestionResponseDTO> getCurrentQuestion(@PathVariable String sessionId) {
-        CurrentQuestionResponseDTO cplCurrentQuestionResponseDTO = interviewSessionService
+        CurrentQuestionResponseDTO currentQuestionResponseDTO = interviewSessionService
                 .getCurrentQuestion(sessionId);
-        return Result.success(cplCurrentQuestionResponseDTO);
+        return Result.success(currentQuestionResponseDTO);
     }
 
     /**
      * 功能说明
      * <p>提前完成面试。</p>
      *
-     * @param strSessionId 面试会话编号
+     * @param sessionId 面试会话编号
      * @return 空结果
      * @author NobuNo
      * @date 2026-04-20
      */
     @PostMapping("/{sessionId}/complete")
-    public Result<Void> completeInterview(@PathVariable("sessionId") String strSessionId) {
-        interviewSessionService.completeInterview(strSessionId);
+    public Result<Void> completeInterview(@PathVariable("sessionId") String sessionId) {
+        interviewSessionService.completeInterview(sessionId);
         return Result.success(null);
     }
 
@@ -143,32 +143,32 @@ public class InterviewController {
      * 功能说明
      * <p>查询未完成面试会话。</p>
      *
-     * @param lngResumeId 简历编号
+     * @param resumeId 简历编号
      * @return 未完成面试会话信息
      * @author NobuNo
      * @date 2026-04-20
      */
     @GetMapping("/unfinished/{resumeId}")
-    public Result<InterviewSessionDTO> findUnfinishedSessionByResumeId(@PathVariable("resumeId") Long lngResumeId) {
-        InterviewSessionDTO cplInterviewSessionDTO = interviewSessionService
-                .findUnfinishedSessionByResumeId(lngResumeId);
-        return Result.success(cplInterviewSessionDTO);
+    public Result<InterviewSessionDTO> findUnfinishedSessionByResumeId(@PathVariable("resumeId") Long resumeId) {
+        InterviewSessionDTO interviewSessionDTO = interviewSessionService
+                .findUnfinishedSessionByResumeId(resumeId);
+        return Result.success(interviewSessionDTO);
     }
 
     /**
      * 功能说明
      * <p>暂存面试答案。</p>
      *
-     * @param strSessionId 面试会话编号
-     * @param cplSaveAnswerRequest 暂存答案请求
+     * @param sessionId 面试会话编号
+     * @param saveAnswerRequest 暂存答案请求
      * @return 空结果
      * @author NobuNo
      * @date 2026-04-20
      */
     @PutMapping("/{sessionId}/answers")
-    public Result<Void> saveAnswer(@PathVariable("sessionId") String strSessionId,
-            @Valid @RequestBody SaveAnswerRequest cplSaveAnswerRequest) {
-        interviewSessionService.saveAnswer(strSessionId, cplSaveAnswerRequest);
+    public Result<Void> saveAnswer(@PathVariable("sessionId") String sessionId,
+            @Valid @RequestBody SaveAnswerRequest saveAnswerRequest) {
+        interviewSessionService.saveAnswer(sessionId, saveAnswerRequest);
         return Result.success(null);
     }
 

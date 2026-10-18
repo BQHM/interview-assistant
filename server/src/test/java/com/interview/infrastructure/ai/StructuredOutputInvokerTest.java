@@ -104,10 +104,10 @@ class StructuredOutputInvokerTest {
 
         StructuredOutputProperties properties = new StructuredOutputProperties();
         properties.setStructuredMaxAttempts(1);
-        StructuredOutputInvoker cplSingleAttemptInvoker = new StructuredOutputInvoker(properties);
+        StructuredOutputInvoker singleAttemptInvoker = new StructuredOutputInvoker(properties);
 
         BusinessException exception = catchThrowableOfType(
-                () -> invoke(cplSingleAttemptInvoker),
+                () -> invoke(singleAttemptInvoker),
                 BusinessException.class);
 
         assertThat(exception.getCode()).isEqualTo(ERROR_CODE.getCode());
@@ -140,11 +140,11 @@ class StructuredOutputInvokerTest {
     void invoke_shouldKeepOriginalPromptOnRetryWhenRepairPromptDisabled() {
         StructuredOutputProperties properties = new StructuredOutputProperties();
         properties.setStructuredRetryUseRepairPrompt(false);
-        StructuredOutputInvoker cplPlainRetryInvoker = new StructuredOutputInvoker(properties);
+        StructuredOutputInvoker plainRetryInvoker = new StructuredOutputInvoker(properties);
 
         stubAiContents(INVALID_JSON, VALID_JSON);
 
-        TestPayload payload = invoke(cplPlainRetryInvoker);
+        TestPayload payload = invoke(plainRetryInvoker);
 
         assertThat(payload.getTopic()).isEqualTo("ok");
 
@@ -158,8 +158,8 @@ class StructuredOutputInvokerTest {
         return invoke(invoker);
     }
 
-    private TestPayload invoke(StructuredOutputInvoker cplInvoker) {
-        return cplInvoker.invoke(
+    private TestPayload invoke(StructuredOutputInvoker invoker) {
+        return invoker.invoke(
                 chatClient,
                 SYSTEM_PROMPT,
                 USER_PROMPT,
@@ -169,10 +169,10 @@ class StructuredOutputInvokerTest {
                 LOG_CONTEXT);
     }
 
-    private void stubAiContents(String... strAiContents) {
+    private void stubAiContents(String... aiContents) {
         when(callResponseSpec.content()).thenReturn(
-                strAiContents[0],
-                Arrays.copyOfRange(strAiContents, 1, strAiContents.length));
+                aiContents[0],
+                Arrays.copyOfRange(aiContents, 1, aiContents.length));
     }
 
     /**
@@ -186,8 +186,8 @@ class StructuredOutputInvokerTest {
             return topic;
         }
 
-        public void setTopic(String strTopic) {
-            this.topic = strTopic;
+        public void setTopic(String topic) {
+            this.topic = topic;
         }
     }
 }

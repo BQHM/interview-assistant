@@ -48,6 +48,7 @@ public class InterviewQuestionService {
      * @param chatClientBuilder     AI 客户端构建器
      * @param resourceLoader        资源加载器
      * @param interviewSkillService 面试方向配置服务
+     * @param structuredOutputInvoker 结构化输出调用器
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
      * @date 2026-07-02
@@ -55,7 +56,8 @@ public class InterviewQuestionService {
     public InterviewQuestionService(
             ChatClient.Builder chatClientBuilder,
             ResourceLoader resourceLoader,
-            InterviewSkillService interviewSkillService, StructuredOutputInvoker structuredOutputInvoker
+            InterviewSkillService interviewSkillService,
+            StructuredOutputInvoker structuredOutputInvoker
     ) throws IOException {
         this.chatClient = chatClientBuilder.build();
         this.structuredOutputInvoker = structuredOutputInvoker;
@@ -71,60 +73,60 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>根据简历文本生成面试题。</p>
      *
-     * @param strResumeText    简历文本
-     * @param intQuestionCount 题目数量
+     * @param resumeText    简历文本
+     * @param questionCount 题目数量
      * @return 面试题列表
      * @author NobuNo
      * @date 2026-07-02
      */
-    public List<InterviewQuestionDTO> generateQuestions(String strResumeText, Integer intQuestionCount) {
+    public List<InterviewQuestionDTO> generateQuestions(String resumeText, Integer questionCount) {
         // 未指定面试方向时，默认使用 Java 后端 Skill
-        return generateQuestions(strResumeText, intQuestionCount, "java-backend");
+        return generateQuestions(resumeText, questionCount, "java-backend");
     }
 
     /**
      * 功能说明
      * <p>根据面试方向生成面试题，不参考历史题目。</p>
      *
-     * @param strResumeText    简历文本
-     * @param intQuestionCount 题目数量
-     * @param strSkillId       面试方向编号
+     * @param resumeText    简历文本
+     * @param questionCount 题目数量
+     * @param skillId       面试方向编号
      * @return 面试题列表
      * @author NobuNo
      * @date 2026-07-02
      */
-    public List<InterviewQuestionDTO> generateQuestions(String strResumeText, Integer intQuestionCount, String strSkillId) {
-        return generateQuestions(strResumeText, intQuestionCount, strSkillId, List.of());
+    public List<InterviewQuestionDTO> generateQuestions(String resumeText, Integer questionCount, String skillId) {
+        return generateQuestions(resumeText, questionCount, skillId, List.of());
     }
 
     /**
      * 功能说明
      * <p>根据面试方向和历史题目生成面试题。</p>
      *
-     * @param strResumeText         简历文本
-     * @param intQuestionCount      题目数量
-     * @param strSkillId            面试方向编号
-     * @param lstHistoricalQuestion 同一简历、同一面试方向的历史题目
+     * @param resumeText         简历文本
+     * @param questionCount      题目数量
+     * @param skillId            面试方向编号
+     * @param historicalQuestions 同一简历、同一面试方向的历史题目
      * @return 面试题列表
      * @author NobuNo
      * @date 2026-07-02
      */
-    public List<InterviewQuestionDTO> generateQuestions(String strResumeText, Integer intQuestionCount, String strSkillId, List<HistoricalQuestion> lstHistoricalQuestion) {
+    public List<InterviewQuestionDTO> generateQuestions(String resumeText, Integer questionCount, String skillId, List<HistoricalQuestion> historicalQuestions) {
 
 
         // 先读取 Skill 配置，后续的 AI 出题和规则兜底都必须使用同一个面试方向。
-        InterviewSkillDTO skillDTO = interviewSkillService.getSkill(strSkillId);
+        InterviewSkillDTO skillDTO = interviewSkillService.getSkill(skillId);
         log.debug("开始生成面试题: skillId={}, skillName={}", skillDTO.getId(), skillDTO.getName());
         try {
             // 优先使用 AI 生成问题，便于结合简历内容产生更有针对性的题目。
-            List<InterviewQuestionDTO> lstAiQuestionDTO = generateQuestionsByAi(strResumeText, intQuestionCount, skillDTO, lstHistoricalQuestion);
+            List<InterviewQuestionDTO> aiQuestionDTOs = generateQuestionsByAi(resumeText, questionCount, skillDTO, historicalQuestions);
 
-            if (!lstAiQuestionDTO.isEmpty()) {
+            if (!aiQuestionDTOs.isEmpty()) {
                 // AI 返回的题号、类型或题目数量可能不稳定，先统一整理后再返回。
                 return normalizeGeneratedQuestions(
-                        lstAiQuestionDTO,
-                        strResumeText,
-                        intQuestionCount,
+                        aiQuestionDTOs,
+                        resumeText,
+                        questionCount,
                         skillDTO);
             }
         } catch (Exception e) {
@@ -132,57 +134,57 @@ public class InterviewQuestionService {
         }
 
         // AI 调用失败或返回空结果时，使用规则题保证面试主流程仍然可以继续。
-        return generateRuleBasedQuestions(strResumeText, intQuestionCount, skillDTO);
+        return generateRuleBasedQuestions(resumeText, questionCount, skillDTO);
     }
 
     /**
      * 功能说明
      * <p>调用 AI 生成面试题。</p>
      *
-     * @param strResumeText         简历文本
-     * @param intQuestionCount      题目数量
+     * @param resumeText         简历文本
+     * @param questionCount      题目数量
      * @param skillDTO              面试方向配置
-     * @param lstHistoricalQuestion 同一简历、同一面试方向的历史题目
+     * @param historicalQuestions 同一简历、同一面试方向的历史题目
      * @return AI 生成的题目列表
      * @author NobuNo
      * @date 2026-07-02
      */
-    private List<InterviewQuestionDTO> generateQuestionsByAi(String strResumeText, Integer intQuestionCount, InterviewSkillDTO skillDTO, List<HistoricalQuestion> lstHistoricalQuestion) {
+    private List<InterviewQuestionDTO> generateQuestionsByAi(String resumeText, Integer questionCount, InterviewSkillDTO skillDTO, List<HistoricalQuestion> historicalQuestions) {
 
         // 后端约束题目数量为正数；这里再次设置默认值，保护 Service 被其他调用方直接使用时的行为。
-        Integer intSafeQuestionCount = (intQuestionCount == null || intQuestionCount <= 0) ? 3 : intQuestionCount;
+        Integer safeQuestionCount = (questionCount == null || questionCount <= 0) ? 3 : questionCount;
 
         // 根据 Skill 的分类优先级计算每个分类应分配的题目数量，并把结果写入 Prompt。
-        Map<String, Integer> mapAllocation = interviewSkillService.calculateAllocation(skillDTO.getCategories(), intSafeQuestionCount);
+        Map<String, Integer> allocation = interviewSkillService.calculateAllocation(skillDTO.getCategories(), safeQuestionCount);
 
-        Map<String, Object> mapVariables = new HashMap<>();
-        mapVariables.put("questionCount", intSafeQuestionCount);
-        mapVariables.put("resumeText", strResumeText == null ? "" : strResumeText);
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("questionCount", safeQuestionCount);
+        variables.put("resumeText", resumeText == null ? "" : resumeText);
 
         // 构建面试方向分类说明
-        String strSkillCategorySection = buildSkillCategorySection(skillDTO.getCategories(), mapAllocation);
-        mapVariables.put("skillCategories", strSkillCategorySection);
+        String skillCategorySection = buildSkillCategorySection(skillDTO.getCategories(), allocation);
+        variables.put("skillCategories", skillCategorySection);
         // 构建历史考点说明，提醒 AI 避免重复出题
-        String strHistoricalSection = buildHistoricalSection(lstHistoricalQuestion);
-        mapVariables.put("historicalSection", strHistoricalSection);
+        String historicalSection = buildHistoricalSection(historicalQuestions);
+        variables.put("historicalSection", historicalSection);
 
-        Map<String, Object> mapSystemVariables = new HashMap<>();
-        mapSystemVariables.put("persona", skillDTO.getPersona() == null ? "" : skillDTO.getPersona());
+        Map<String, Object> systemVariables = new HashMap<>();
+        systemVariables.put("persona", skillDTO.getPersona() == null ? "" : skillDTO.getPersona());
 
-        String strSystemPromptWithFormat = systemPromptTemplate.render(mapSystemVariables) + "\n\n" + outputConverter.getFormat();
-        String strUserPrompt = userPromptTemplate.render(mapVariables);
+        String systemPromptWithFormat = systemPromptTemplate.render(systemVariables) + "\n\n" + outputConverter.getFormat();
+        String userPrompt = userPromptTemplate.render(variables);
 
         // 交给统一的结构化输出调用器：失败会按配置重试；重试仍失败抛 BusinessException，由上层 catch 降级到规则题。
-        QuestionListDTO cplQuestionListDTO = structuredOutputInvoker.invoke(
-                chatClient, strSystemPromptWithFormat, strUserPrompt, outputConverter,
+        QuestionListDTO questionListDTO = structuredOutputInvoker.invoke(
+                chatClient, systemPromptWithFormat, userPrompt, outputConverter,
                 ErrorCode.AI_STRUCTURED_OUTPUT_FAILED, "AI 出题结构化解析失败：", "AI 出题");
 
         // invoke 不会返回 null，这里只防御 questions 字段缺失。
-        if (cplQuestionListDTO.getQuestions() == null) {
+        if (questionListDTO.getQuestions() == null) {
             return List.of();
         }
 
-        return cplQuestionListDTO.getQuestions();
+        return questionListDTO.getQuestions();
     }
 
     /**
@@ -248,38 +250,38 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>构建已考知识点说明，提醒 AI 避免重复出题。</p>
      *
-     * @param lstHistoricalQuestion 历史题目列表
+     * @param historicalQuestions 历史题目列表
      * @return 已考知识点说明
      * @author NobuNo
      * @date 2026-07-02
      */
-    private String buildHistoricalSection(List<HistoricalQuestion> lstHistoricalQuestion) {
-        if (lstHistoricalQuestion == null || lstHistoricalQuestion.isEmpty()) {
+    private String buildHistoricalSection(List<HistoricalQuestion> historicalQuestions) {
+        if (historicalQuestions == null || historicalQuestions.isEmpty()) {
             return "暂无历史提问";
         }
 
-        Map<String, List<String>> mapGroupedSummary = new LinkedHashMap<>();
+        Map<String, List<String>> groupedSummary = new LinkedHashMap<>();
 
-        for (HistoricalQuestion cplHistoricalQuestion : lstHistoricalQuestion) {
+        for (HistoricalQuestion historicalQuestion : historicalQuestions) {
 
             // 类型为空就归到默认类型
-            String strType = (cplHistoricalQuestion.type() != null && !cplHistoricalQuestion.type().isBlank())
-                    ? cplHistoricalQuestion.type() : "GENERAL";
+            String type = (historicalQuestion.type() != null && !historicalQuestion.type().isBlank())
+                    ? historicalQuestion.type() : "GENERAL";
 
             // 摘要优先；没有摘要就截断题目正文兜底
-            String strSummary = cplHistoricalQuestion.topicSummary();
-            if (strSummary == null || strSummary.isBlank()) {
-                String strQuestion = cplHistoricalQuestion.question();
-                strSummary = strQuestion.length() > 30 ? strQuestion.substring(0, 30) + "…" : strQuestion;
+            String summary = historicalQuestion.topicSummary();
+            if (summary == null || summary.isBlank()) {
+                String question = historicalQuestion.question();
+                summary = question.length() > 30 ? question.substring(0, 30) + "…" : question;
             }
 
             // 放进分组：没有该类型就先建一个空列表
-            mapGroupedSummary.computeIfAbsent(strType, k -> new ArrayList<>()).add(strSummary);
+            groupedSummary.computeIfAbsent(type, k -> new ArrayList<>()).add(summary);
         }
 
         StringBuilder sectionBuilder = new StringBuilder("已考过的知识点（避免重复出题）：\n");
 
-        for (Map.Entry<String, List<String>> entry : mapGroupedSummary.entrySet()) {
+        for (Map.Entry<String, List<String>> entry : groupedSummary.entrySet()) {
             sectionBuilder.append("- ").append(entry.getKey()).append(": ").append(String.join(", ", entry.getValue())).append('\n');
         }
 
@@ -290,123 +292,123 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>规整 AI 返回的题目列表。</p>
      *
-     * @param lstAiQuestionDTO AI 题目列表
-     * @param strResumeText    简历文本
-     * @param intQuestionCount 题目数量
+     * @param aiQuestionDTOs AI 题目列表
+     * @param resumeText    简历文本
+     * @param questionCount 题目数量
      * @param skillDTO         面试方向配置
      * @return 规整后的题目列表
      * @author NobuNo
      * @date 2026-07-02
      */
     private List<InterviewQuestionDTO> normalizeGeneratedQuestions(
-            List<InterviewQuestionDTO> lstAiQuestionDTO,
-            String strResumeText,
-            Integer intQuestionCount,
+            List<InterviewQuestionDTO> aiQuestionDTOs,
+            String resumeText,
+            Integer questionCount,
             InterviewSkillDTO skillDTO) {
 
         // 无论 AI 返回什么题号，最终都由程序重新按 0、1、2... 编号，保证前端按顺序答题。
-        Integer intSafeQuestionCount = intQuestionCount == null || intQuestionCount <= 0 ? 3 : intQuestionCount;
+        Integer safeQuestionCount = questionCount == null || questionCount <= 0 ? 3 : questionCount;
 
-        List<InterviewQuestionDTO> lstNormalizedQuestionDTO = new ArrayList<>();
+        List<InterviewQuestionDTO> normalizedQuestionDTOs = new ArrayList<>();
 
-        for (InterviewQuestionDTO cplQuestionDTO : lstAiQuestionDTO) {
-            if (lstNormalizedQuestionDTO.size() >= intSafeQuestionCount) {
+        for (InterviewQuestionDTO questionDTO : aiQuestionDTOs) {
+            if (normalizedQuestionDTOs.size() >= safeQuestionCount) {
                 break;
             }
 
             // 跳过 AI 返回的空对象或空题目，避免无效数据进入会话快照。
-            if (cplQuestionDTO == null || cplQuestionDTO.getQuestion() == null
-                    || cplQuestionDTO.getQuestion().isBlank()) {
+            if (questionDTO == null || questionDTO.getQuestion() == null
+                    || questionDTO.getQuestion().isBlank()) {
                 continue;
             }
 
-            String strType = cplQuestionDTO.getType();
-            if (strType == null || strType.isBlank()) {
-                strType = "GENERAL";
+            String type = questionDTO.getType();
+            if (type == null || type.isBlank()) {
+                type = "GENERAL";
             }
 
-            String strCategory = cplQuestionDTO.getCategory();
-            if (strCategory == null || strCategory.isBlank()) {
-                strCategory = "综合能力";
+            String category = questionDTO.getCategory();
+            if (category == null || category.isBlank()) {
+                category = "综合能力";
             }
 
-            lstNormalizedQuestionDTO.add(createQuestion(
-                    lstNormalizedQuestionDTO.size(),
-                    cplQuestionDTO.getQuestion(),
-                    strType,
-                    strCategory,
-                    cplQuestionDTO.getTopicSummary()));
+            normalizedQuestionDTOs.add(createQuestion(
+                    normalizedQuestionDTOs.size(),
+                    questionDTO.getQuestion(),
+                    type,
+                    category,
+                    questionDTO.getTopicSummary()));
         }
 
         // AI 题目不足时，用当前 Skill 的规则题补齐，确保最终题量满足请求。
-        if (lstNormalizedQuestionDTO.size() < intSafeQuestionCount) {
-            List<InterviewQuestionDTO> lstRuleBasedQuestionDTO = generateRuleBasedQuestions(
-                    strResumeText,
-                    intSafeQuestionCount,
+        if (normalizedQuestionDTOs.size() < safeQuestionCount) {
+            List<InterviewQuestionDTO> ruleBasedQuestionDTOs = generateRuleBasedQuestions(
+                    resumeText,
+                    safeQuestionCount,
                     skillDTO);
 
-            for (InterviewQuestionDTO cplQuestionDTO : lstRuleBasedQuestionDTO) {
-                if (lstNormalizedQuestionDTO.size() >= intSafeQuestionCount) {
+            for (InterviewQuestionDTO questionDTO : ruleBasedQuestionDTOs) {
+                if (normalizedQuestionDTOs.size() >= safeQuestionCount) {
                     break;
                 }
 
-                lstNormalizedQuestionDTO.add(createQuestion(
-                        lstNormalizedQuestionDTO.size(),
-                        cplQuestionDTO.getQuestion(),
-                        cplQuestionDTO.getType(),
-                        cplQuestionDTO.getCategory()));
+                normalizedQuestionDTOs.add(createQuestion(
+                        normalizedQuestionDTOs.size(),
+                        questionDTO.getQuestion(),
+                        questionDTO.getType(),
+                        questionDTO.getCategory()));
             }
         }
 
-        return lstNormalizedQuestionDTO;
+        return normalizedQuestionDTOs;
     }
 
     /**
      * 功能说明
      * <p>生成规则版兜底面试题。</p>
      *
-     * @param strResumeText    简历文本
-     * @param intQuestionCount 题目数量
+     * @param resumeText    简历文本
+     * @param questionCount 题目数量
      * @param skillDTO         面试方向配置
      * @return 规则版题目列表
      * @author NobuNo
      * @date 2026-07-02
      */
     private List<InterviewQuestionDTO> generateRuleBasedQuestions(
-            String strResumeText,
-            Integer intQuestionCount,
+            String resumeText,
+            Integer questionCount,
             InterviewSkillDTO skillDTO) {
 
         // 根据是否存在简历确定问题上下文
-        String strExperienceContext =
-                strResumeText == null || strResumeText.isBlank()
+        String experienceContext =
+                resumeText == null || resumeText.isBlank()
                         ? "请结合你的实际经历"
                         : "请结合你的简历或项目经历";
 
-        Integer intSafeQuestionCount = null;// 面试问题数量
-        if (intQuestionCount == null || intQuestionCount <= 0) {
-            intSafeQuestionCount = 3;
+        Integer safeQuestionCount = null;// 面试问题数量
+        if (questionCount == null || questionCount <= 0) {
+            safeQuestionCount = 3;
         } else {
-            intSafeQuestionCount = intQuestionCount;
+            safeQuestionCount = questionCount;
         }
 
         // 计算题目分配
-        Map<String, Integer> mapAllocation = interviewSkillService.calculateAllocation(skillDTO.getCategories(), intSafeQuestionCount);
+        Map<String, Integer> allocation = interviewSkillService.calculateAllocation(skillDTO.getCategories(), safeQuestionCount);
 
-        List<InterviewQuestionDTO> lstInterviewQuestionDTO = new ArrayList<>();
+        List<InterviewQuestionDTO> interviewQuestionDTOs = new ArrayList<>();
 
-        List<String> lstQuestionFocus = List.of(
+        List<String> questionFocuses = List.of(
                 "核心原理",
                 "项目实践",
                 "问题排查",
                 "性能优化");
 
-        List<InterviewSkillCategoryDTO> lstCategoryDTO =
+        List<InterviewSkillCategoryDTO> categoryDTOs =
                 skillDTO.getCategories() == null
                         ? List.of()
                         : skillDTO.getCategories();
 
-        for (InterviewSkillCategoryDTO categoryDTO : lstCategoryDTO) {
+        for (InterviewSkillCategoryDTO categoryDTO : categoryDTOs) {
             if (categoryDTO == null
                     || categoryDTO.getKey() == null
                     || categoryDTO.getKey().isBlank()
@@ -415,89 +417,89 @@ public class InterviewQuestionService {
                 continue;
             }
 
-            Integer intCategoryQuestionCount = mapAllocation.getOrDefault(categoryDTO.getKey(), 0);
+            Integer categoryQuestionCount = allocation.getOrDefault(categoryDTO.getKey(), 0);
 
-            for (int intQuestionIndex = 0; intQuestionIndex < intCategoryQuestionCount; intQuestionIndex++) {
+            for (int questionIndex = 0; questionIndex < categoryQuestionCount; questionIndex++) {
 
-                String strFocus = lstQuestionFocus.get(intQuestionIndex % lstQuestionFocus.size());
+                String focus = questionFocuses.get(questionIndex % questionFocuses.size());
 
-                String strQuestion = strExperienceContext + "，谈谈你在“" + categoryDTO.getLabel() + "”方向的" + strFocus + "。";
+                String question = experienceContext + "，谈谈你在“" + categoryDTO.getLabel() + "”方向的" + focus + "。";
 
-                lstInterviewQuestionDTO.add(createQuestion(
-                        lstInterviewQuestionDTO.size(),
-                        strQuestion,
+                interviewQuestionDTOs.add(createQuestion(
+                        interviewQuestionDTOs.size(),
+                        question,
                         categoryDTO.getKey(),
                         categoryDTO.getLabel()));
             }
         }
 
-        String strSkillName = skillDTO.getName() == null ? "当前面试方向" : skillDTO.getName();
+        String skillName = skillDTO.getName() == null ? "当前面试方向" : skillDTO.getName();
 
-        while (lstInterviewQuestionDTO.size() < intSafeQuestionCount) {
-            String strFocus = lstQuestionFocus.get(lstInterviewQuestionDTO.size() % lstQuestionFocus.size());
+        while (interviewQuestionDTOs.size() < safeQuestionCount) {
+            String focus = questionFocuses.get(interviewQuestionDTOs.size() % questionFocuses.size());
 
-            lstInterviewQuestionDTO.add(createQuestion(
-                    lstInterviewQuestionDTO.size(),
-                    strExperienceContext + "，说明你对" + strSkillName + "岗位" + strFocus + "的理解。",
+            interviewQuestionDTOs.add(createQuestion(
+                    interviewQuestionDTOs.size(),
+                    experienceContext + "，说明你对" + skillName + "岗位" + focus + "的理解。",
                     "GENERAL",
-                    strSkillName));
+                    skillName));
         }
 
-        return lstInterviewQuestionDTO;
+        return interviewQuestionDTOs;
     }
 
     /**
      * 功能说明
      * <p>创建单道面试题对象。</p>
      *
-     * @param intQuestionIndex 题目索引
-     * @param strQuestion      题目内容
-     * @param strType          题目类型
-     * @param strCategory      题目分类
-     * @param strTopicSummary  知识点摘要
+     * @param questionIndex 题目索引
+     * @param question      题目内容
+     * @param type          题目类型
+     * @param category      题目分类
+     * @param topicSummary  知识点摘要
      * @return 面试题 DTO
      * @author NobuNo
      * @date 2026-07-02
      */
     private InterviewQuestionDTO createQuestion(
-            Integer intQuestionIndex,
-            String strQuestion,
-            String strType,
-            String strCategory,
-            String strTopicSummary) {
+            Integer questionIndex,
+            String question,
+            String type,
+            String category,
+            String topicSummary) {
 
-        InterviewQuestionDTO cplInterviewQuestionDTO = new InterviewQuestionDTO();
-        cplInterviewQuestionDTO.setQuestionIndex(intQuestionIndex);
-        cplInterviewQuestionDTO.setQuestion(strQuestion);
-        cplInterviewQuestionDTO.setType(strType);
-        cplInterviewQuestionDTO.setCategory(strCategory);
-        cplInterviewQuestionDTO.setTopicSummary(strTopicSummary);
-        return cplInterviewQuestionDTO;
+        InterviewQuestionDTO interviewQuestionDTO = new InterviewQuestionDTO();
+        interviewQuestionDTO.setQuestionIndex(questionIndex);
+        interviewQuestionDTO.setQuestion(question);
+        interviewQuestionDTO.setType(type);
+        interviewQuestionDTO.setCategory(category);
+        interviewQuestionDTO.setTopicSummary(topicSummary);
+        return interviewQuestionDTO;
     }
 
     /**
      * 功能说明
      * <p>创建不包含知识点摘要的面试题对象。</p>
      *
-     * @param intQuestionIndex 题目索引
-     * @param strQuestion      题目内容
-     * @param strType          题目类型
-     * @param strCategory      题目分类
+     * @param questionIndex 题目索引
+     * @param question      题目内容
+     * @param type          题目类型
+     * @param category      题目分类
      * @return 面试题 DTO
      * @author NobuNo
      * @date 2026-07-02
      */
     private InterviewQuestionDTO createQuestion(
-            Integer intQuestionIndex,
-            String strQuestion,
-            String strType,
-            String strCategory) {
+            Integer questionIndex,
+            String question,
+            String type,
+            String category) {
 
         return createQuestion(
-                intQuestionIndex,
-                strQuestion,
-                strType,
-                strCategory,
+                questionIndex,
+                question,
+                type,
+                category,
                 null);
     }
 

@@ -21,32 +21,32 @@ public interface ResumeAnalysisRepository extends JpaRepository<ResumeAnalysisEn
      * 功能说明
      * <p>根据简历编号查询分析结果。</p>
      *
-     * @param lngResumeId 简历编号
+     * @param resumeId 简历编号
      * @return 简历分析结果
      * @author NobuNo
      * @date 2026-04-14
      */
-    Optional<ResumeAnalysisEntity> findByResumeId(Long lngResumeId);
+    Optional<ResumeAnalysisEntity> findByResumeId(Long resumeId);
 
     /**
      * 功能说明
      * <p>根据简历编号列表查询分析结果。</p>
      *
-     * @param lstResumeId 简历编号列表
+     * @param resumeIds 简历编号列表
      * @return 简历分析结果列表
      * @author NobuNo
      * @date 2026-04-14
      */
-    List<ResumeAnalysisEntity> findByResumeIdIn(List<Long> lstResumeId);
+    List<ResumeAnalysisEntity> findByResumeIdIn(List<Long> resumeIds);
 
     /**
      * 功能说明
      * <p>按分析时间倒序查询简历分析历史。</p>
      *
-     * @param lngResumeId 简历编号
+     * @param resumeId 简历编号
      * @return 简历分析历史列表
      * @author NobuNo
      * @date 2026-04-14
      */
-    List<ResumeAnalysisEntity> findByResumeIdOrderByAnalyzedAtDesc(Long lngResumeId);
+    List<ResumeAnalysisEntity> findByResumeIdOrderByAnalyzedAtDesc(Long resumeId);
 }

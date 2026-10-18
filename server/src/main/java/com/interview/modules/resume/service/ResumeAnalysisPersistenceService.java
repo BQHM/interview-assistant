@@ -33,26 +33,26 @@ public class ResumeAnalysisPersistenceService {
      * 功能说明
      * <p>保存简历分析结果。</p>
      *
-     * @param tblResumeEntity 简历实体
-     * @param cplResumeAnalysisResultDTO 简历分析结果
+     * @param resumeEntity 简历实体
+     * @param resumeAnalysisResultDTO 简历分析结果
      * @author NobuNo
      * @date 2026-04-17
      */
-    public void saveAnalysis(ResumeEntity tblResumeEntity, ResumeAnalysisResultDTO cplResumeAnalysisResultDTO) {
-        log.info("开始保存简历分析结果: resumeId={}", tblResumeEntity.getId());
+    public void saveAnalysis(ResumeEntity resumeEntity, ResumeAnalysisResultDTO resumeAnalysisResultDTO) {
+        log.info("开始保存简历分析结果: resumeId={}", resumeEntity.getId());
 
-        if (cplResumeAnalysisResultDTO == null || cplResumeAnalysisResultDTO.getScoreDetail() == null) {
-            log.error("简历分析结果不完整，无法落库: resumeId={}", tblResumeEntity.getId());
+        if (resumeAnalysisResultDTO == null || resumeAnalysisResultDTO.getScoreDetail() == null) {
+            log.error("简历分析结果不完整，无法落库: resumeId={}", resumeEntity.getId());
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果不完整，无法落库");
         }
 
-        ResumeAnalysisEntity tblResumeAnalysisEntity = ResumeAnalysisPersistenceConverter.convertToResumeAnalysisEntity(
-                tblResumeEntity,
-                cplResumeAnalysisResultDTO,
+        ResumeAnalysisEntity resumeAnalysisEntity = ResumeAnalysisPersistenceConverter.convertToResumeAnalysisEntity(
+                resumeEntity,
+                resumeAnalysisResultDTO,
                 objectMapper
         );
 
-        resumeAnalysisRepository.save(tblResumeAnalysisEntity);
-        log.info("保存简历分析结果成功: resumeId={}", tblResumeEntity.getId());
+        resumeAnalysisRepository.save(resumeAnalysisEntity);
+        log.info("保存简历分析结果成功: resumeId={}", resumeEntity.getId());
     }
 }

@@ -19,22 +19,22 @@ public class ResumeUploadConverter {
      * 功能说明
      * <p>转换简历上传响应。</p>
      *
-     * @param tblResumeEntity 简历实体
-     * @param boolIsDuplicate 是否重复简历
+     * @param resumeEntity 简历实体
+     * @param isDuplicate 是否重复简历
      * @return 简历上传响应
      * @author NobuNo
      * @date 2026-04-20
      */
     public static ResumeUploadResponseDTO convertToResumeUploadResponseDTO(
-            ResumeEntity tblResumeEntity,
-            Boolean boolIsDuplicate) {
+            ResumeEntity resumeEntity,
+            Boolean isDuplicate) {
 
-        ResumeUploadResponseDTO cplResumeUploadResponseDTO = new ResumeUploadResponseDTO();
-        cplResumeUploadResponseDTO.setResumeId(tblResumeEntity.getId()); // 简历ID
-        cplResumeUploadResponseDTO.setFilename(tblResumeEntity.getOriginalFilename()); // 文件名
-        cplResumeUploadResponseDTO.setStorageKey(tblResumeEntity.getStorageKey()); // 对象存储键
-        cplResumeUploadResponseDTO.setAnalyzeStatus(tblResumeEntity.getAnalyzeStatus()); // 分析状态
-        cplResumeUploadResponseDTO.setDuplicate(boolIsDuplicate); // 是否重复简历
-        return cplResumeUploadResponseDTO;
+        ResumeUploadResponseDTO resumeUploadResponseDTO = new ResumeUploadResponseDTO();
+        resumeUploadResponseDTO.setResumeId(resumeEntity.getId()); // 简历ID
+        resumeUploadResponseDTO.setFilename(resumeEntity.getOriginalFilename()); // 文件名
+        resumeUploadResponseDTO.setStorageKey(resumeEntity.getStorageKey()); // 对象存储键
+        resumeUploadResponseDTO.setAnalyzeStatus(resumeEntity.getAnalyzeStatus()); // 分析状态
+        resumeUploadResponseDTO.setDuplicate(isDuplicate); // 是否重复简历
+        return resumeUploadResponseDTO;
     }
 }

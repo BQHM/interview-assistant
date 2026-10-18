@@ -42,25 +42,25 @@ class InterviewQuestionServiceTest {
 
         when(chatClient.prompt()).thenThrow(new IllegalStateException("AI unavailable"));
 
-        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+        List<InterviewQuestionDTO> questionDTOs = interviewQuestionService.generateQuestions(
                 "熟悉 Spring Boot、MySQL、Redis、Docker。",
                 4);
 
-        assertThat(lstQuestionDTO).hasSize(4);
-        assertThat(lstQuestionDTO)
+        assertThat(questionDTOs).hasSize(4);
+        assertThat(questionDTOs)
                 .extracting(InterviewQuestionDTO::getQuestionIndex)
                 .containsExactly(0, 1, 2, 3);
-        assertThat(lstQuestionDTO)
+        assertThat(questionDTOs)
                 .extracting(InterviewQuestionDTO::getCategory)
                 .containsExactly("Java 基础", "Java 基础", "Java 基础", "项目经验");
-        assertThat(lstQuestionDTO)
+        assertThat(questionDTOs)
                 .extracting(InterviewQuestionDTO::getType)
                 .containsExactly("JAVA", "JAVA", "JAVA", "PROJECT");
-        assertThat(lstQuestionDTO)
+        assertThat(questionDTOs)
                 .extracting(InterviewQuestionDTO::getQuestion)
-                .allSatisfy(strQuestion -> assertThat(strQuestion)
+                .allSatisfy(question -> assertThat(question)
                         .startsWith("请结合你的简历或项目经历，"))
-                .noneMatch(strQuestion -> strQuestion.contains(
+                .noneMatch(question -> question.contains(
                         "请结合你的简历或项目经历请结合你的简历或项目经历"));
     }
 
@@ -71,14 +71,14 @@ class InterviewQuestionServiceTest {
 
         when(chatClient.prompt()).thenThrow(new IllegalStateException("AI unavailable"));
 
-        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+        List<InterviewQuestionDTO> questionDTOs = interviewQuestionService.generateQuestions(
                 "  ",
                 2);
 
-        assertThat(lstQuestionDTO).hasSize(2);
-        assertThat(lstQuestionDTO)
+        assertThat(questionDTOs).hasSize(2);
+        assertThat(questionDTOs)
                 .extracting(InterviewQuestionDTO::getQuestion)
-                .allSatisfy(strQuestion -> assertThat(strQuestion)
+                .allSatisfy(question -> assertThat(question)
                         .startsWith("请结合你的实际经历，"));
     }
 
@@ -86,7 +86,7 @@ class InterviewQuestionServiceTest {
     void generateQuestions_shouldNormalizeUnstableAiQuestionCount() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
-        String strAiResponse = """
+        String aiResponse = """
                 {
                   "questions": [
                     {
@@ -109,29 +109,29 @@ class InterviewQuestionServiceTest {
                 .system(anyString())
                 .user(anyString())
                 .call()
-                .content()).thenReturn(strAiResponse);
+                .content()).thenReturn(aiResponse);
 
-        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+        List<InterviewQuestionDTO> questionDTOs = interviewQuestionService.generateQuestions(
                 "熟悉 Spring Boot。",
                 4);
 
-        assertThat(lstQuestionDTO).hasSize(4);
-        assertThat(lstQuestionDTO)
+        assertThat(questionDTOs).hasSize(4);
+        assertThat(questionDTOs)
                 .extracting(InterviewQuestionDTO::getQuestionIndex)
                 .containsExactly(0, 1, 2, 3);
-        assertThat(lstQuestionDTO.get(0).getCategory()).isEqualTo("综合能力");
-        assertThat(lstQuestionDTO.get(0).getType()).isEqualTo("GENERAL");
-        assertThat(lstQuestionDTO.get(1).getCategory()).isEqualTo("Java");
-        assertThat(lstQuestionDTO)
+        assertThat(questionDTOs.get(0).getCategory()).isEqualTo("综合能力");
+        assertThat(questionDTOs.get(0).getType()).isEqualTo("GENERAL");
+        assertThat(questionDTOs.get(1).getCategory()).isEqualTo("Java");
+        assertThat(questionDTOs)
                 .extracting(InterviewQuestionDTO::getQuestion)
-                .allSatisfy(strQuestion -> assertThat(strQuestion).isNotBlank());
+                .allSatisfy(question -> assertThat(question).isNotBlank());
     }
 
     @Test
     void generateQuestions_shouldPreserveTopicSummaryFromAiResponse() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
-        String strAiResponse = """
+        String aiResponse = """
                 {
                   "questions": [
                     {
@@ -149,23 +149,23 @@ class InterviewQuestionServiceTest {
                 .system(anyString())
                 .user(anyString())
                 .call()
-                .content()).thenReturn(strAiResponse);
+                .content()).thenReturn(aiResponse);
 
-        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+        List<InterviewQuestionDTO> questionDTOs = interviewQuestionService.generateQuestions(
                 "熟悉 Java 并发编程。",
                 1,
                 "java-backend");
 
-        assertThat(lstQuestionDTO).hasSize(1);
-        assertThat(lstQuestionDTO.get(0).getQuestionIndex()).isZero();
-        assertThat(lstQuestionDTO.get(0).getTopicSummary()).isEqualTo("Java线程池参数");
+        assertThat(questionDTOs).hasSize(1);
+        assertThat(questionDTOs.get(0).getQuestionIndex()).isZero();
+        assertThat(questionDTOs.get(0).getTopicSummary()).isEqualTo("Java线程池参数");
     }
 
     @Test
     void generateQuestions_shouldInjectSkillPersonaAndCategoriesIntoPrompt() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
-        String strAiResponse = """
+        String aiResponse = """
                 {
                   "questions": [
                     {
@@ -185,22 +185,22 @@ class InterviewQuestionServiceTest {
                 """;
 
         when(chatClient.prompt()
-                .system(argThat((String strPrompt) -> strPrompt.contains("资深 Java 后端面试官")))
-                .user(argThat((String strPrompt) -> strPrompt.contains("JAVA")
-                        && strPrompt.contains("目标生成 1 道题")
-                        && strPrompt.contains("核心方向，优先覆盖")
-                        && strPrompt.contains("PROJECT")
-                        && strPrompt.contains("必须至少生成 1 道题")))
+                .system(argThat((String prompt) -> prompt.contains("资深 Java 后端面试官")))
+                .user(argThat((String prompt) -> prompt.contains("JAVA")
+                        && prompt.contains("目标生成 1 道题")
+                        && prompt.contains("核心方向，优先覆盖")
+                        && prompt.contains("PROJECT")
+                        && prompt.contains("必须至少生成 1 道题")))
                 .call()
-                .content()).thenReturn(strAiResponse);
+                .content()).thenReturn(aiResponse);
 
-        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+        List<InterviewQuestionDTO> questionDTOs = interviewQuestionService.generateQuestions(
                 "熟悉 Java，并有真实项目经验。",
                 2,
                 "java-backend");
 
-        assertThat(lstQuestionDTO).hasSize(2);
-        assertThat(lstQuestionDTO.get(0).getQuestion()).isEqualTo("AI Skill 注入题");
+        assertThat(questionDTOs).hasSize(2);
+        assertThat(questionDTOs.get(0).getQuestion()).isEqualTo("AI Skill 注入题");
     }
 
     @Test
@@ -232,7 +232,7 @@ class InterviewQuestionServiceTest {
     void generateQuestions_shouldRetryWithStricterPromptWhenAiReturnsInvalidJson() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
-        String strAiResponse = """
+        String aiResponse = """
                 {
                   "questions": [
                     {
@@ -251,15 +251,15 @@ class InterviewQuestionServiceTest {
                 .system(anyString())
                 .user(anyString())
                 .call()
-                .content()).thenReturn("这不是合法的 JSON", strAiResponse);
+                .content()).thenReturn("这不是合法的 JSON", aiResponse);
 
-        List<InterviewQuestionDTO> lstQuestionDTO = interviewQuestionService.generateQuestions(
+        List<InterviewQuestionDTO> questionDTOs = interviewQuestionService.generateQuestions(
                 "熟悉 Java 并发编程。",
                 1,
                 "java-backend");
 
-        assertThat(lstQuestionDTO).hasSize(1);
-        assertThat(lstQuestionDTO.get(0).getQuestion()).isEqualTo("AI 重试后题目");
+        assertThat(questionDTOs).hasSize(1);
+        assertThat(questionDTOs.get(0).getQuestion()).isEqualTo("AI 重试后题目");
     }
 
     private InterviewQuestionService createService(
@@ -325,14 +325,14 @@ class InterviewQuestionServiceTest {
     }
 
     private InterviewSkillCategoryDTO createCategory(
-            String strKey,
-            String strLabel,
-            String strPriority
+            String key,
+            String label,
+            String priority
     ) {
         InterviewSkillCategoryDTO categoryDTO = new InterviewSkillCategoryDTO();
-        categoryDTO.setKey(strKey);
-        categoryDTO.setLabel(strLabel);
-        categoryDTO.setPriority(strPriority);
+        categoryDTO.setKey(key);
+        categoryDTO.setLabel(label);
+        categoryDTO.setPriority(priority);
         return categoryDTO;
     }
 }

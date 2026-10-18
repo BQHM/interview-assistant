@@ -54,74 +54,74 @@ public class InterviewHistoryService {
     public List<InterviewSessionListItemDTO> getHistory() {
 
         // 按创建时间倒序查询所有面试会话
-        List<InterviewSessionEntity> lstInterviewSessionEntity = interviewSessionRepository
+        List<InterviewSessionEntity> interviewSessionEntities = interviewSessionRepository
                 .findAllByOrderByCreatedAtDesc();
 
-        List<InterviewSessionListItemDTO> lstInterviewSessionListItemDTO = new ArrayList<>();
+        List<InterviewSessionListItemDTO> interviewSessionListItemDTOs = new ArrayList<>();
 
-        for (InterviewSessionEntity tblInterviewSessionEntity : lstInterviewSessionEntity) {
-            InterviewSessionListItemDTO cplInterviewSessionListItemDTO = InterviewSessionConverter
-                    .convertToInterviewSessionListItemDTO(tblInterviewSessionEntity);
-            lstInterviewSessionListItemDTO.add(cplInterviewSessionListItemDTO);
+        for (InterviewSessionEntity interviewSessionEntity : interviewSessionEntities) {
+            InterviewSessionListItemDTO interviewSessionListItemDTO = InterviewSessionConverter
+                    .convertToInterviewSessionListItemDTO(interviewSessionEntity);
+            interviewSessionListItemDTOs.add(interviewSessionListItemDTO);
         }
 
-        return lstInterviewSessionListItemDTO;
+        return interviewSessionListItemDTOs;
     }
 
     /**
      * 功能说明
      * <p>查询面试历史详情。</p>
      *
-     * @param strSessionId 面试会话编号
+     * @param sessionId 面试会话编号
      * @return 面试历史详情
      * @author NobuNo
      * @date 2026-06-29
      */
-    public InterviewDetailDTO getInterviewDetail(String strSessionId) {
+    public InterviewDetailDTO getInterviewDetail(String sessionId) {
         // 根据会话ID查询面试会话
         Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
-                .findBySessionId(strSessionId);
+                .findBySessionId(sessionId);
 
         if (optInterviewSessionEntity.isEmpty()) {
             throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND, "面试会话不存在");
         }
 
         // 获取面试会话
-        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+        InterviewSessionEntity interviewSessionEntity = optInterviewSessionEntity.get();
 
-        List<InterviewQuestionDTO> lstInterviewQuestionDTO;
+        List<InterviewQuestionDTO> interviewQuestionDTOs;
         try {
-            lstInterviewQuestionDTO = objectMapper.readValue(
-                    tblInterviewSessionEntity.getQuestionsJson(),
+            interviewQuestionDTOs = objectMapper.readValue(
+                    interviewSessionEntity.getQuestionsJson(),
                     new TypeReference<List<InterviewQuestionDTO>>() {
                     });
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "面试题目反序列化失败");
         }
 
-        List<InterviewAnswerEntity> lstInterviewAnswerEntity = interviewAnswerRepository
-                .findBySessionOrderByQuestionIndexAsc(tblInterviewSessionEntity);
-        InterviewQuestionAnswerAggregator.fillUserAnswers(lstInterviewQuestionDTO, lstInterviewAnswerEntity);
+        List<InterviewAnswerEntity> interviewAnswerEntities = interviewAnswerRepository
+                .findBySessionOrderByQuestionIndexAsc(interviewSessionEntity);
+        InterviewQuestionAnswerAggregator.fillUserAnswers(interviewQuestionDTOs, interviewAnswerEntities);
 
         // 输出转换
-        InterviewDetailDTO cplInterviewDetailDTO = InterviewSessionConverter.convertToInterviewDetailDTO(
-                tblInterviewSessionEntity,
-                lstInterviewQuestionDTO);
-        return cplInterviewDetailDTO;
+        InterviewDetailDTO interviewDetailDTO = InterviewSessionConverter.convertToInterviewDetailDTO(
+                interviewSessionEntity,
+                interviewQuestionDTOs);
+        return interviewDetailDTO;
     }
 
     /**
      * 功能说明
      * <p>删除面试会话。</p>
      *
-     * @param strSessionId 面试会话编号
+     * @param sessionId 面试会话编号
      * @author NobuNo
      * @date 2026-06-29
      */
     @Transactional
-    public void deleteInterview(String strSessionId) {
+    public void deleteInterview(String sessionId) {
         Optional<InterviewSessionEntity> optInterviewSessionEntity = interviewSessionRepository
-                .findBySessionId(strSessionId);
+                .findBySessionId(sessionId);
 
         if (optInterviewSessionEntity.isEmpty()) {
             throw new BusinessException(
@@ -129,14 +129,14 @@ public class InterviewHistoryService {
                     "面试会话不存在");
         }
 
-        InterviewSessionEntity tblInterviewSessionEntity = optInterviewSessionEntity.get();
+        InterviewSessionEntity interviewSessionEntity = optInterviewSessionEntity.get();
 
         // 删除答案表中的所有记录
-        interviewAnswerRepository.deleteBySession(tblInterviewSessionEntity);
+        interviewAnswerRepository.deleteBySession(interviewSessionEntity);
 
         // 删除会话记录
-        interviewSessionRepository.delete(tblInterviewSessionEntity);
+        interviewSessionRepository.delete(interviewSessionEntity);
 
-        log.info("删除面试会话成功: sessionId={}", strSessionId);
+        log.info("删除面试会话成功: sessionId={}", sessionId);
     }
 }
