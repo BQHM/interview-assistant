@@ -65,27 +65,27 @@ public class ResumeGradingService {
      * 功能说明
      * <p>分析简历正文。</p>
      *
-     * @param resumeText 简历正文
+     * @param rawResumeText 简历正文，尚未裁剪首尾空白
      * @return 简历分析结果
      * @author NobuNo
      * @date 2026-04-14
      */
-    public ResumeAnalysisResultDTO analyzeResume(String resumeText) {
+    public ResumeAnalysisResultDTO analyzeResume(String rawResumeText) {
 
-        if (resumeText == null || resumeText.trim().isEmpty()) {
+        if (rawResumeText == null || rawResumeText.trim().isEmpty()) {
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历文本为空，无法分析");
         }
-        String strResumeText = resumeText.trim();
-        log.info("开始执行简历分析: textLength={}", strResumeText.length());
+        String resumeText = rawResumeText.trim();
+        log.info("开始执行简历分析: textLength={}", resumeText.length());
         try {
-            ResumeAnalysisResultDTO cplResumeAnalysisResultDTO = analyzeByAi(strResumeText);
-            log.info("AI 简历分析成功: overallScore={}", cplResumeAnalysisResultDTO.getOverallScore());
-            return cplResumeAnalysisResultDTO;
+            ResumeAnalysisResultDTO resumeAnalysisResultDTO = analyzeByAi(resumeText);
+            log.info("AI 简历分析成功: overallScore={}", resumeAnalysisResultDTO.getOverallScore());
+            return resumeAnalysisResultDTO;
         } catch (Exception e) {
             log.warn("AI 简历分析失败, fallback to rule-based analysis", e);
-            ResumeAnalysisResultDTO cplResumeAnalysisResultDTO = buildRuleBasedResult(strResumeText);
-            log.info("规则版简历分析完成: overallScore={}", cplResumeAnalysisResultDTO.getOverallScore());
-            return cplResumeAnalysisResultDTO;
+            ResumeAnalysisResultDTO resumeAnalysisResultDTO = buildRuleBasedResult(resumeText);
+            log.info("规则版简历分析完成: overallScore={}", resumeAnalysisResultDTO.getOverallScore());
+            return resumeAnalysisResultDTO;
         }
     }
 
@@ -93,97 +93,97 @@ public class ResumeGradingService {
      * 功能说明
      * <p>调用 AI 分析简历。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 简历分析结果
      * @author NobuNo
      * @date 2026-04-14
      */
-    private ResumeAnalysisResultDTO analyzeByAi(String strResumeText) {
-        String strSystemPrompt = systemPromptTemplate.render();
+    private ResumeAnalysisResultDTO analyzeByAi(String resumeText) {
+        String systemPrompt = systemPromptTemplate.render();
 
-        Map<String, Object> mapVariables = new HashMap<>();
-        mapVariables.put("resumeText", strResumeText);
-        String strUserPrompt = userPromptTemplate.render(mapVariables);
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("resumeText", resumeText);
+        String userPrompt = userPromptTemplate.render(variables);
 
-        String strSystemPromptWithFormat = strSystemPrompt + "\n\n" + outputConverter.getFormat();
-        String strRawContent = chatClient.prompt()
-                .system(strSystemPromptWithFormat)
-                .user(strUserPrompt)
+        String systemPromptWithFormat = systemPrompt + "\n\n" + outputConverter.getFormat();
+        String rawContent = chatClient.prompt()
+                .system(systemPromptWithFormat)
+                .user(userPrompt)
                 .call()
                 .content();
 
-        log.info("Resume analysis raw AI response: 【{}】", strRawContent);
-        return outputConverter.convert(strRawContent);
+        log.info("Resume analysis raw AI response: 【{}】", rawContent);
+        return outputConverter.convert(rawContent);
     }
 
     /**
      * 功能说明
      * <p>构建规则版简历分析结果。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 简历分析结果
      * @author NobuNo
      * @date 2026-04-14
      */
-    private ResumeAnalysisResultDTO buildRuleBasedResult(String strResumeText) {
-        ResumeAnalysisResultDTO cplResumeAnalysisResultDTO = new ResumeAnalysisResultDTO();
+    private ResumeAnalysisResultDTO buildRuleBasedResult(String resumeText) {
+        ResumeAnalysisResultDTO resumeAnalysisResultDTO = new ResumeAnalysisResultDTO();
 
-        int intContentScore = scoreContent(strResumeText);
-        int intStructureScore = scoreStructure(strResumeText);
-        int intSkillMatchScore = scoreSkillMatch(strResumeText);
-        int intExpressionScore = scoreExpression(strResumeText);
-        int intProjectScore = scoreProject(strResumeText);
+        int contentScore = scoreContent(resumeText);
+        int structureScore = scoreStructure(resumeText);
+        int skillMatchScore = scoreSkillMatch(resumeText);
+        int expressionScore = scoreExpression(resumeText);
+        int projectScore = scoreProject(resumeText);
 
-        int intOverallScore = intContentScore + intStructureScore + intSkillMatchScore + intExpressionScore + intProjectScore;
+        int overallScore = contentScore + structureScore + skillMatchScore + expressionScore + projectScore;
 
-        ResumeAnalysisResultDTO.ScoreDetail cplScoreDetail = new ResumeAnalysisResultDTO.ScoreDetail();
-        cplScoreDetail.setContentScore(intContentScore);
-        cplScoreDetail.setStructureScore(intStructureScore);
-        cplScoreDetail.setSkillMatchScore(intSkillMatchScore);
-        cplScoreDetail.setExpressionScore(intExpressionScore);
-        cplScoreDetail.setProjectScore(intProjectScore);
+        ResumeAnalysisResultDTO.ScoreDetail scoreDetail = new ResumeAnalysisResultDTO.ScoreDetail();
+        scoreDetail.setContentScore(contentScore);
+        scoreDetail.setStructureScore(structureScore);
+        scoreDetail.setSkillMatchScore(skillMatchScore);
+        scoreDetail.setExpressionScore(expressionScore);
+        scoreDetail.setProjectScore(projectScore);
 
-        cplResumeAnalysisResultDTO.setOverallScore(intOverallScore);
-        cplResumeAnalysisResultDTO.setScoreDetail(cplScoreDetail);
-        cplResumeAnalysisResultDTO.setSummary(buildSummary(intOverallScore));
-        cplResumeAnalysisResultDTO.setStrengths(buildStrengths(strResumeText));
-        cplResumeAnalysisResultDTO.setSuggestions(buildSuggestions(strResumeText));
-        return cplResumeAnalysisResultDTO;
+        resumeAnalysisResultDTO.setOverallScore(overallScore);
+        resumeAnalysisResultDTO.setScoreDetail(scoreDetail);
+        resumeAnalysisResultDTO.setSummary(buildSummary(overallScore));
+        resumeAnalysisResultDTO.setStrengths(buildStrengths(resumeText));
+        resumeAnalysisResultDTO.setSuggestions(buildSuggestions(resumeText));
+        return resumeAnalysisResultDTO;
     }
 
     /**
      * 功能说明
      * <p>统计关键词命中数量。</p>
      *
-     * @param strResumeText 简历正文
-     * @param arrKeywords 关键词数组
+     * @param resumeText 简历正文
+     * @param keywords 关键词数组
      * @return 命中数量
      * @author NobuNo
      * @date 2026-04-14
      */
-    private int countMatches(String strResumeText, String... arrKeywords) {
-        int intCount = 0;
-        for (String strKeyword : arrKeywords) {
-            if (strResumeText.contains(strKeyword)) {
-                intCount++;
+    private int countMatches(String resumeText, String... keywords) {
+        int count = 0;
+        for (String keyword : keywords) {
+            if (resumeText.contains(keyword)) {
+                count++;
             }
         }
-        return intCount;
+        return count;
     }
 
     /**
      * 功能说明
      * <p>判断文本是否包含任意关键词。</p>
      *
-     * @param strResumeText 简历正文
-     * @param arrKeywords 关键词数组
+     * @param resumeText 简历正文
+     * @param keywords 关键词数组
      * @return 是否包含关键词
      * @author NobuNo
      * @date 2026-04-14
      */
-    private boolean containsAny(String strResumeText, String... arrKeywords) {
-        for (String strKeyword : arrKeywords) {
-            if (strResumeText.contains(strKeyword)) {
+    private boolean containsAny(String resumeText, String... keywords) {
+        for (String keyword : keywords) {
+            if (resumeText.contains(keyword)) {
                 return true;
             }
         }
@@ -194,47 +194,47 @@ public class ResumeGradingService {
      * 功能说明
      * <p>计算简历内容评分。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 内容评分
      * @author NobuNo
      * @date 2026-04-14
      */
-    private int scoreContent(String strResumeText) {
-        int intScore;
+    private int scoreContent(String resumeText) {
+        int score;
 
-        if (strResumeText.length() < 200) {
-            intScore = 5;
-        } else if (strResumeText.length() < 500) {
-            intScore = 10;
-        } else if (strResumeText.length() < 1000) {
-            intScore = 15;
+        if (resumeText.length() < 200) {
+            score = 5;
+        } else if (resumeText.length() < 500) {
+            score = 10;
+        } else if (resumeText.length() < 1000) {
+            score = 15;
         } else {
-            intScore = 18;
+            score = 18;
         }
 
-        int intSectionCount = countMatches(strResumeText, "教育", "项目", "工作经历", "技能", "实习");
-        intScore += intSectionCount * 2;
+        int sectionCount = countMatches(resumeText, "教育", "项目", "工作经历", "技能", "实习");
+        score += sectionCount * 2;
 
-        return Math.min(intScore, 25);
+        return Math.min(score, 25);
     }
 
     /**
      * 功能说明
      * <p>计算简历结构评分。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 结构评分
      * @author NobuNo
      * @date 2026-04-14
      */
-    private int scoreStructure(String strResumeText) {
-        int intSectionCount = countMatches(strResumeText, "教育", "项目", "工作经历", "技能", "实习");
+    private int scoreStructure(String resumeText) {
+        int sectionCount = countMatches(resumeText, "教育", "项目", "工作经历", "技能", "实习");
 
-        if (intSectionCount <= 1) {
+        if (sectionCount <= 1) {
             return 6;
-        } else if (intSectionCount == 2) {
+        } else if (sectionCount == 2) {
             return 10;
-        } else if (intSectionCount == 3) {
+        } else if (sectionCount == 3) {
             return 14;
         } else {
             return 18;
@@ -245,19 +245,19 @@ public class ResumeGradingService {
      * 功能说明
      * <p>计算技能匹配评分。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 技能匹配评分
      * @author NobuNo
      * @date 2026-04-14
      */
-    private int scoreSkillMatch(String strResumeText) {
-        int intSkillCount = countMatches(strResumeText, "Java", "Spring", "Spring Boot", "MySQL", "Redis", "Docker", "Linux", "Git");
+    private int scoreSkillMatch(String resumeText) {
+        int skillCount = countMatches(resumeText, "Java", "Spring", "Spring Boot", "MySQL", "Redis", "Docker", "Linux", "Git");
 
-        if (intSkillCount <= 1) {
+        if (skillCount <= 1) {
             return 6;
-        } else if (intSkillCount <= 3) {
+        } else if (skillCount <= 3) {
             return 12;
-        } else if (intSkillCount <= 5) {
+        } else if (skillCount <= 5) {
             return 18;
         } else {
             return 22;
@@ -268,18 +268,18 @@ public class ResumeGradingService {
      * 功能说明
      * <p>计算表达评分。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 表达评分
      * @author NobuNo
      * @date 2026-04-14
      */
-    private int scoreExpression(String strResumeText) {
-        boolean boolHasAction = containsAny(strResumeText, "负责", "设计", "实现", "优化", "重构");
-        boolean boolHasMetric = containsAny(strResumeText, "%", "提升", "降低", "减少", "QPS", "耗时");
+    private int scoreExpression(String resumeText) {
+        boolean hasAction = containsAny(resumeText, "负责", "设计", "实现", "优化", "重构");
+        boolean hasMetric = containsAny(resumeText, "%", "提升", "降低", "减少", "QPS", "耗时");
 
-        if (boolHasAction && boolHasMetric) {
+        if (hasAction && hasMetric) {
             return 13;
-        } else if (boolHasAction) {
+        } else if (hasAction) {
             return 10;
         } else {
             return 6;
@@ -290,21 +290,21 @@ public class ResumeGradingService {
      * 功能说明
      * <p>计算项目经验评分。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 项目经验评分
      * @author NobuNo
      * @date 2026-04-14
      */
-    private int scoreProject(String strResumeText) {
-        boolean boolHasProject = containsAny(strResumeText, "项目");
-        boolean boolHasResponsibility = containsAny(strResumeText, "负责", "实现", "设计", "优化");
-        boolean boolHasOutcome = containsAny(strResumeText, "提升", "降低", "%", "上线");
+    private int scoreProject(String resumeText) {
+        boolean hasProject = containsAny(resumeText, "项目");
+        boolean hasResponsibility = containsAny(resumeText, "负责", "实现", "设计", "优化");
+        boolean hasOutcome = containsAny(resumeText, "提升", "降低", "%", "上线");
 
-        if (boolHasProject && boolHasResponsibility && boolHasOutcome) {
+        if (hasProject && hasResponsibility && hasOutcome) {
             return 14;
-        } else if (boolHasProject && boolHasResponsibility) {
+        } else if (hasProject && hasResponsibility) {
             return 11;
-        } else if (boolHasProject) {
+        } else if (hasProject) {
             return 8;
         } else {
             return 3;
@@ -315,15 +315,15 @@ public class ResumeGradingService {
      * 功能说明
      * <p>生成简历分析总结。</p>
      *
-     * @param intOverallScore 综合评分
+     * @param overallScore 综合评分
      * @return 分析总结
      * @author NobuNo
      * @date 2026-04-14
      */
-    private String buildSummary(int intOverallScore) {
-        if (intOverallScore >= 75) {
+    private String buildSummary(int overallScore) {
+        if (overallScore >= 75) {
             return "简历整体较完整，具备一定岗位匹配度，建议进一步强化项目成果表达。";
-        } else if (intOverallScore >= 55) {
+        } else if (overallScore >= 55) {
             return "简历具备基础内容，但在结构清晰度和项目亮点上还有提升空间。";
         } else {
             return "简历内容较弱，建议补充完整经历、技能栈和项目说明。";
@@ -334,12 +334,12 @@ public class ResumeGradingService {
      * 功能说明
      * <p>生成简历优点列表。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 简历优点列表
      * @author NobuNo
      * @date 2026-04-14
      */
-    private List<String> buildStrengths(String strResumeText) {
+    private List<String> buildStrengths(String resumeText) {
         return List.of("具备基础简历结构", "包含一定技术关键词");
     }
 
@@ -347,24 +347,24 @@ public class ResumeGradingService {
      * 功能说明
      * <p>生成简历修改建议。</p>
      *
-     * @param strResumeText 简历正文
+     * @param resumeText 简历正文
      * @return 简历修改建议
      * @author NobuNo
      * @date 2026-04-14
      */
-    private List<ResumeAnalysisResultDTO.Suggestion> buildSuggestions(String strResumeText) {
-        ResumeAnalysisResultDTO.Suggestion cplSuggestionProject = new ResumeAnalysisResultDTO.Suggestion();
-        cplSuggestionProject.setCategory("项目");
-        cplSuggestionProject.setPriority("高");
-        cplSuggestionProject.setIssue("项目成果量化描述不足");
-        cplSuggestionProject.setRecommendation("补充性能提升、效率提升、成本降低等可量化结果");
+    private List<ResumeAnalysisResultDTO.Suggestion> buildSuggestions(String resumeText) {
+        ResumeAnalysisResultDTO.Suggestion suggestionProject = new ResumeAnalysisResultDTO.Suggestion();
+        suggestionProject.setCategory("项目");
+        suggestionProject.setPriority("高");
+        suggestionProject.setIssue("项目成果量化描述不足");
+        suggestionProject.setRecommendation("补充性能提升、效率提升、成本降低等可量化结果");
 
-        ResumeAnalysisResultDTO.Suggestion cplSuggestionSkill = new ResumeAnalysisResultDTO.Suggestion();
-        cplSuggestionSkill.setCategory("技能");
-        cplSuggestionSkill.setPriority("中");
-        cplSuggestionSkill.setIssue("岗位匹配技能展示不够突出");
-        cplSuggestionSkill.setRecommendation("将与目标岗位最相关的技术栈前置展示，并结合项目说明使用场景");
+        ResumeAnalysisResultDTO.Suggestion suggestionSkill = new ResumeAnalysisResultDTO.Suggestion();
+        suggestionSkill.setCategory("技能");
+        suggestionSkill.setPriority("中");
+        suggestionSkill.setIssue("岗位匹配技能展示不够突出");
+        suggestionSkill.setRecommendation("将与目标岗位最相关的技术栈前置展示，并结合项目说明使用场景");
 
-        return List.of(cplSuggestionProject, cplSuggestionSkill);
+        return List.of(suggestionProject, suggestionSkill);
     }
 }

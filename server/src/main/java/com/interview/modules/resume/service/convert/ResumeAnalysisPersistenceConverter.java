@@ -24,35 +24,35 @@ public class ResumeAnalysisPersistenceConverter {
      * 功能说明
      * <p>转换简历分析实体。</p>
      *
-     * @param tblResumeEntity 简历实体
-     * @param cplResumeAnalysisResultDTO 简历分析结果
+     * @param resumeEntity 简历实体
+     * @param resumeAnalysisResultDTO 简历分析结果
      * @param objectMapper JSON 转换器
      * @return 简历分析实体
      * @author NobuNo
      * @date 2026-04-20
      */
     public static ResumeAnalysisEntity convertToResumeAnalysisEntity(
-            ResumeEntity tblResumeEntity,
-            ResumeAnalysisResultDTO cplResumeAnalysisResultDTO,
+            ResumeEntity resumeEntity,
+            ResumeAnalysisResultDTO resumeAnalysisResultDTO,
             ObjectMapper objectMapper) {
 
-        ResumeAnalysisEntity tblResumeAnalysisEntity = new ResumeAnalysisEntity();
-        tblResumeAnalysisEntity.setResume(tblResumeEntity); // 关联简历
-        tblResumeAnalysisEntity.setOverallScore(cplResumeAnalysisResultDTO.getOverallScore()); // 综合评分
-        tblResumeAnalysisEntity.setContentScore(cplResumeAnalysisResultDTO.getScoreDetail().getContentScore()); // 内容完整性评分
-        tblResumeAnalysisEntity.setStructureScore(cplResumeAnalysisResultDTO.getScoreDetail().getStructureScore()); // 结构清晰度评分
-        tblResumeAnalysisEntity.setSkillMatchScore(cplResumeAnalysisResultDTO.getScoreDetail().getSkillMatchScore()); // 技能匹配度评分
-        tblResumeAnalysisEntity.setExpressionScore(cplResumeAnalysisResultDTO.getScoreDetail().getExpressionScore()); // 表达专业性评分
-        tblResumeAnalysisEntity.setProjectScore(cplResumeAnalysisResultDTO.getScoreDetail().getProjectScore()); // 项目经验评分
-        tblResumeAnalysisEntity.setSummary(cplResumeAnalysisResultDTO.getSummary()); // 分析总结
+        ResumeAnalysisEntity resumeAnalysisEntity = new ResumeAnalysisEntity();
+        resumeAnalysisEntity.setResume(resumeEntity); // 关联简历
+        resumeAnalysisEntity.setOverallScore(resumeAnalysisResultDTO.getOverallScore()); // 综合评分
+        resumeAnalysisEntity.setContentScore(resumeAnalysisResultDTO.getScoreDetail().getContentScore()); // 内容完整性评分
+        resumeAnalysisEntity.setStructureScore(resumeAnalysisResultDTO.getScoreDetail().getStructureScore()); // 结构清晰度评分
+        resumeAnalysisEntity.setSkillMatchScore(resumeAnalysisResultDTO.getScoreDetail().getSkillMatchScore()); // 技能匹配度评分
+        resumeAnalysisEntity.setExpressionScore(resumeAnalysisResultDTO.getScoreDetail().getExpressionScore()); // 表达专业性评分
+        resumeAnalysisEntity.setProjectScore(resumeAnalysisResultDTO.getScoreDetail().getProjectScore()); // 项目经验评分
+        resumeAnalysisEntity.setSummary(resumeAnalysisResultDTO.getSummary()); // 分析总结
 
         try {
-            tblResumeAnalysisEntity.setStrengthsJson(objectMapper.writeValueAsString(cplResumeAnalysisResultDTO.getStrengths())); // 优点列表JSON
-            tblResumeAnalysisEntity.setSuggestionsJson(objectMapper.writeValueAsString(cplResumeAnalysisResultDTO.getSuggestions())); // 改进建议JSON
+            resumeAnalysisEntity.setStrengthsJson(objectMapper.writeValueAsString(resumeAnalysisResultDTO.getStrengths())); // 优点列表JSON
+            resumeAnalysisEntity.setSuggestionsJson(objectMapper.writeValueAsString(resumeAnalysisResultDTO.getSuggestions())); // 改进建议JSON
         } catch (JacksonException e) {
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果序列化失败");
         }
 
-        return tblResumeAnalysisEntity;
+        return resumeAnalysisEntity;
     }
 }

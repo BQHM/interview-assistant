@@ -28,50 +28,50 @@ public class ResumeAnalysisQueryConverter {
      * 功能说明
      * <p>转换简历分析结果。</p>
      *
-     * @param tblResumeAnalysisEntity 简历分析实体
+     * @param resumeAnalysisEntity 简历分析实体
      * @param objectMapper JSON 转换器
      * @return 简历分析结果
      * @author NobuNo
      * @date 2026-04-20
      */
     public static ResumeAnalysisDTO convertToResumeAnalysisDTO(
-            ResumeAnalysisEntity tblResumeAnalysisEntity,
+            ResumeAnalysisEntity resumeAnalysisEntity,
             ObjectMapper objectMapper) {
 
-        ResumeAnalysisDTO cplResumeAnalysisDTO = new ResumeAnalysisDTO();
-        ResumeAnalysisDTO.ScoreDetail cplScoreDetail = new ResumeAnalysisDTO.ScoreDetail();
+        ResumeAnalysisDTO resumeAnalysisDTO = new ResumeAnalysisDTO();
+        ResumeAnalysisDTO.ScoreDetail scoreDetail = new ResumeAnalysisDTO.ScoreDetail();
 
-        cplResumeAnalysisDTO.setResumeId(tblResumeAnalysisEntity.getResume().getId()); // 简历ID
-        cplResumeAnalysisDTO.setOverallScore(tblResumeAnalysisEntity.getOverallScore()); // 综合评分
+        resumeAnalysisDTO.setResumeId(resumeAnalysisEntity.getResume().getId()); // 简历ID
+        resumeAnalysisDTO.setOverallScore(resumeAnalysisEntity.getOverallScore()); // 综合评分
 
-        cplScoreDetail.setContentScore(tblResumeAnalysisEntity.getContentScore()); // 内容完整性评分
-        cplScoreDetail.setStructureScore(tblResumeAnalysisEntity.getStructureScore()); // 结构清晰度评分
-        cplScoreDetail.setSkillMatchScore(tblResumeAnalysisEntity.getSkillMatchScore()); // 技能匹配度评分
-        cplScoreDetail.setExpressionScore(tblResumeAnalysisEntity.getExpressionScore()); // 表达专业性评分
-        cplScoreDetail.setProjectScore(tblResumeAnalysisEntity.getProjectScore()); // 项目经验评分
-        cplResumeAnalysisDTO.setScoreDetail(cplScoreDetail); // 评分详情
+        scoreDetail.setContentScore(resumeAnalysisEntity.getContentScore()); // 内容完整性评分
+        scoreDetail.setStructureScore(resumeAnalysisEntity.getStructureScore()); // 结构清晰度评分
+        scoreDetail.setSkillMatchScore(resumeAnalysisEntity.getSkillMatchScore()); // 技能匹配度评分
+        scoreDetail.setExpressionScore(resumeAnalysisEntity.getExpressionScore()); // 表达专业性评分
+        scoreDetail.setProjectScore(resumeAnalysisEntity.getProjectScore()); // 项目经验评分
+        resumeAnalysisDTO.setScoreDetail(scoreDetail); // 评分详情
 
-        cplResumeAnalysisDTO.setSummary(tblResumeAnalysisEntity.getSummary()); // 分析总结
-        cplResumeAnalysisDTO.setAnalyzedAt(tblResumeAnalysisEntity.getAnalyzedAt()); // 分析时间
+        resumeAnalysisDTO.setSummary(resumeAnalysisEntity.getSummary()); // 分析总结
+        resumeAnalysisDTO.setAnalyzedAt(resumeAnalysisEntity.getAnalyzedAt()); // 分析时间
 
         try {
-            cplResumeAnalysisDTO.setStrengths(parseStrengths(tblResumeAnalysisEntity.getStrengthsJson(), objectMapper)); // 简历优点
-            cplResumeAnalysisDTO.setSuggestions(parseSuggestions(tblResumeAnalysisEntity.getSuggestionsJson(), objectMapper)); // 改进建议
+            resumeAnalysisDTO.setStrengths(parseStrengths(resumeAnalysisEntity.getStrengthsJson(), objectMapper)); // 简历优点
+            resumeAnalysisDTO.setSuggestions(parseSuggestions(resumeAnalysisEntity.getSuggestionsJson(), objectMapper)); // 改进建议
         } catch (JacksonException e) {
             log.error("简历分析结果反序列化失败: strengthsJson={}, suggestionsJson={}",
-                    tblResumeAnalysisEntity.getStrengthsJson(),
-                    tblResumeAnalysisEntity.getSuggestionsJson(), e);
+                    resumeAnalysisEntity.getStrengthsJson(),
+                    resumeAnalysisEntity.getSuggestionsJson(), e);
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_FAILED, "简历分析结果反序列化失败");
         }
 
-        return cplResumeAnalysisDTO;
+        return resumeAnalysisDTO;
     }
 
     /**
      * 功能说明
      * <p>解析简历优点。</p>
      *
-     * @param strStrengthsJson 优点 JSON 字符串
+     * @param strengthsJson 优点 JSON 字符串
      * @param objectMapper JSON 转换器
      * @return 简历优点列表
      * @throws JacksonException 当 JSON 解析失败时抛出
@@ -79,13 +79,13 @@ public class ResumeAnalysisQueryConverter {
      * @date 2026-04-20
      */
     private static List<String> parseStrengths(
-            String strStrengthsJson,
+            String strengthsJson,
             ObjectMapper objectMapper) throws JacksonException {
 
-        if (strStrengthsJson == null || strStrengthsJson.isBlank()) {
+        if (strengthsJson == null || strengthsJson.isBlank()) {
             return List.of();
         }
-        return objectMapper.readValue(strStrengthsJson, new TypeReference<List<String>>() {
+        return objectMapper.readValue(strengthsJson, new TypeReference<List<String>>() {
         });
     }
 
@@ -93,7 +93,7 @@ public class ResumeAnalysisQueryConverter {
      * 功能说明
      * <p>解析简历修改建议。</p>
      *
-     * @param strSuggestionsJson 建议 JSON 字符串
+     * @param suggestionsJson 建议 JSON 字符串
      * @param objectMapper JSON 转换器
      * @return 简历修改建议列表
      * @throws JacksonException 当 JSON 解析失败时抛出
@@ -101,13 +101,13 @@ public class ResumeAnalysisQueryConverter {
      * @date 2026-04-20
      */
     private static List<ResumeAnalysisDTO.Suggestion> parseSuggestions(
-            String strSuggestionsJson,
+            String suggestionsJson,
             ObjectMapper objectMapper) throws JacksonException {
 
-        if (strSuggestionsJson == null || strSuggestionsJson.isBlank()) {
+        if (suggestionsJson == null || suggestionsJson.isBlank()) {
             return List.of();
         }
-        return objectMapper.readValue(strSuggestionsJson, new TypeReference<List<ResumeAnalysisDTO.Suggestion>>() {
+        return objectMapper.readValue(suggestionsJson, new TypeReference<List<ResumeAnalysisDTO.Suggestion>>() {
         });
     }
 }

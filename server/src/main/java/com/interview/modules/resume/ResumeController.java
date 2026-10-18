@@ -63,8 +63,8 @@ public class ResumeController {
      */
     @GetMapping("/{id}")
     public Result<ResumeDetailDTO> getById(@PathVariable Long id) {
-        ResumeDetailDTO cplResumeDetailDTO = resumeQueryService.getById(id);
-        return Result.success(cplResumeDetailDTO);
+        ResumeDetailDTO resumeDetailDTO = resumeQueryService.getById(id);
+        return Result.success(resumeDetailDTO);
     }
 
     /**
@@ -92,8 +92,8 @@ public class ResumeController {
      */
     @GetMapping
     public Result<List<ResumeListItemDTO>> listResumes() {
-        List<ResumeListItemDTO> lstResumeList = resumeQueryService.listResumes();
-        return Result.success(lstResumeList);
+        List<ResumeListItemDTO> resumeLists = resumeQueryService.listResumes();
+        return Result.success(resumeLists);
     }
 
 }

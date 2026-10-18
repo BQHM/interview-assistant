@@ -53,13 +53,13 @@ class InterviewReportServiceTest {
 
     @Test
     void generateReport_shouldRejectUncompletedSession() throws JacksonException {
-        InterviewSessionEntity tblSessionEntity = createSession(
+        InterviewSessionEntity sessionEntity = createSession(
                 InterviewSessionStatus.IN_PROGRESS,
                 1,
                 3);
 
         when(interviewSessionRepository.findBySessionId("session-001"))
-                .thenReturn(Optional.of(tblSessionEntity));
+                .thenReturn(Optional.of(sessionEntity));
 
         BusinessException exception = catchThrowableOfType(
                 () -> interviewReportService.generateReport("session-001"),
@@ -72,20 +72,20 @@ class InterviewReportServiceTest {
     @Test
     void generateReport_shouldAggregateAnswersScoreFeedbackReferenceAndKeyPoints()
             throws JacksonException {
-        InterviewSessionEntity tblSessionEntity = createSession(
+        InterviewSessionEntity sessionEntity = createSession(
                 InterviewSessionStatus.COMPLETED,
                 2,
                 2);
-        InterviewAnswerEntity tblFirstAnswerEntity = createAnswer(
-                tblSessionEntity,
+        InterviewAnswerEntity firstAnswerEntity = createAnswer(
+                sessionEntity,
                 0,
                 "我会先按业务分层，再说明事务边界。",
                 88,
                 "回答清晰。",
                 "参考答案一",
                 "[\"业务分层\",\"事务边界\"]");
-        InterviewAnswerEntity tblSecondAnswerEntity = createAnswer(
-                tblSessionEntity,
+        InterviewAnswerEntity secondAnswerEntity = createAnswer(
+                sessionEntity,
                 1,
                 "我会结合 Redis 缓存一致性说明。",
                 76,
@@ -94,32 +94,32 @@ class InterviewReportServiceTest {
                 "[\"缓存一致性\",\"异常处理\"]");
 
         when(interviewSessionRepository.findBySessionId("session-001"))
-                .thenReturn(Optional.of(tblSessionEntity));
-        when(interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(tblSessionEntity))
-                .thenReturn(List.of(tblFirstAnswerEntity, tblSecondAnswerEntity));
+                .thenReturn(Optional.of(sessionEntity));
+        when(interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(sessionEntity))
+                .thenReturn(List.of(firstAnswerEntity, secondAnswerEntity));
 
-        InterviewReportDTO cplReportDTO = interviewReportService.generateReport("session-001");
+        InterviewReportDTO reportDTO = interviewReportService.generateReport("session-001");
 
-        assertThat(cplReportDTO.getCompleted()).isTrue();
-        assertThat(cplReportDTO.getTotalQuestions()).isEqualTo(2);
-        assertThat(cplReportDTO.getAnsweredQuestions()).isEqualTo(2);
-        assertThat(cplReportDTO.getUnansweredQuestions()).isZero();
-        assertThat(cplReportDTO.getQuestionReports()).hasSize(2);
-        assertThat(cplReportDTO.getQuestionReports().get(0).getScore()).isEqualTo(88);
-        assertThat(cplReportDTO.getQuestionReports().get(0).getEvaluation()).isEqualTo("回答清晰。");
-        assertThat(cplReportDTO.getQuestionReports().get(0).getReferenceAnswer()).isEqualTo("参考答案一");
-        assertThat(cplReportDTO.getQuestionReports().get(0).getKeyPoints())
+        assertThat(reportDTO.getCompleted()).isTrue();
+        assertThat(reportDTO.getTotalQuestions()).isEqualTo(2);
+        assertThat(reportDTO.getAnsweredQuestions()).isEqualTo(2);
+        assertThat(reportDTO.getUnansweredQuestions()).isZero();
+        assertThat(reportDTO.getQuestionReports()).hasSize(2);
+        assertThat(reportDTO.getQuestionReports().get(0).getScore()).isEqualTo(88);
+        assertThat(reportDTO.getQuestionReports().get(0).getEvaluation()).isEqualTo("回答清晰。");
+        assertThat(reportDTO.getQuestionReports().get(0).getReferenceAnswer()).isEqualTo("参考答案一");
+        assertThat(reportDTO.getQuestionReports().get(0).getKeyPoints())
                 .containsExactly("业务分层", "事务边界");
     }
 
     @Test
     void generateReport_shouldCountUnansweredQuestions() throws JacksonException {
-        InterviewSessionEntity tblSessionEntity = createSession(
+        InterviewSessionEntity sessionEntity = createSession(
                 InterviewSessionStatus.COMPLETED,
                 3,
                 3);
-        InterviewAnswerEntity tblAnswerEntity = createAnswer(
-                tblSessionEntity,
+        InterviewAnswerEntity answerEntity = createAnswer(
+                sessionEntity,
                 0,
                 "我会结合项目说明。",
                 72,
@@ -128,70 +128,70 @@ class InterviewReportServiceTest {
                 "[\"项目经验\"]");
 
         when(interviewSessionRepository.findBySessionId("session-001"))
-                .thenReturn(Optional.of(tblSessionEntity));
-        when(interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(tblSessionEntity))
-                .thenReturn(List.of(tblAnswerEntity));
+                .thenReturn(Optional.of(sessionEntity));
+        when(interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(sessionEntity))
+                .thenReturn(List.of(answerEntity));
 
-        InterviewReportDTO cplReportDTO = interviewReportService.generateReport("session-001");
+        InterviewReportDTO reportDTO = interviewReportService.generateReport("session-001");
 
-        assertThat(cplReportDTO.getAnsweredQuestions()).isEqualTo(1);
-        assertThat(cplReportDTO.getUnansweredQuestions()).isEqualTo(2);
-        assertThat(cplReportDTO.getQuestionReports().get(1).getAnswered()).isFalse();
-        assertThat(cplReportDTO.getQuestionReports().get(1).getScore()).isZero();
-        assertThat(cplReportDTO.getQuestionReports().get(1).getEvaluation())
+        assertThat(reportDTO.getAnsweredQuestions()).isEqualTo(1);
+        assertThat(reportDTO.getUnansweredQuestions()).isEqualTo(2);
+        assertThat(reportDTO.getQuestionReports().get(1).getAnswered()).isFalse();
+        assertThat(reportDTO.getQuestionReports().get(1).getScore()).isZero();
+        assertThat(reportDTO.getQuestionReports().get(1).getEvaluation())
                 .contains("未作答");
     }
 
     private InterviewSessionEntity createSession(
             InterviewSessionStatus status,
-            Integer intCurrentQuestionIndex,
-            Integer intTotalQuestions) throws JacksonException {
-        ResumeEntity tblResumeEntity = new ResumeEntity();
-        tblResumeEntity.setId(11L);
+            Integer currentQuestionIndex,
+            Integer totalQuestions) throws JacksonException {
+        ResumeEntity resumeEntity = new ResumeEntity();
+        resumeEntity.setId(11L);
 
-        InterviewSessionEntity tblSessionEntity = new InterviewSessionEntity();
-        tblSessionEntity.setSessionId("session-001");
-        tblSessionEntity.setResume(tblResumeEntity);
-        tblSessionEntity.setStatus(status);
-        tblSessionEntity.setCurrentQuestionIndex(intCurrentQuestionIndex);
-        tblSessionEntity.setTotalQuestions(intTotalQuestions);
-        tblSessionEntity.setQuestionsJson(objectMapper.writeValueAsString(createQuestions(intTotalQuestions)));
-        return tblSessionEntity;
+        InterviewSessionEntity sessionEntity = new InterviewSessionEntity();
+        sessionEntity.setSessionId("session-001");
+        sessionEntity.setResume(resumeEntity);
+        sessionEntity.setStatus(status);
+        sessionEntity.setCurrentQuestionIndex(currentQuestionIndex);
+        sessionEntity.setTotalQuestions(totalQuestions);
+        sessionEntity.setQuestionsJson(objectMapper.writeValueAsString(createQuestions(totalQuestions)));
+        return sessionEntity;
     }
 
-    private List<InterviewQuestionDTO> createQuestions(Integer intTotalQuestions) {
-        return java.util.stream.IntStream.range(0, intTotalQuestions)
+    private List<InterviewQuestionDTO> createQuestions(Integer totalQuestions) {
+        return java.util.stream.IntStream.range(0, totalQuestions)
                 .mapToObj(this::createQuestion)
                 .toList();
     }
 
-    private InterviewQuestionDTO createQuestion(Integer intQuestionIndex) {
-        InterviewQuestionDTO cplQuestionDTO = new InterviewQuestionDTO();
-        cplQuestionDTO.setQuestionIndex(intQuestionIndex);
-        cplQuestionDTO.setQuestion("第 " + intQuestionIndex + " 题");
-        cplQuestionDTO.setType("PROJECT");
-        cplQuestionDTO.setCategory("项目经验");
-        return cplQuestionDTO;
+    private InterviewQuestionDTO createQuestion(Integer questionIndex) {
+        InterviewQuestionDTO questionDTO = new InterviewQuestionDTO();
+        questionDTO.setQuestionIndex(questionIndex);
+        questionDTO.setQuestion("第 " + questionIndex + " 题");
+        questionDTO.setType("PROJECT");
+        questionDTO.setCategory("项目经验");
+        return questionDTO;
     }
 
     private InterviewAnswerEntity createAnswer(
-            InterviewSessionEntity tblSessionEntity,
-            Integer intQuestionIndex,
-            String strUserAnswer,
-            Integer intScore,
-            String strFeedback,
-            String strReferenceAnswer,
-            String strKeyPointsJson) {
-        InterviewAnswerEntity tblAnswerEntity = new InterviewAnswerEntity();
-        tblAnswerEntity.setSession(tblSessionEntity);
-        tblAnswerEntity.setQuestionIndex(intQuestionIndex);
-        tblAnswerEntity.setQuestion("第 " + intQuestionIndex + " 题");
-        tblAnswerEntity.setCategory("项目经验");
-        tblAnswerEntity.setUserAnswer(strUserAnswer);
-        tblAnswerEntity.setScore(intScore);
-        tblAnswerEntity.setFeedback(strFeedback);
-        tblAnswerEntity.setReferenceAnswer(strReferenceAnswer);
-        tblAnswerEntity.setKeyPointsJson(strKeyPointsJson);
-        return tblAnswerEntity;
+            InterviewSessionEntity sessionEntity,
+            Integer questionIndex,
+            String userAnswer,
+            Integer score,
+            String feedback,
+            String referenceAnswer,
+            String keyPointsJson) {
+        InterviewAnswerEntity answerEntity = new InterviewAnswerEntity();
+        answerEntity.setSession(sessionEntity);
+        answerEntity.setQuestionIndex(questionIndex);
+        answerEntity.setQuestion("第 " + questionIndex + " 题");
+        answerEntity.setCategory("项目经验");
+        answerEntity.setUserAnswer(userAnswer);
+        answerEntity.setScore(score);
+        answerEntity.setFeedback(feedback);
+        answerEntity.setReferenceAnswer(referenceAnswer);
+        answerEntity.setKeyPointsJson(keyPointsJson);
+        return answerEntity;
     }
 }

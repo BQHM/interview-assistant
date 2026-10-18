@@ -21,19 +21,19 @@ public class InterviewQuestionAnswerAggregator {
      * 功能说明
      * <p>填充题目中的用户答案。</p>
      *
-     * @param lstInterviewQuestionDTO 面试题列表
-     * @param lstInterviewAnswerEntity 面试答案列表
+     * @param interviewQuestionDTOs 面试题列表
+     * @param interviewAnswerEntities 面试答案列表
      * @author NobuNo
      * @date 2026-06-29
      */
     public static void fillUserAnswers(
-            List<InterviewQuestionDTO> lstInterviewQuestionDTO,
-            List<InterviewAnswerEntity> lstInterviewAnswerEntity) {
+            List<InterviewQuestionDTO> interviewQuestionDTOs,
+            List<InterviewAnswerEntity> interviewAnswerEntities) {
 
-        for (InterviewQuestionDTO cplInterviewQuestionDTO : lstInterviewQuestionDTO) {
-            for (InterviewAnswerEntity tblInterviewAnswerEntity : lstInterviewAnswerEntity) {
-                if (cplInterviewQuestionDTO.getQuestionIndex().equals(tblInterviewAnswerEntity.getQuestionIndex())) {
-                    cplInterviewQuestionDTO.setUserAnswer(tblInterviewAnswerEntity.getUserAnswer());
+        for (InterviewQuestionDTO interviewQuestionDTO : interviewQuestionDTOs) {
+            for (InterviewAnswerEntity interviewAnswerEntity : interviewAnswerEntities) {
+                if (interviewQuestionDTO.getQuestionIndex().equals(interviewAnswerEntity.getQuestionIndex())) {
+                    interviewQuestionDTO.setUserAnswer(interviewAnswerEntity.getUserAnswer());
                     break;
                 }
             }

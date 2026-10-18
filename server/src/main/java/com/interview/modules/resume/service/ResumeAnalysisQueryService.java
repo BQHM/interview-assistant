@@ -34,30 +34,30 @@ public class ResumeAnalysisQueryService {
      * 功能说明
      * <p>查询简历分析结果。</p>
      *
-     * @param lngResumeId 简历编号
+     * @param resumeId 简历编号
      * @return 简历分析结果
      * @author NobuNo
      * @date 2026-04-14
      */
-    public ResumeAnalysisDTO getResumeAnalysis(Long lngResumeId) {
-        log.info("开始查询简历分析结果: resumeId={}", lngResumeId);
+    public ResumeAnalysisDTO getResumeAnalysis(Long resumeId) {
+        log.info("开始查询简历分析结果: resumeId={}", resumeId);
 
-        Optional<ResumeAnalysisEntity> optResumeAnalysisEntity = resumeAnalysisRepository.findByResumeId(lngResumeId);
+        Optional<ResumeAnalysisEntity> optResumeAnalysisEntity = resumeAnalysisRepository.findByResumeId(resumeId);
 
         if (optResumeAnalysisEntity.isPresent()) {
-            ResumeAnalysisEntity tblResumeAnalysisEntity = optResumeAnalysisEntity.get();
-            log.info("查询简历分析结果成功: resumeId={}", lngResumeId);
+            ResumeAnalysisEntity resumeAnalysisEntity = optResumeAnalysisEntity.get();
+            log.info("查询简历分析结果成功: resumeId={}", resumeId);
             try {
                 return ResumeAnalysisQueryConverter.convertToResumeAnalysisDTO(
-                        tblResumeAnalysisEntity,
+                        resumeAnalysisEntity,
                         objectMapper
                 );
             } catch (BusinessException e) {
-                log.error("简历分析结果反序列化失败: resumeId={}", lngResumeId, e);
+                log.error("简历分析结果反序列化失败: resumeId={}", resumeId, e);
                 throw e;
             }
         } else {
-            log.warn("查询简历分析结果未命中: resumeId={}", lngResumeId);
+            log.warn("查询简历分析结果未命中: resumeId={}", resumeId);
             throw new BusinessException(ErrorCode.RESUME_ANALYSIS_NOT_FOUND);
         }
 

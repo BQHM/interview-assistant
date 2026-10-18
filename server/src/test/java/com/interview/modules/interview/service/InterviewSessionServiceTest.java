@@ -76,29 +76,29 @@ class InterviewSessionServiceTest {
 
     @Test
     void createInterview_shouldCreateSessionSuccessfully() {
-        ResumeEntity tblResumeEntity = createResume(11L, "熟悉 Spring Boot、MySQL、Redis。");
-        List<InterviewQuestionDTO> lstQuestionDTO = createQuestions(3);
-        CreateInterviewRequest cplRequest = createInterviewRequest(11L, 3);
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot、MySQL、Redis。");
+        List<InterviewQuestionDTO> questionDTOs = createQuestions(3);
+        CreateInterviewRequest request = createInterviewRequest(11L, 3);
 
-        when(resumeRepository.findById(11L)).thenReturn(Optional.of(tblResumeEntity));
+        when(resumeRepository.findById(11L)).thenReturn(Optional.of(resumeEntity));
         when(interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
                 eq(11L),
                 eq("java-backend"),
                 anyList())).thenReturn(Optional.empty());
-        when(interviewQuestionService.generateQuestions(eq(tblResumeEntity.getResumeText()), eq(3), eq("java-backend"), anyList()))
-                .thenReturn(lstQuestionDTO);
+        when(interviewQuestionService.generateQuestions(eq(resumeEntity.getResumeText()), eq(3), eq("java-backend"), anyList()))
+                .thenReturn(questionDTOs);
         when(interviewSessionRepository.save(any(InterviewSessionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        InterviewSessionDTO cplSessionDTO = interviewSessionService.createInterview(cplRequest);
+        InterviewSessionDTO sessionDTO = interviewSessionService.createInterview(request);
 
-        assertThat(cplSessionDTO.getSessionId()).isNotBlank();
-        assertThat(cplSessionDTO.getResumeId()).isEqualTo(11L);
-        assertThat(cplSessionDTO.getSkillId()).isEqualTo("java-backend");
-        assertThat(cplSessionDTO.getTotalQuestions()).isEqualTo(3);
-        assertThat(cplSessionDTO.getCurrentQuestionIndex()).isZero();
-        assertThat(cplSessionDTO.getStatus()).isEqualTo(InterviewSessionStatus.CREATED);
-        assertThat(cplSessionDTO.getQuestions())
+        assertThat(sessionDTO.getSessionId()).isNotBlank();
+        assertThat(sessionDTO.getResumeId()).isEqualTo(11L);
+        assertThat(sessionDTO.getSkillId()).isEqualTo("java-backend");
+        assertThat(sessionDTO.getTotalQuestions()).isEqualTo(3);
+        assertThat(sessionDTO.getCurrentQuestionIndex()).isZero();
+        assertThat(sessionDTO.getStatus()).isEqualTo(InterviewSessionStatus.CREATED);
+        assertThat(sessionDTO.getQuestions())
                 .extracting(InterviewQuestionDTO::getQuestionIndex)
                 .containsExactly(0, 1, 2);
         verify(interviewSessionRepository).save(argThat(
@@ -107,36 +107,36 @@ class InterviewSessionServiceTest {
 
     @Test
     void createInterview_shouldReuseUnfinishedSessionForSameResume() throws JacksonException {
-        ResumeEntity tblResumeEntity = createResume(11L, "熟悉 Spring Boot。");
-        InterviewSessionEntity tblExistingSessionEntity = createSession(
-                tblResumeEntity,
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity existingSessionEntity = createSession(
+                resumeEntity,
                 "session-001",
                 InterviewSessionStatus.IN_PROGRESS,
                 1,
                 3);
-        InterviewAnswerEntity tblAnswerEntity = createAnswer(
-                tblExistingSessionEntity,
+        InterviewAnswerEntity answerEntity = createAnswer(
+                existingSessionEntity,
                 0,
                 "我会从项目模块和接口设计说明。");
 
-        when(resumeRepository.findById(11L)).thenReturn(Optional.of(tblResumeEntity));
+        when(resumeRepository.findById(11L)).thenReturn(Optional.of(resumeEntity));
         when(interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
                 eq(11L),
                 eq("java-backend"),
-                anyList())).thenReturn(Optional.of(tblExistingSessionEntity));
+                anyList())).thenReturn(Optional.of(existingSessionEntity));
         when(interviewSessionRepository.findBySessionId("session-001"))
-                .thenReturn(Optional.of(tblExistingSessionEntity));
-        when(interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(tblExistingSessionEntity))
-                .thenReturn(List.of(tblAnswerEntity));
+                .thenReturn(Optional.of(existingSessionEntity));
+        when(interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(existingSessionEntity))
+                .thenReturn(List.of(answerEntity));
 
-        InterviewSessionDTO cplSessionDTO = interviewSessionService.createInterview(
+        InterviewSessionDTO sessionDTO = interviewSessionService.createInterview(
                 createInterviewRequest(11L, 3));
 
-        assertThat(cplSessionDTO.getSessionId()).isEqualTo("session-001");
-        assertThat(cplSessionDTO.getSkillId()).isEqualTo("java-backend");
-        assertThat(cplSessionDTO.getStatus()).isEqualTo(InterviewSessionStatus.IN_PROGRESS);
-        assertThat(cplSessionDTO.getCurrentQuestionIndex()).isEqualTo(1);
-        assertThat(cplSessionDTO.getQuestions().get(0).getUserAnswer())
+        assertThat(sessionDTO.getSessionId()).isEqualTo("session-001");
+        assertThat(sessionDTO.getSkillId()).isEqualTo("java-backend");
+        assertThat(sessionDTO.getStatus()).isEqualTo(InterviewSessionStatus.IN_PROGRESS);
+        assertThat(sessionDTO.getCurrentQuestionIndex()).isEqualTo(1);
+        assertThat(sessionDTO.getQuestions().get(0).getUserAnswer())
                 .isEqualTo("我会从项目模块和接口设计说明。");
         verify(interviewQuestionService, never()).generateQuestions(any(), any(), any(), anyList());
         verify(interviewSessionRepository, never()).save(any(InterviewSessionEntity.class));
@@ -144,56 +144,56 @@ class InterviewSessionServiceTest {
 
     @Test
     void submitAnswer_shouldAdvanceCurrentQuestionIndex() throws JacksonException {
-        ResumeEntity tblResumeEntity = createResume(11L, "熟悉 Spring Boot。");
-        InterviewSessionEntity tblSessionEntity = createSession(
-                tblResumeEntity,
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity sessionEntity = createSession(
+                resumeEntity,
                 "session-001",
                 InterviewSessionStatus.CREATED,
                 0,
                 3);
-        SubmitAnswerRequest cplRequest = createSubmitAnswerRequest(
+        SubmitAnswerRequest request = createSubmitAnswerRequest(
                 "session-001",
                 0,
                 "我会先按 Controller、Service、Repository 分层说明项目结构。");
 
         when(interviewSessionRepository.findBySessionId("session-001"))
-                .thenReturn(Optional.of(tblSessionEntity));
-        when(interviewAnswerRepository.findBySessionAndQuestionIndex(tblSessionEntity, 0))
+                .thenReturn(Optional.of(sessionEntity));
+        when(interviewAnswerRepository.findBySessionAndQuestionIndex(sessionEntity, 0))
                 .thenReturn(Optional.empty());
         when(interviewAnswerRepository.save(any(InterviewAnswerEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(interviewAnswerEvaluationService.evaluateAnswer(any(InterviewAnswerEntity.class)))
                 .thenReturn(createEvaluation());
-        when(interviewSessionRepository.save(tblSessionEntity)).thenReturn(tblSessionEntity);
+        when(interviewSessionRepository.save(sessionEntity)).thenReturn(sessionEntity);
 
-        SubmitAnswerResponse cplResponse = interviewSessionService.submitAnswer(cplRequest);
+        SubmitAnswerResponse response = interviewSessionService.submitAnswer(request);
 
-        assertThat(cplResponse.getCurrentQuestionIndex()).isEqualTo(1);
-        assertThat(cplResponse.getHasNextQuestion()).isTrue();
-        assertThat(cplResponse.getNextQuestion().getQuestionIndex()).isEqualTo(1);
-        assertThat(tblSessionEntity.getCurrentQuestionIndex()).isEqualTo(1);
-        assertThat(tblSessionEntity.getStatus()).isEqualTo(InterviewSessionStatus.IN_PROGRESS);
+        assertThat(response.getCurrentQuestionIndex()).isEqualTo(1);
+        assertThat(response.getHasNextQuestion()).isTrue();
+        assertThat(response.getNextQuestion().getQuestionIndex()).isEqualTo(1);
+        assertThat(sessionEntity.getCurrentQuestionIndex()).isEqualTo(1);
+        assertThat(sessionEntity.getStatus()).isEqualTo(InterviewSessionStatus.IN_PROGRESS);
     }
 
     @Test
     void submitAnswer_shouldRejectCompletedSession() throws JacksonException {
-        ResumeEntity tblResumeEntity = createResume(11L, "熟悉 Spring Boot。");
-        InterviewSessionEntity tblSessionEntity = createSession(
-                tblResumeEntity,
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity sessionEntity = createSession(
+                resumeEntity,
                 "session-001",
                 InterviewSessionStatus.COMPLETED,
                 3,
                 3);
-        SubmitAnswerRequest cplRequest = createSubmitAnswerRequest(
+        SubmitAnswerRequest request = createSubmitAnswerRequest(
                 "session-001",
                 0,
                 "面试完成后不应该还能提交。");
 
         when(interviewSessionRepository.findBySessionId("session-001"))
-                .thenReturn(Optional.of(tblSessionEntity));
+                .thenReturn(Optional.of(sessionEntity));
 
         BusinessException exception = catchThrowableOfType(
-                () -> interviewSessionService.submitAnswer(cplRequest),
+                () -> interviewSessionService.submitAnswer(request),
                 BusinessException.class);
 
         assertThat(exception).isNotNull();
@@ -203,100 +203,100 @@ class InterviewSessionServiceTest {
 
     @Test
     void completeInterview_shouldMarkSessionCompletedBeforeAllAnswers() throws JacksonException {
-        ResumeEntity tblResumeEntity = createResume(11L, "熟悉 Spring Boot。");
-        InterviewSessionEntity tblSessionEntity = createSession(
-                tblResumeEntity,
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity sessionEntity = createSession(
+                resumeEntity,
                 "session-001",
                 InterviewSessionStatus.IN_PROGRESS,
                 1,
                 3);
 
         when(interviewSessionRepository.findBySessionId("session-001"))
-                .thenReturn(Optional.of(tblSessionEntity));
-        when(interviewSessionRepository.save(tblSessionEntity)).thenReturn(tblSessionEntity);
+                .thenReturn(Optional.of(sessionEntity));
+        when(interviewSessionRepository.save(sessionEntity)).thenReturn(sessionEntity);
 
         interviewSessionService.completeInterview("session-001");
 
-        assertThat(tblSessionEntity.getStatus()).isEqualTo(InterviewSessionStatus.COMPLETED);
-        assertThat(tblSessionEntity.getCurrentQuestionIndex()).isEqualTo(3);
-        verify(interviewSessionRepository).save(tblSessionEntity);
+        assertThat(sessionEntity.getStatus()).isEqualTo(InterviewSessionStatus.COMPLETED);
+        assertThat(sessionEntity.getCurrentQuestionIndex()).isEqualTo(3);
+        verify(interviewSessionRepository).save(sessionEntity);
     }
 
-    private CreateInterviewRequest createInterviewRequest(Long lngResumeId, Integer intQuestionCount) {
-        CreateInterviewRequest cplRequest = new CreateInterviewRequest();
-        cplRequest.setResumeId(lngResumeId);
-        cplRequest.setQuestionCount(intQuestionCount);
-        return cplRequest;
+    private CreateInterviewRequest createInterviewRequest(Long resumeId, Integer questionCount) {
+        CreateInterviewRequest request = new CreateInterviewRequest();
+        request.setResumeId(resumeId);
+        request.setQuestionCount(questionCount);
+        return request;
     }
 
     private SubmitAnswerRequest createSubmitAnswerRequest(
-            String strSessionId,
-            Integer intQuestionIndex,
-            String strAnswer) {
-        SubmitAnswerRequest cplRequest = new SubmitAnswerRequest();
-        cplRequest.setSessionId(strSessionId);
-        cplRequest.setQuestionIndex(intQuestionIndex);
-        cplRequest.setAnswer(strAnswer);
-        return cplRequest;
+            String sessionId,
+            Integer questionIndex,
+            String answer) {
+        SubmitAnswerRequest request = new SubmitAnswerRequest();
+        request.setSessionId(sessionId);
+        request.setQuestionIndex(questionIndex);
+        request.setAnswer(answer);
+        return request;
     }
 
-    private ResumeEntity createResume(Long lngResumeId, String strResumeText) {
-        ResumeEntity tblResumeEntity = new ResumeEntity();
-        tblResumeEntity.setId(lngResumeId);
-        tblResumeEntity.setResumeText(strResumeText);
-        return tblResumeEntity;
+    private ResumeEntity createResume(Long resumeId, String resumeText) {
+        ResumeEntity resumeEntity = new ResumeEntity();
+        resumeEntity.setId(resumeId);
+        resumeEntity.setResumeText(resumeText);
+        return resumeEntity;
     }
 
     private InterviewSessionEntity createSession(
-            ResumeEntity tblResumeEntity,
-            String strSessionId,
+            ResumeEntity resumeEntity,
+            String sessionId,
             InterviewSessionStatus status,
-            Integer intCurrentQuestionIndex,
-            Integer intTotalQuestions) throws JacksonException {
-        InterviewSessionEntity tblSessionEntity = new InterviewSessionEntity();
-        tblSessionEntity.setSessionId(strSessionId);
-        tblSessionEntity.setResume(tblResumeEntity);
-        tblSessionEntity.setStatus(status);
-        tblSessionEntity.setCurrentQuestionIndex(intCurrentQuestionIndex);
-        tblSessionEntity.setTotalQuestions(intTotalQuestions);
-        tblSessionEntity.setQuestionsJson(objectMapper.writeValueAsString(createQuestions(intTotalQuestions)));
-        return tblSessionEntity;
+            Integer currentQuestionIndex,
+            Integer totalQuestions) throws JacksonException {
+        InterviewSessionEntity sessionEntity = new InterviewSessionEntity();
+        sessionEntity.setSessionId(sessionId);
+        sessionEntity.setResume(resumeEntity);
+        sessionEntity.setStatus(status);
+        sessionEntity.setCurrentQuestionIndex(currentQuestionIndex);
+        sessionEntity.setTotalQuestions(totalQuestions);
+        sessionEntity.setQuestionsJson(objectMapper.writeValueAsString(createQuestions(totalQuestions)));
+        return sessionEntity;
     }
 
-    private List<InterviewQuestionDTO> createQuestions(Integer intTotalQuestions) {
-        return java.util.stream.IntStream.range(0, intTotalQuestions)
+    private List<InterviewQuestionDTO> createQuestions(Integer totalQuestions) {
+        return java.util.stream.IntStream.range(0, totalQuestions)
                 .mapToObj(this::createQuestion)
                 .toList();
     }
 
-    private InterviewQuestionDTO createQuestion(Integer intQuestionIndex) {
-        InterviewQuestionDTO cplQuestionDTO = new InterviewQuestionDTO();
-        cplQuestionDTO.setQuestionIndex(intQuestionIndex);
-        cplQuestionDTO.setQuestion("第 " + intQuestionIndex + " 题");
-        cplQuestionDTO.setType("PROJECT");
-        cplQuestionDTO.setCategory("项目经验");
-        return cplQuestionDTO;
+    private InterviewQuestionDTO createQuestion(Integer questionIndex) {
+        InterviewQuestionDTO questionDTO = new InterviewQuestionDTO();
+        questionDTO.setQuestionIndex(questionIndex);
+        questionDTO.setQuestion("第 " + questionIndex + " 题");
+        questionDTO.setType("PROJECT");
+        questionDTO.setCategory("项目经验");
+        return questionDTO;
     }
 
     private InterviewAnswerEntity createAnswer(
-            InterviewSessionEntity tblSessionEntity,
-            Integer intQuestionIndex,
-            String strUserAnswer) {
-        InterviewAnswerEntity tblAnswerEntity = new InterviewAnswerEntity();
-        tblAnswerEntity.setSession(tblSessionEntity);
-        tblAnswerEntity.setQuestionIndex(intQuestionIndex);
-        tblAnswerEntity.setQuestion("第 " + intQuestionIndex + " 题");
-        tblAnswerEntity.setCategory("项目经验");
-        tblAnswerEntity.setUserAnswer(strUserAnswer);
-        return tblAnswerEntity;
+            InterviewSessionEntity sessionEntity,
+            Integer questionIndex,
+            String userAnswer) {
+        InterviewAnswerEntity answerEntity = new InterviewAnswerEntity();
+        answerEntity.setSession(sessionEntity);
+        answerEntity.setQuestionIndex(questionIndex);
+        answerEntity.setQuestion("第 " + questionIndex + " 题");
+        answerEntity.setCategory("项目经验");
+        answerEntity.setUserAnswer(userAnswer);
+        return answerEntity;
     }
 
     private InterviewAnswerEvaluationDTO createEvaluation() {
-        InterviewAnswerEvaluationDTO cplEvaluationDTO = new InterviewAnswerEvaluationDTO();
-        cplEvaluationDTO.setScore(80);
-        cplEvaluationDTO.setFeedback("回答基本完整。");
-        cplEvaluationDTO.setReferenceAnswer("参考答案");
-        cplEvaluationDTO.setKeyPoints(List.of("分层设计", "项目经验"));
-        return cplEvaluationDTO;
+        InterviewAnswerEvaluationDTO evaluationDTO = new InterviewAnswerEvaluationDTO();
+        evaluationDTO.setScore(80);
+        evaluationDTO.setFeedback("回答基本完整。");
+        evaluationDTO.setReferenceAnswer("参考答案");
+        evaluationDTO.setKeyPoints(List.of("分层设计", "项目经验"));
+        return evaluationDTO;
     }
 }

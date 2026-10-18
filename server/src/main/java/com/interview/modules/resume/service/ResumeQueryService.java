@@ -40,30 +40,30 @@ public class ResumeQueryService {
      * 功能说明
      * <p>根据简历编号查询详情。</p>
      *
-     * @param lngResumeId 简历编号
+     * @param resumeId 简历编号
      * @return 简历详情
      * @author NobuNo
      * @date 2026-04-09
      */
-    public ResumeDetailDTO getById(Long lngResumeId) {
+    public ResumeDetailDTO getById(Long resumeId) {
 
-        log.info("开始查询简历详情: resumeId={}", lngResumeId);
-        Optional<ResumeEntity> optResumeEntity = resumeRepository.findById(lngResumeId);
+        log.info("开始查询简历详情: resumeId={}", resumeId);
+        Optional<ResumeEntity> optResumeEntity = resumeRepository.findById(resumeId);
 
         if (optResumeEntity.isPresent()) {
-            ResumeEntity tblResumeEntity = optResumeEntity.get();
-            List<ResumeAnalysisEntity> lstResumeAnalysisEntity =
-                    resumeAnalysisRepository.findByResumeIdOrderByAnalyzedAtDesc(lngResumeId);
+            ResumeEntity resumeEntity = optResumeEntity.get();
+            List<ResumeAnalysisEntity> resumeAnalysisEntities =
+                    resumeAnalysisRepository.findByResumeIdOrderByAnalyzedAtDesc(resumeId);
 
-            ResumeDetailDTO cplResumeDetailDTO = ResumeDetailConverter.convertToResumeDetailDTO(tblResumeEntity);
-            List<ResumeDetailDTO.AnalysisHistoryDTO> lstAnalysisHistoryDTO =
-                    ResumeDetailConverter.convertToAnalysisHistoryDTO(lstResumeAnalysisEntity);
-            cplResumeDetailDTO.setAnalyses(lstAnalysisHistoryDTO);
+            ResumeDetailDTO resumeDetailDTO = ResumeDetailConverter.convertToResumeDetailDTO(resumeEntity);
+            List<ResumeDetailDTO.AnalysisHistoryDTO> analysisHistoryDTOs =
+                    ResumeDetailConverter.convertToAnalysisHistoryDTO(resumeAnalysisEntities);
+            resumeDetailDTO.setAnalyses(analysisHistoryDTOs);
 
-            log.info("查询简历详情成功: resumeId={}, analysesCount={}", lngResumeId, lstAnalysisHistoryDTO.size());
-            return cplResumeDetailDTO;
+            log.info("查询简历详情成功: resumeId={}, analysesCount={}", resumeId, analysisHistoryDTOs.size());
+            return resumeDetailDTO;
         } else {
-            log.warn("查询简历详情未命中: resumeId={}", lngResumeId);
+            log.warn("查询简历详情未命中: resumeId={}", resumeId);
             throw new BusinessException(ErrorCode.RESUME_NOT_FOUND);
         }
     }
@@ -79,36 +79,36 @@ public class ResumeQueryService {
     public List<ResumeListItemDTO> listResumes() {
         log.info("开始查询简历列表");
 
-        List<ResumeEntity> lstResumeEntity = resumeRepository.findAllByOrderByUploadedAtDesc();
-        if (lstResumeEntity.isEmpty()) {
+        List<ResumeEntity> resumeEntities = resumeRepository.findAllByOrderByUploadedAtDesc();
+        if (resumeEntities.isEmpty()) {
             log.info("查询简历列表成功: count=0");
             return List.of();
         }
 
-        List<Long> lstResumeId = new ArrayList<>();
-        for (ResumeEntity tblResumeEntity : lstResumeEntity) {
-            lstResumeId.add(tblResumeEntity.getId());
+        List<Long> resumeIds = new ArrayList<>();
+        for (ResumeEntity resumeEntity : resumeEntities) {
+            resumeIds.add(resumeEntity.getId());
         }
 
-        List<ResumeAnalysisEntity> lstResumeAnalysisEntity =
-                resumeAnalysisRepository.findByResumeIdIn(lstResumeId);
+        List<ResumeAnalysisEntity> resumeAnalysisEntities =
+                resumeAnalysisRepository.findByResumeIdIn(resumeIds);
 
-        Map<Long, ResumeAnalysisEntity> mapResumeAnalysisEntity = new HashMap<>();
-        for (ResumeAnalysisEntity tblResumeAnalysisEntity : lstResumeAnalysisEntity) {
-            mapResumeAnalysisEntity.put(tblResumeAnalysisEntity.getResume().getId(), tblResumeAnalysisEntity);
+        Map<Long, ResumeAnalysisEntity> resumeAnalysisEntityMap = new HashMap<>();
+        for (ResumeAnalysisEntity resumeAnalysisEntity : resumeAnalysisEntities) {
+            resumeAnalysisEntityMap.put(resumeAnalysisEntity.getResume().getId(), resumeAnalysisEntity);
         }
 
-        List<ResumeListItemDTO> lstResumeListItemDTO = new ArrayList<>();
-        for (ResumeEntity tblResumeEntity : lstResumeEntity) {
-            ResumeAnalysisEntity tblResumeAnalysisEntity = mapResumeAnalysisEntity.get(tblResumeEntity.getId());
-            ResumeListItemDTO cplResumeListItemDTO = ResumeDetailConverter.convertToResumeListItemDTO(
-                    tblResumeEntity,
-                    tblResumeAnalysisEntity
+        List<ResumeListItemDTO> resumeListItemDTOs = new ArrayList<>();
+        for (ResumeEntity resumeEntity : resumeEntities) {
+            ResumeAnalysisEntity resumeAnalysisEntity = resumeAnalysisEntityMap.get(resumeEntity.getId());
+            ResumeListItemDTO resumeListItemDTO = ResumeDetailConverter.convertToResumeListItemDTO(
+                    resumeEntity,
+                    resumeAnalysisEntity
             );
-            lstResumeListItemDTO.add(cplResumeListItemDTO);
+            resumeListItemDTOs.add(resumeListItemDTO);
         }
 
-        log.info("查询简历列表成功: count={}", lstResumeListItemDTO.size());
-        return lstResumeListItemDTO;
+        log.info("查询简历列表成功: count={}", resumeListItemDTOs.size());
+        return resumeListItemDTOs;
     }
 }
