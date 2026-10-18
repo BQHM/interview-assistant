@@ -181,7 +181,12 @@ com.interview/
 - 变量名：语义清晰的 lowerCamelCase，例如 `sessionEntity`、`questionList`。
 - 不新增无意义名称，例如 `data`、`temp`、`obj`、`result`，除非上下文非常明确。
 
-当前代码中已经存在的 `str`、`lst`、`tbl`、`cpl` 等匈牙利前缀可以在局部修改时保持一致，避免无意义大面积改名；但新模块和重构后的代码应逐步向标准 Java 命名靠齐。
+**全项目已统一为标准 Java 命名，不再使用类型前缀。** 历史遗留的 `str`、`lst`、`tbl`、`cpl`、`map`、`int`、`bool`、`lng` 等匈牙利前缀已全部清除，新增代码不得重新引入：
+
+- 不写类型前缀：用 `resumeText`，不用 `strResumeText`。
+- 集合变量用复数：用 `historicalQuestions`，不用 `lstHistoricalQuestion`。
+- 保留有业务含义的 JavaBean 后缀：`interviewAnswerEntity`、`questionDTO` 中的 `Entity`、`DTO` 继续保留。
+- 类型信息由变量声明和 IDE 承担，不写进变量名。
 
 ### 6.2 JavaBean 后缀
 
