@@ -2,6 +2,7 @@ package com.interview.modules.resume.service;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
+import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,15 +33,18 @@ public class ResumeGradingService {
     private final PromptTemplate systemPromptTemplate;
     private final PromptTemplate userPromptTemplate;
     private final BeanOutputConverter<ResumeAnalysisResultDTO> outputConverter;
+    private final StructuredOutputInvoker structuredOutputInvoker;
+
     private static final Logger log = LoggerFactory.getLogger(ResumeGradingService.class);
 
     /**
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param chatClientBuilder AI 客户端构建器
-     * @param properties 简历分析配置
-     * @param resourceLoader 资源加载器
+     * @param chatClientBuilder       AI 客户端构建器
+     * @param properties              简历分析配置
+     * @param resourceLoader          资源加载器
+     * @param structuredOutputInvoker 结构化输出调用器
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
      * @date 2026-04-14
@@ -48,17 +52,13 @@ public class ResumeGradingService {
     public ResumeGradingService(
             ChatClient.Builder chatClientBuilder,
             ResumeAnalysisProperties properties,
-            ResourceLoader resourceLoader) throws IOException {
+            ResourceLoader resourceLoader,
+            StructuredOutputInvoker structuredOutputInvoker) throws IOException {
         this.chatClient = chatClientBuilder.build();
+        this.structuredOutputInvoker = structuredOutputInvoker;
         this.outputConverter = new BeanOutputConverter<>(ResumeAnalysisResultDTO.class);
-        this.systemPromptTemplate = new PromptTemplate(
-                resourceLoader.getResource(properties.getSystemPromptPath())
-                        .getContentAsString(StandardCharsets.UTF_8)
-        );
-        this.userPromptTemplate = new PromptTemplate(
-                resourceLoader.getResource(properties.getUserPromptPath())
-                        .getContentAsString(StandardCharsets.UTF_8)
-        );
+        this.systemPromptTemplate = new PromptTemplate(resourceLoader.getResource(properties.getSystemPromptPath()).getContentAsString(StandardCharsets.UTF_8));
+        this.userPromptTemplate = new PromptTemplate(resourceLoader.getResource(properties.getUserPromptPath()).getContentAsString(StandardCharsets.UTF_8));
     }
 
     /**
@@ -106,14 +106,13 @@ public class ResumeGradingService {
         String userPrompt = userPromptTemplate.render(variables);
 
         String systemPromptWithFormat = systemPrompt + "\n\n" + outputConverter.getFormat();
-        String rawContent = chatClient.prompt()
-                .system(systemPromptWithFormat)
-                .user(userPrompt)
-                .call()
-                .content();
+        // 交给统一的结构化输出调用器：失败会按配置重试；
+        // 重试仍失败抛 BusinessException，由 analyzeResume 的 catch 降级到规则版分析。
+        ResumeAnalysisResultDTO resumeAnalysisResultDTO = structuredOutputInvoker.invoke(
+                chatClient, systemPromptWithFormat, userPrompt, outputConverter,
+                ErrorCode.AI_STRUCTURED_OUTPUT_FAILED, "AI 简历分析结构化解析失败：", "AI 简历分析");
 
-        log.info("Resume analysis raw AI response: 【{}】", rawContent);
-        return outputConverter.convert(rawContent);
+        return resumeAnalysisResultDTO;
     }
 
     /**
@@ -156,7 +155,7 @@ public class ResumeGradingService {
      * <p>统计关键词命中数量。</p>
      *
      * @param resumeText 简历正文
-     * @param keywords 关键词数组
+     * @param keywords   关键词数组
      * @return 命中数量
      * @author NobuNo
      * @date 2026-04-14
@@ -176,7 +175,7 @@ public class ResumeGradingService {
      * <p>判断文本是否包含任意关键词。</p>
      *
      * @param resumeText 简历正文
-     * @param keywords 关键词数组
+     * @param keywords   关键词数组
      * @return 是否包含关键词
      * @author NobuNo
      * @date 2026-04-14
