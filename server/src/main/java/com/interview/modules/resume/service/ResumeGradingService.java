@@ -57,8 +57,12 @@ public class ResumeGradingService {
         this.chatClient = chatClientBuilder.build();
         this.structuredOutputInvoker = structuredOutputInvoker;
         this.outputConverter = new BeanOutputConverter<>(ResumeAnalysisResultDTO.class);
-        this.systemPromptTemplate = new PromptTemplate(resourceLoader.getResource(properties.getSystemPromptPath()).getContentAsString(StandardCharsets.UTF_8));
-        this.userPromptTemplate = new PromptTemplate(resourceLoader.getResource(properties.getUserPromptPath()).getContentAsString(StandardCharsets.UTF_8));
+        this.systemPromptTemplate = new PromptTemplate(
+                resourceLoader.getResource(properties.getSystemPromptPath())
+                        .getContentAsString(StandardCharsets.UTF_8));
+        this.userPromptTemplate = new PromptTemplate(
+                resourceLoader.getResource(properties.getUserPromptPath())
+                        .getContentAsString(StandardCharsets.UTF_8));
     }
 
     /**

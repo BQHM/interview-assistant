@@ -3,24 +3,29 @@ package com.interview.modules.interview.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
+import com.interview.modules.interview.model.HistoricalQuestion;
 import com.interview.modules.interview.model.InterviewSessionStatus;
 import com.interview.modules.interview.model.dto.InterviewAnswerEvaluationDTO;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
@@ -220,6 +225,184 @@ class InterviewSessionServiceTest {
         assertThat(sessionEntity.getStatus()).isEqualTo(InterviewSessionStatus.COMPLETED);
         assertThat(sessionEntity.getCurrentQuestionIndex()).isEqualTo(3);
         verify(interviewSessionRepository).save(sessionEntity);
+    }
+
+    @Test
+    void createInterview_shouldCollectHistoricalQuestionsOnceInFirstSeenOrder() throws JacksonException {
+        // 同一道题出现在多场历史会话里时，只保留第一次出现的那一条，顺序按历史会话由新到旧。
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity newestSessionEntity = createSessionWithQuestions("session-003", List.of(
+                createHistoricalQuestion("题A", "JAVA", "摘要A"),
+                createHistoricalQuestion("题B", "JAVA", "摘要B")));
+        InterviewSessionEntity middleSessionEntity = createSessionWithQuestions("session-002", List.of(
+                createHistoricalQuestion("题B", "JAVA", "摘要B"),
+                createHistoricalQuestion("题C", "PROJECT", "摘要C")));
+        InterviewSessionEntity oldestSessionEntity = createSessionWithQuestions("session-001", List.of(
+                createHistoricalQuestion("题A", "JAVA", "摘要A"),
+                createHistoricalQuestion("题D", "GENERAL", "摘要D")));
+
+        stubCreateInterviewDependencies(
+                resumeEntity,
+                List.of(newestSessionEntity, middleSessionEntity, oldestSessionEntity));
+
+        interviewSessionService.createInterview(createInterviewRequest(11L, 3));
+
+        assertThat(captureHistoricalQuestions())
+                .extracting(HistoricalQuestion::question)
+                .containsExactly("题A", "题B", "题C", "题D");
+    }
+
+    @Test
+    void createInterview_shouldSkipBlankHistoricalQuestions() throws JacksonException {
+        // 空白题目没有去重价值，也不能作为有效的历史出题上下文，必须整条丢弃。
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity sessionEntity = createSessionWithQuestions("session-001", Arrays.asList(
+                createHistoricalQuestion("有效题A", "JAVA", "摘要A"),
+                createHistoricalQuestion("   ", "JAVA", "摘要B"),
+                createHistoricalQuestion(null, "JAVA", "摘要C"),
+                null));
+
+        stubCreateInterviewDependencies(resumeEntity, List.of(sessionEntity));
+
+        interviewSessionService.createInterview(createInterviewRequest(11L, 3));
+
+        assertThat(captureHistoricalQuestions())
+                .extracting(HistoricalQuestion::question)
+                .containsExactly("有效题A");
+    }
+
+    @Test
+    void createInterview_shouldSkipSessionWithBrokenQuestionsJson() throws JacksonException {
+        // 历史数据可能因为早期版本或人工改动而损坏，单场会话解析失败不能拖垮本次创建面试。
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity validSessionEntity = createSessionWithQuestions("session-003", List.of(
+                createHistoricalQuestion("解析成功的题", "JAVA", "摘要A")));
+        InterviewSessionEntity brokenSessionEntity =
+                createSessionWithRawQuestionsJson("session-002", "这不是合法的 JSON");
+        InterviewSessionEntity anotherValidSessionEntity = createSessionWithQuestions("session-001", List.of(
+                createHistoricalQuestion("另一道解析成功的题", "PROJECT", "摘要B")));
+
+        stubCreateInterviewDependencies(
+                resumeEntity,
+                List.of(validSessionEntity, brokenSessionEntity, anotherValidSessionEntity));
+
+        interviewSessionService.createInterview(createInterviewRequest(11L, 3));
+
+        assertThat(captureHistoricalQuestions())
+                .extracting(HistoricalQuestion::question)
+                .containsExactly("解析成功的题", "另一道解析成功的题");
+    }
+
+    @Test
+    void createInterview_shouldCapHistoricalQuestionsAtSixty() throws JacksonException {
+        // 三场会话共 90 道不重复的题，只保留前 60 道，避免 Prompt 被历史数据撑爆。
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity firstSessionEntity =
+                createSessionWithQuestions("session-003", createHistoricalQuestions("a", 30));
+        InterviewSessionEntity secondSessionEntity =
+                createSessionWithQuestions("session-002", createHistoricalQuestions("b", 30));
+        InterviewSessionEntity thirdSessionEntity =
+                createSessionWithQuestions("session-001", createHistoricalQuestions("c", 30));
+
+        stubCreateInterviewDependencies(
+                resumeEntity,
+                List.of(firstSessionEntity, secondSessionEntity, thirdSessionEntity));
+
+        interviewSessionService.createInterview(createInterviewRequest(11L, 3));
+
+        List<HistoricalQuestion> historicalQuestions = captureHistoricalQuestions();
+        assertThat(historicalQuestions).hasSize(60);
+        assertThat(historicalQuestions.get(59).question()).isEqualTo("历史题b-29");
+        assertThat(historicalQuestions)
+                .extracting(HistoricalQuestion::question)
+                .doesNotContain("历史题c-0");
+    }
+
+    @Test
+    void createInterview_shouldMapHistoryToQuestionTypeAndTopicSummaryOnly() throws JacksonException {
+        // 只保留出题需要的三个字段：题号、分类这些展示字段不应该进入历史题目对象。
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewQuestionDTO questionDTO = createHistoricalQuestion("请说明线程池核心参数", "JAVA", "线程池");
+        questionDTO.setCategory("Java 基础");
+        questionDTO.setQuestionIndex(7);
+        InterviewSessionEntity sessionEntity = createSessionWithQuestions("session-001", List.of(
+                questionDTO,
+                createHistoricalQuestion("请描述项目难点", "PROJECT", null)));
+
+        stubCreateInterviewDependencies(resumeEntity, List.of(sessionEntity));
+
+        interviewSessionService.createInterview(createInterviewRequest(11L, 3));
+
+        assertThat(captureHistoricalQuestions()).containsExactly(
+                new HistoricalQuestion("请说明线程池核心参数", "JAVA", "线程池"),
+                new HistoricalQuestion("请描述项目难点", "PROJECT", null));
+    }
+
+    private void stubCreateInterviewDependencies(
+            ResumeEntity resumeEntity,
+            List<InterviewSessionEntity> historicalSessionEntities) {
+        when(resumeRepository.findById(11L)).thenReturn(Optional.of(resumeEntity));
+        when(interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
+                eq(11L),
+                eq("java-backend"),
+                anyList())).thenReturn(Optional.empty());
+        when(interviewSessionRepository.findTop10ByResumeIdAndSkillIdOrderByCreatedAtDesc(11L, "java-backend"))
+                .thenReturn(historicalSessionEntities);
+        when(interviewQuestionService.generateQuestions(
+                eq(resumeEntity.getResumeText()),
+                eq(3),
+                eq("java-backend"),
+                anyList())).thenReturn(createQuestions(3));
+        when(interviewSessionRepository.save(any(InterviewSessionEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<HistoricalQuestion> captureHistoricalQuestions() {
+        ArgumentCaptor<List<HistoricalQuestion>> historicalCaptor = ArgumentCaptor.forClass(List.class);
+        verify(interviewQuestionService).generateQuestions(
+                anyString(),
+                anyInt(),
+                anyString(),
+                historicalCaptor.capture());
+        return historicalCaptor.getValue();
+    }
+
+    private InterviewSessionEntity createSessionWithQuestions(
+            String sessionId,
+            List<InterviewQuestionDTO> questionDTOs) throws JacksonException {
+        return createSessionWithRawQuestionsJson(
+                sessionId,
+                objectMapper.writeValueAsString(questionDTOs));
+    }
+
+    private InterviewSessionEntity createSessionWithRawQuestionsJson(
+            String sessionId,
+            String questionsJson) {
+        InterviewSessionEntity sessionEntity = new InterviewSessionEntity();
+        sessionEntity.setSessionId(sessionId);
+        sessionEntity.setQuestionsJson(questionsJson);
+        return sessionEntity;
+    }
+
+    private InterviewQuestionDTO createHistoricalQuestion(
+            String question,
+            String type,
+            String topicSummary) {
+        InterviewQuestionDTO questionDTO = new InterviewQuestionDTO();
+        questionDTO.setQuestion(question);
+        questionDTO.setType(type);
+        questionDTO.setTopicSummary(topicSummary);
+        return questionDTO;
+    }
+
+    private List<InterviewQuestionDTO> createHistoricalQuestions(String prefix, int count) {
+        return java.util.stream.IntStream.range(0, count)
+                .mapToObj(index -> createHistoricalQuestion(
+                        "历史题" + prefix + "-" + index,
+                        "JAVA",
+                        "摘要" + prefix + "-" + index))
+                .toList();
     }
 
     private CreateInterviewRequest createInterviewRequest(Long resumeId, Integer questionCount) {

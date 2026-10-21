@@ -92,12 +92,7 @@ public class StructuredOutputInvoker {
 
             try {
                 // 向 AI 发起一次同步请求，拿回文本内容。
-                String content = chatClient
-                        .prompt()
-                        .system(attemptSystemPrompt)
-                        .user(userPrompt)
-                        .call()
-                        .content();
+                String content = chatClient.prompt().system(attemptSystemPrompt).user(userPrompt).call().content();
 
                 // 空内容无法转换成 Java 对象，因此按失败处理。
                 if (content == null || content.isBlank()) {
@@ -107,7 +102,7 @@ public class StructuredOutputInvoker {
                 // 转换成功立即返回，不再继续后续尝试。
                 // 转换结果可能为 null，这也按失败处理，交给下一次重试。
                 T result = outputConverter.convert(content);
-                if(result == null){
+                if (result == null) {
                     throw new IllegalStateException("AI 返回内容无法转换为目标对象");
                 }
 
