@@ -564,7 +564,7 @@ public class InterviewSessionService {
 
         // LinkedHashSet 同时具备“判断是否重复”和“保持原有顺序”两个作用。
         LinkedHashSet<String> seenQuestionSet = new LinkedHashSet<>();
-        List<HistoricalQuestion> historicalQuestionList = new ArrayList<>();
+        List<HistoricalQuestion> historicalQuestions = new ArrayList<>();
 
         for (InterviewSessionEntity sessionEntity : sessionList) {
             // 每个会话的题目以 JSON 字符串保存，这里先还原成题目对象列表。
@@ -577,7 +577,7 @@ public class InterviewSessionService {
 
                 for (InterviewQuestionDTO questionDTO : questionList) {
                     // 收集够了就不再继续
-                    if (historicalQuestionList.size() >= MAX_HISTORICAL_QUESTIONS) {
+                    if (historicalQuestions.size() >= MAX_HISTORICAL_QUESTIONS) {
                         break;
                     }
 
@@ -588,7 +588,7 @@ public class InterviewSessionService {
 
                     // add 返回 true 表示题目第一次出现；返回 false 表示已经存在，自动跳过重复题。
                     if (seenQuestionSet.add(questionDTO.getQuestion())) {
-                        historicalQuestionList.add(
+                        historicalQuestions.add(
                                 new HistoricalQuestion(questionDTO.getQuestion(), questionDTO.getType(), questionDTO.getTopicSummary()));
                     }
                 }
@@ -597,6 +597,6 @@ public class InterviewSessionService {
             }
         }
 
-        return historicalQuestionList;
+        return historicalQuestions;
     }
 }

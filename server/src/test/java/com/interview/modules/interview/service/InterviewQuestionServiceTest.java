@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -25,6 +26,7 @@ import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
 import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.infrastructure.ai.StructuredOutputProperties;
+import com.interview.modules.interview.model.HistoricalQuestion;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
 import com.interview.modules.interview.skill.InterviewSkillService;
 import com.interview.modules.interview.skill.model.InterviewSkillCategoryDTO;
@@ -34,6 +36,23 @@ import com.interview.modules.interview.skill.model.InterviewSkillDTO;
  * 面试题生成服务测试。
  */
 class InterviewQuestionServiceTest {
+
+    /**
+     * 固定的合法 AI 出题响应，用于只关心 Prompt 内容的测试。
+     */
+    private static final String AI_QUESTION_RESPONSE = """
+            {
+              "questions": [
+                {
+                  "questionIndex": 0,
+                  "question": "请说明历史考点注入后的面试题。",
+                  "type": "JAVA",
+                  "category": "Java 基础",
+                  "topicSummary": "历史考点注入"
+                }
+              ]
+            }
+            """;
 
     @Test
     void generateQuestions_shouldUseSkillBasedFallbackWhenAiFails() throws IOException {
@@ -262,6 +281,84 @@ class InterviewQuestionServiceTest {
         assertThat(questionDTOs.get(0).getQuestion()).isEqualTo("AI 重试后题目");
     }
 
+    @Test
+    void generateQuestions_shouldTellAiThatHistoryIsEmpty() throws IOException {
+        String userPrompt = renderUserPromptForHistory(List.of());
+
+        assertThat(userPrompt).contains("暂无历史提问");
+    }
+
+    @Test
+    void generateQuestions_shouldGroupHistoricalQuestionsByType() throws IOException {
+        String userPrompt = renderUserPromptForHistory(List.of(
+                new HistoricalQuestion("题A", "JAVA", "线程池"),
+                new HistoricalQuestion("题B", "JAVA", "GC"),
+                new HistoricalQuestion("题C", "PROJECT", "项目难点")));
+
+        assertThat(userPrompt).contains("已考过的知识点（避免重复出题）：");
+        assertThat(userPrompt).contains("- JAVA: 线程池, GC\n");
+        assertThat(userPrompt).contains("- PROJECT: 项目难点\n");
+        assertThat(userPrompt.indexOf("- JAVA:")).isLessThan(userPrompt.indexOf("- PROJECT:"));
+    }
+
+    @Test
+    void generateQuestions_shouldTreatBlankTypeAsGeneralWhenBuildingHistorySection() throws IOException {
+        String userPrompt = renderUserPromptForHistory(List.of(
+                new HistoricalQuestion("题A", null, "线程池"),
+                new HistoricalQuestion("题B", "   ", "GC")));
+
+        assertThat(userPrompt).contains("- GENERAL: 线程池, GC\n");
+    }
+
+    @Test
+    void generateQuestions_shouldPreferTopicSummaryOverQuestionText() throws IOException {
+        String longQuestion = "请结合你在生产环境中排查线上 CPU 飙高的完整过程，说明你是如何定位问题并最终解决的。";
+        String userPrompt = renderUserPromptForHistory(List.of(
+                new HistoricalQuestion(longQuestion, "JAVA", "CPU 飙高排查")));
+
+        assertThat(userPrompt).contains("- JAVA: CPU 飙高排查\n");
+        assertThat(userPrompt).doesNotContain(longQuestion);
+    }
+
+    @Test
+    void generateQuestions_shouldTruncateOnlyQuestionTextLongerThanThirtyChars() throws IOException {
+        String exactlyThirty = "题".repeat(30);
+        String thirtyOne = "文".repeat(31);
+        String userPrompt = renderUserPromptForHistory(List.of(
+                new HistoricalQuestion(thirtyOne, "JAVA", null),
+                new HistoricalQuestion(exactlyThirty, "PROJECT", "   ")));
+
+        // 31 个字：保留前 30 个字并补省略号。
+        assertThat(userPrompt).contains("- JAVA: " + "文".repeat(30) + "…\n");
+        // 正好 30 个字：不截断也不补省略号，说明判断用的是 > 30 而不是 >= 30。
+        assertThat(userPrompt).contains("- PROJECT: " + exactlyThirty + "\n");
+        assertThat(userPrompt).doesNotContain("- PROJECT: " + exactlyThirty + "…");
+    }
+
+    /**
+     * 渲染一次用户 Prompt，用于断言历史考点说明被真实拼进了 Prompt。
+     *
+     * <p>输出转换器和 Skill 分配都走真实实现，只把 AI 调用替换成固定响应，
+     * 这样断言的是生产代码渲染出来的字符串，而不是测试自己拼的字符串。</p>
+     */
+    private String renderUserPromptForHistory(List<HistoricalQuestion> historicalQuestions) throws IOException {
+        ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
+        InterviewQuestionService interviewQuestionService = createService(chatClient);
+        ArgumentCaptor<String> userPromptCaptor = ArgumentCaptor.forClass(String.class);
+
+        when(chatClient.prompt()
+                .system(anyString())
+                .user(userPromptCaptor.capture())
+                .call()
+                .content()).thenReturn(AI_QUESTION_RESPONSE);
+
+        interviewQuestionService.generateQuestions("熟悉 Spring Boot。", 1, "java-backend", historicalQuestions);
+
+        // PromptTemplate 底层用 StringTemplate 渲染，Windows 下会把 \n 统一换成 \r\n，
+        // 这里归一化换行符，否则断言换行位置的用例会随运行平台时红时绿。
+        return userPromptCaptor.getValue().replace("\r\n", "\n");
+    }
+
     private InterviewQuestionService createService(
             ChatClient chatClient
     ) throws IOException {
@@ -319,7 +416,7 @@ class InterviewQuestionServiceTest {
         when(systemPromptResource.getContentAsString(StandardCharsets.UTF_8))
                 .thenReturn("{persona}");
         when(userPromptResource.getContentAsString(StandardCharsets.UTF_8))
-                .thenReturn("请根据简历 {resumeText} 生成 {questionCount} 道题。考察方向：{skillCategories}");
+                .thenReturn("请根据简历 {resumeText} 生成 {questionCount} 道题。考察方向：{skillCategories}\n\n{historicalSection}");
 
         return resourceLoader;
     }

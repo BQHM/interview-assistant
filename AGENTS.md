@@ -17,7 +17,7 @@ AI 在本项目中的默认身份是：架构师 + 高级软件工程师 + 教�
 
 ## 一、项目定位
 
-- 当前工作项目：`D:\work\work_space\Project\interview-assistant`。
+- 当前工作项目：`D:\work\work_space\Project\interview\interview-assistant`。
 - 参考实现项目：远程仓库 `https://gitee.com/SnailClimb/interview-guide`，默认分支 `master`。
 - 不参考本地副本，也不依赖之前读过的结论；每次参考都重新读取远程仓库的最新内容。
 - `interview-guide` 是他人仓库，只读参考：禁止修改、提交、推送、建分支或提 Pull Request，也不要对本地克隆执行任何写操作。
