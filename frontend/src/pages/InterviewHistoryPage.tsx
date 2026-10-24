@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { EmptyState, ErrorNotice } from '../components/Feedback';
-import type { InterviewSessionListItem, InterviewSessionStatus } from '../types/interview';
+import { INTERVIEW_STATUS_TEXT } from '../constants/interviewStatus';
+import type { InterviewSessionListItem } from '../types/interview';
+import { formatDateTime } from '../utils/format';
 
 export default function InterviewHistoryPage() {
   // useLocation 可以读取上一个页面跳转时传过来的 state。
@@ -16,12 +18,6 @@ export default function InterviewHistoryPage() {
   const [sessions, setSessions] = useState<InterviewSessionListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const STATUS_TEXT: Record<InterviewSessionStatus, string> = {
-    CREATED: '未开始',
-    IN_PROGRESS: '进行中',
-    COMPLETED: '已完成',
-  };
 
   // 页面首次进入时加载历史记录。
   useEffect(() => {
@@ -84,10 +80,10 @@ export default function InterviewHistoryPage() {
                 已完成题数：{Math.min(session.currentQuestionIndex, session.totalQuestions)} / {session.totalQuestions}
               </p>
               <p className="text-sm text-slate-500">
-                状态：{STATUS_TEXT[session.status]}
+                状态：{INTERVIEW_STATUS_TEXT[session.status]}
               </p>
               <p className="text-sm text-slate-500">
-                创建时间：{session.createdAt}
+                创建时间：{formatDateTime(session.createdAt)}
               </p>
 
               <div className="mt-4">

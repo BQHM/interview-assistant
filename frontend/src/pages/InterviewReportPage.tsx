@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { EmptyState, ErrorNotice } from '../components/Feedback';
 import type { InterviewReport } from '../types/interview';
+import { formatDateTime } from '../utils/format';
 
 
 export default function InterviewReportPage() {
@@ -90,7 +91,7 @@ export default function InterviewReportPage() {
       <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">整体评价</h2>
         <p className="text-slate-700 leading-7">{report.overallEvaluation}</p>
-        <p className="mt-4 text-xs text-slate-400">生成时间：{report.generatedAt}</p>
+        <p className="mt-4 text-xs text-slate-400">生成时间：{formatDateTime(report.generatedAt)}</p>
       </div>
 
       <div className="space-y-5">

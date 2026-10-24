@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getErrorMessage } from '../api/request';
 import { resumeApi } from '../api/resume';
 import { ErrorNotice } from '../components/Feedback';
+import { formatFileSize } from '../utils/format';
 
 export default function ResumeUploadPage() {
   // 上传成功后需要跳转到详情页，所以这里引入 navigate。
@@ -117,7 +118,7 @@ export default function ResumeUploadPage() {
             </div>
             <h3 className="text-lg font-medium text-slate-700 mb-1">{selectedFile.name}</h3>
             <p className="text-slate-500 mb-4">
-              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+              {formatFileSize(selectedFile.size)}
             </p>
 
             {/* 上传成功且命中重复文件时，显示绿色提示；否则显示操作按钮 */}

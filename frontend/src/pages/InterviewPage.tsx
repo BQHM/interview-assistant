@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { EmptyState, ErrorNotice } from '../components/Feedback';
+import { formatQuestionLabel } from '../constants/questionCategory';
 import type { InterviewSession } from '../types/interview';
-
-
 
 export default function InterviewPage() {
     // sessionId 来自路由 /interview/:sessionId，用来查询某一次面试会话。
@@ -107,10 +106,10 @@ export default function InterviewPage() {
                 <div className="mb-4">
                     {/* category/type 是后端给题目打的分类标签 */}
                     <span className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
-                        {currentQuestion.category}
+                        {formatQuestionLabel(currentQuestion.category)}
                     </span>
                     <span className="inline-block ml-2 px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600">
-                        {currentQuestion.type}
+                        {formatQuestionLabel(currentQuestion.type)}
                     </span>
                 </div>
 
