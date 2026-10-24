@@ -157,17 +157,20 @@
 - [x] 历史题目查询、`topicSummary` 摘要、精确去重和 Prompt 注入
 - [x] AI 结构化输出重试：出题、简历分析、单题评估三处统一接入 `StructuredOutputInvoker`
 - [x] 全项目变量名去掉匈牙利前缀，统一标准 Java 命名
+- [x] 前端后端枚举中文化：简历状态、面试状态、题目分类统一走 `src/constants/`
+- [x] 抽取 `ResumeStatusBadge` 状态徽章组件，文案与配色分离
+- [x] 前端时间与文件大小格式化统一走 `src/utils/format.ts`
+- [x] Redis / Redisson 基础设施接入：依赖、配置、连通性测试通过（Redis 7.4.11 + Redisson 4.0.0）
 
 ### 进行中
 
-- [ ] 前端空状态、错误提示和时间格式展示继续完善
+- [ ] Redis 会话缓存与接口限流（基础设施已就绪，缓存编码器方案待定）
 - [ ] 补强核心 Service 单元测试
 - [ ] 历史题目去重专项测试和双方向人工复验
 
 ### 未完成
 
-- [ ] Redis 会话缓存
-- [ ] 异步任务流转
+- [ ] 异步任务流转（Redis Stream）
 - [ ] 知识库 / RAG 问答
 - [ ] 面试日程管理
 - [ ] 语音面试
@@ -262,8 +265,20 @@ interview-assistant/
 
 - JDK 21+
 - Maven 3.9+
-- PostgreSQL
+- Node.js 18+（前端构建与本地开发）
+- PostgreSQL 17（推荐 `pgvector/pgvector:pg17` 镜像，后续知识库阶段需要向量扩展）
 - RustFS 或其他兼容 S3 协议的对象存储
+- Redis 7+（会话缓存、接口限流和异步任务）
+
+本地依赖容器参考：
+
+```bash
+docker run -d --name pgvector -p 5432:5432 -e POSTGRES_PASSWORD=123456 pgvector/pgvector:pg17
+docker run -d --name rustfs -p 9000:9000 rustfs/rustfs
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+```
+
+跑完整集成测试（`@SpringBootTest`）前需要三个容器同时运行，否则会因为数据库或存储连接失败而中途退出。
 
 ### 配置说明
 
@@ -272,6 +287,7 @@ interview-assistant/
 核心配置包括：
 
 - PostgreSQL 连接信息
+- Redis 连接信息（Redisson 单机配置与连接池大小）
 - AI 模型地址和 API Key
 - RustFS / S3 对象存储配置
 - 简历分析 Prompt 模板路径
@@ -294,6 +310,10 @@ APP_STORAGE_ACCESS_KEY=your-access-key
 APP_STORAGE_SECRET_KEY=your-secret-key
 APP_STORAGE_BUCKET=interview-guide
 APP_STORAGE_REGION=us-east-1
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DATABASE=0
 ```
 
 ### 启动方式
