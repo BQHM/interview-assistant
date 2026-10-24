@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { resumeApi } from '../api/resume';
 import { EmptyState, ErrorNotice } from '../components/Feedback';
+import { ResumeStatusBadge } from '../components/ResumeStatusBadge';
 import type { ResumeListItem } from '../types/resume';
+import { formatDateTime, formatFileSize } from '../utils/format';
 
 export default function ResumeListPage() {
   // useNavigate 返回一个函数，调用 navigate('/xxx') 就能用代码跳转页面。
@@ -35,40 +37,6 @@ export default function ResumeListPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // 把后端返回的字节数转换成更适合用户阅读的单位。
-  const formatFileSize = (bytes: number): string => {
-    // 小于 1024 字节，直接显示 B。
-    if (bytes < 1024) return bytes + ' B';
-    // 小于 1MB，显示 KB。
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-    // 更大的文件显示 MB。
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  };
-
-  // 把后端返回的时间字符串转换成本地中文时间格式。
-  const formatDate = (dateStr: string): string => {
-    return new Date(dateStr).toLocaleString('zh-CN');
-  };
-
-  // 根据后端状态返回一个彩色标签。
-  // Record<string, ...> 可以理解成“一个字符串 key 到配置对象的映射表”。
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      PENDING: { label: '等待中', className: 'bg-yellow-100 text-yellow-800' },
-      PROCESSING: { label: '分析中', className: 'bg-blue-100 text-blue-800' },
-      COMPLETED: { label: '已完成', className: 'bg-green-100 text-green-800' },
-      FAILED: { label: '失败', className: 'bg-red-100 text-red-800' },
-    };
-    const config = statusMap[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
-
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.className}`}>
-        {/* 这里显示中文状态文字，例如“已完成” */}
-        {config.label}
-      </span>
-    );
   };
 
   // loading 为 true 时，直接返回加载中页面，不继续渲染下面的列表。
@@ -133,8 +101,8 @@ export default function ResumeListPage() {
                     <h3 className="font-medium text-slate-800">{resume.filename}</h3>
                     <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
                       <span>{formatFileSize(resume.fileSize)}</span>
-                      <span>{formatDate(resume.uploadedAt)}</span>
-                      {getStatusBadge(resume.analyzeStatus)}
+                      <span>{formatDateTime(resume.uploadedAt)}</span>
+                      <ResumeStatusBadge status={resume.analyzeStatus} />
                     </div>
                     {/* && 是条件渲染：只有 analyzeError 有值时才显示错误信息 */}
                     {resume.analyzeError && (

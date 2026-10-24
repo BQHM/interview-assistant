@@ -3,13 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { interviewApi } from '../api/interview';
 import { resumeApi } from '../api/resume';
 import { EmptyState, ErrorNotice } from '../components/Feedback';
+import { RESUME_STATUS_TEXT } from '../constants/resumeStatus';
 import type { ResumeAnalysis, ResumeDetail } from '../types/resume';
 import { formatDateTime, formatFileSize } from '../utils/format';
 
 export default function ResumeDetailPage() {
   // id 来自路由 /resumes/:id，例如 /resumes/11。
-  // useParams 取到的路径参数默认是 string | undefined，所以后面请求接口时要 Number(id)。
-  const { id } = useParams();
+  // useParams 取到的路径参数默认是 string | undefined，所以后面请求接口时要 Number(resumeId)。
+  const { id: resumeId } = useParams();
   const navigate = useNavigate();
 
   // resume 保存详情数据；creatingInterview 用来避免重复点击“开始模拟面试”。
@@ -20,10 +21,10 @@ export default function ResumeDetailPage() {
   const [creatingInterview, setCreatingInterview] = useState(false);
   const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
 
-  // id 变化时重新加载简历详情。
-  // 依赖数组 [id] 的意思是：只要路由里的 id 变化，就重新执行这个 effect。
+  // resumeId 变化时重新加载简历详情。
+  // 依赖数组 [resumeId] 的意思是：只要路由里的 id 变化，就重新执行这个 effect。
   useEffect(() => {
-    if (!id) {
+    if (!resumeId) {
       setError('简历 ID 不存在');
       setLoading(false);
       return;
@@ -32,11 +33,11 @@ export default function ResumeDetailPage() {
     const loadResume = async () => {
       try {
         setLoading(true);
-        // 后端接口需要 number 类型的 id，所以这里把字符串 id 转成数字。
-        const resumeData = await resumeApi.getResumeDetail(Number(id));
+        // 后端接口需要 number 类型的 resumeId，所以这里把字符串 resumeId 转成数字。
+        const resumeData = await resumeApi.getResumeDetail(Number(resumeId));
         setResume(resumeData);
 
-        const analysisData = await resumeApi.getResumeAnalysis(Number(id));
+        const analysisData = await resumeApi.getResumeAnalysis(Number(resumeId));
         setAnalysis(analysisData);
       } catch (err) {
         setError(err instanceof Error ? err.message : '加载简历详情失败');
@@ -46,7 +47,7 @@ export default function ResumeDetailPage() {
     };
 
     loadResume();
-  }, [id]);
+  }, [resumeId]);
 
   // 用当前简历创建面试会话，成功后跳转到答题页面。
   const handleStartInterview = async () => {
@@ -180,7 +181,7 @@ export default function ResumeDetailPage() {
           <p>文件名：{resume.originalFilename}</p>
           <p>文件大小：{formatFileSize(resume.fileSize)}</p>
           <p>文件类型：{resume.contentType}</p>
-          <p>分析状态：{resume.analyzeStatus}</p>
+          <p>分析状态：{RESUME_STATUS_TEXT[resume.analyzeStatus]}</p>
           <p>上传时间：{formatDateTime(resume.uploadedAt)}</p>
         </div>
       </div>
