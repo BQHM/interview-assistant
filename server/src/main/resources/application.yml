@@ -22,6 +22,14 @@ spring:
         options:
           model: ${AI_MODEL:qwen-plus}
           temperature: 0.2
+  redis:
+    redisson:
+      config: |
+        singleServerConfig:
+          address: "redis://${REDIS_HOST:localhost}:${REDIS_PORT:6379}"
+          database: ${REDIS_DATABASE:0}
+          connectionMinimumIdleSize: 2
+          connectionPoolSize: 16
 
 # 对应你文档里的 RustFS 配置
 app:
