@@ -161,10 +161,11 @@
 - [x] 抽取 `ResumeStatusBadge` 状态徽章组件，文案与配色分离
 - [x] 前端时间与文件大小格式化统一走 `src/utils/format.ts`
 - [x] Redis / Redisson 基础设施接入：依赖、配置、连通性测试通过（Redis 7.4.11 + Redisson 4.0.0）
+- [x] 简历详情接口接入 Redis 缓存：`StringCodec` + Jackson 明文 JSON，TTL 30 分钟，二次请求零 SQL
 
 ### 进行中
 
-- [ ] Redis 会话缓存与接口限流（基础设施已就绪，缓存编码器方案待定）
+- [ ] 面试会话缓存（失效点 4 个）与接口限流
 - [ ] 补强核心 Service 单元测试
 - [ ] 历史题目去重专项测试和双方向人工复验
 
@@ -206,37 +207,50 @@
 ```text
 interview-assistant/
 ├── README.md
+├── docs/                                   # 设计文档、实施计划、完成度审计
+├── study/                                  # 学习记录
 ├── server/
-    ├── pom.xml
-    └── src/main/java/com/interview/
-        ├── App.java
-        ├── common/
-        │   ├── annotation/
-        │   ├── config/
-        │   ├── constant/
-        │   ├── exception/
-        │   ├── model/
-        │   └── result/
-        ├── infrastructure/
-        │   └── file/
-        └── modules/
-            ├── resume/
-            │   ├── model/
-            │   ├── repository/
-            │   ├── service/
-            │   └── ResumeController.java
-            └── interview/
-                ├── model/
-                ├── repository/
-                ├── service/
-                └── InterviewController.java
+│   ├── pom.xml
+│   └── src/main/
+│       ├── java/com/interview/
+│       │   ├── App.java
+│       │   ├── common/                     # 注解、配置、常量、异常、统一响应
+│       │   │   ├── annotation/
+│       │   │   ├── config/
+│       │   │   ├── constant/
+│       │   │   ├── exception/
+│       │   │   ├── model/
+│       │   │   └── result/
+│       │   ├── infrastructure/             # 文件解析、对象存储、AI 与缓存基础设施
+│       │   │   ├── ai/
+│       │   │   ├── file/
+│       │   │   └── redis/
+│       │   └── modules/
+│       │       ├── resume/
+│       │       │   ├── model/
+│       │       │   ├── repository/
+│       │       │   ├── service/
+│       │       │   └── ResumeController.java
+│       │       └── interview/
+│       │           ├── model/
+│       │           ├── repository/
+│       │           ├── service/
+│       │           ├── skill/              # Skill 元数据与资源加载
+│       │           └── InterviewController.java
+│       └── resources/
+│           ├── application.yml
+│           ├── prompts/                    # AI Prompt 模板
+│           └── skills/                     # Skill 配置（java-backend / system-design）
 └── frontend/
     ├── package.json
     └── src/
-        ├── api/
-        ├── types/
-        ├── components/
-        └── pages/
+        ├── api/                            # 统一请求层与接口封装
+        ├── assets/
+        ├── components/                     # 通用组件（Layout、状态徽章等）
+        ├── constants/                      # 枚举文案与路由常量
+        ├── pages/                          # 页面
+        ├── types/                          # 与后端 DTO 对齐的类型
+        └── utils/                          # 格式化等纯函数
 ```
 
 ## 接口清单
@@ -258,6 +272,13 @@ interview-assistant/
 - `POST /api/interviews/{sessionId}/complete`：提前交卷
 - `GET /api/interviews/{sessionId}/report`：生成面试报告
 - `GET /api/interviews/unfinished/{resumeId}`：查询未完成面试会话
+- `GET /api/interviews`：查询面试历史列表
+- `GET /api/interviews/{sessionId}/details`：查询面试历史详情（含逐题答案与评估）
+- `DELETE /api/interviews/{sessionId}`：删除面试会话
+
+### Skill 模块
+
+- `GET /api/interview/skills`：查询可选面试方向（`java-backend`、`system-design`）
 
 ## 快速开始
 
