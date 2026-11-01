@@ -1,7 +1,9 @@
 package com.interview.modules.interview;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import com.interview.common.annotation.RateLimit;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +55,7 @@ public class InterviewController {
      * @author NobuNo
      * @date 2026-04-20
      */
+    @RateLimit(count = 3, interval = 1, timeUnit = TimeUnit.MINUTES)
     @PostMapping
     public Result<InterviewSessionDTO> createInterview(
             @Valid @RequestBody CreateInterviewRequest createInterviewRequest) {
