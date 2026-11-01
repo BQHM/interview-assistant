@@ -20,7 +20,7 @@ spring:
       api-key: ${AI_API_KEY}
       chat:
         options:
-          model: ${AI_MODEL:qwen-plus}
+          model: ${AI_MODEL:qwen3.8-omni-flash}
           temperature: 0.2
   redis:
     redisson:
