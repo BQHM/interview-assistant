@@ -72,7 +72,8 @@ AI 在本项目中的默认身份是：架构师 + 高级软件工程师 + 教�
 - Apache Tika 做文档解析
 - RustFS / S3 Compatible Storage 做对象存储
 - Redis + Redisson，后续用于缓存、限流和 Redis Stream 异步任务
-- MapStruct，后续用于复杂 DTO 映射
+- Flyway，后续用于数据库迁移，替代 `ddl-auto: update`（参考项目位于 `app/src/main/resources/db/migration`）
+- MapStruct，后续用于复杂 DTO 映射（参考项目位于 `infrastructure/mapper`）
 - iText，后续用于 PDF 导出
 - Maven 是当前项目构建方式；不要因为参考项目使用 Gradle 就盲目迁移
 
@@ -122,17 +123,20 @@ server/
 
 ```text
 com.interview/
-├── common/                  # 通用注解、配置、异常、统一响应、异步模型
-├── infrastructure/          # 文件、存储、Redis、导出、Mapper、AI 基础设施
+├── common/                  # 注解、切面、配置、常量、统一响应、异常、异步模型、评估引擎、事务工具
+├── infrastructure/          # 文件、存储、Redis、导出、Mapper
 └── modules/
     ├── resume/              # 简历管理
     ├── interview/           # 文字模拟面试
     ├── knowledgebase/       # 知识库与 RAG
     ├── interviewschedule/   # 面试日程
-    └── voiceinterview/      # 语音面试
+    ├── voiceinterview/      # 语音面试
+    └── llmprovider/         # 多模型 Provider 注册与选择
 ```
 
 注意：当前项目包名是 `com.interview`，不要直接复制参考项目的 `interview.guide` 包名。
+
+当前项目把 AI 调用封装放在 `infrastructure/ai`，参考项目把同类能力放在 `common/ai`（并提供 `LlmProviderRegistry`）。两者职责相近，暂时保留现状，等做 `modules/llmprovider` 时再统一。
 
 ***
 
@@ -306,10 +310,12 @@ public class UserService {
 
 ### 9.3 阶段演进
 
-- 第一阶段：规则版出题、规则版报告，保证主流程跑通。
-- 第二阶段：AI 出题、AI 简历分析、AI 面试评估，保留规则兜底。
-- 第三阶段：抽象 LLM Provider，靠齐参考项目多 Provider 设计。
-- 第四阶段：Redis Stream 异步化简历分析、面试评估、知识库向量化。
+- 第一阶段：规则版出题、规则版报告，保证主流程跑通。（已完成）
+- 第二阶段：AI 出题、AI 简历分析、AI 面试评估，保留规则兜底。（已完成）
+- 第三阶段：抽象 LLM Provider，靠齐参考项目多 Provider 设计。对应学习路线图阶段 4.5、实施计划任务 21.1。
+- 第四阶段：Redis Stream 异步化简历分析、面试评估、知识库向量化。对应学习路线图阶段 6、实施计划任务 18 和任务 19。
+
+Provider 抽象必须排在知识库之前，因为 RAG 问答同样要通过 Provider 注册表选择模型，越晚抽改造面越大。
 
 ***
 
@@ -371,11 +377,16 @@ public class UserService {
 4. 独立答案表：答案 upsert、单题评分、历史详情聚合。
 5. AI 出题与 AI 评估：Skill 驱动、结构化输出、规则兜底。
 6. 前端页面：先对齐 `interview-guide` 的左侧导航 + 内容区结构，完成简历、文字面试、面试记录核心页面。
-7. Redis 能力：限流、会话缓存、Redis Stream 异步分析/评估。
-8. 知识库与 RAG：文档上传、切分、向量化、检索问答、SSE。
-9. 面试日程：邀请解析、日历视图、状态流转、提醒。
-10. 语音面试：WebSocket、ASR/TTS、多轮对话、语音评估。
-11. Docker 与部署：本地依赖编排、生产配置、监控与日志。
+7. Redis 能力：限流、抄件式缓存、Redis Stream 异步分析/评估。
+8. 数据库迁移基线：引入 Flyway，替代 `ddl-auto: update`（参考项目位于 `app/src/main/resources/db/migration`）。
+9. LLM Provider 抽象：`modules/llmprovider` 注册表，出题、简历分析、单题评估、RAG 共用。
+10. PDF 导出：iText + 中文字体，覆盖简历分析与面试报告。
+11. 知识库与 RAG：文档上传、切分、向量化、检索问答、SSE。
+12. 面试日程：邀请解析、日历视图、状态流转、提醒。
+13. 语音面试：WebSocket、ASR/TTS、多轮对话、语音评估。
+14. Docker 与部署：本地依赖编排、生产配置、监控与日志。
+
+Flyway 与 LLM Provider 是原路线图遗漏的两项：前者拖延成本随表数量增长，后者影响所有 AI 调用点，都应在知识库阶段之前完成。
 
 ***
 
