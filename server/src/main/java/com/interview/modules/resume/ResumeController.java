@@ -1,5 +1,6 @@
 package com.interview.modules.resume;
 
+import com.interview.common.annotation.RateLimit;
 import com.interview.common.result.Result;
 import com.interview.modules.resume.model.dto.ResumeAnalysisDTO;
 import com.interview.modules.resume.model.dto.ResumeDetailDTO;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 文件功能说明
@@ -39,6 +41,7 @@ public class ResumeController {
      * @author NobuNo
      * @date 2026-04-02
      */
+    @RateLimit(count = 5, interval = 1, timeUnit = TimeUnit.MINUTES)
     @PostMapping("/upload")
     public Result<ResumeUploadResponseDTO> upload(@RequestParam("file") MultipartFile file) {
         // 调用业务层
