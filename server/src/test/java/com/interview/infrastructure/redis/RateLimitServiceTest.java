@@ -8,12 +8,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * 文件功能说明
- * <p>负责验证固定窗口限流的计数、拒绝与窗口重置行为。</p>
+ * <p>负责验证滑动窗口限流的计数、拒绝、窗口重置与拒绝不计数行为。</p>
  *
  * @author NobuNo
  * @date 2026-11-01
@@ -79,23 +80,19 @@ class RateLimitServiceTest {
 
     /**
      * 功能说明
-     * <p>后续请求不应重置窗口过期时间，避免窗口被无限延长。</p>
+     * <p>被拒绝的请求不应写入窗口记录，集合内的记录数始终等于允许次数。</p>
      */
     @Test
-    void tryAcquire_shouldNotResetTtlOnSubsequentRequest() throws InterruptedException {
+    void tryAcquire_shouldNotRecordRejectedRequest() {
         String key = "test:ratelimit:" + UUID.randomUUID();
-        int limit = 10;
-        Duration window = Duration.ofSeconds(10);
+        int limit = 2;
+        Duration window = Duration.ofMinutes(5);
 
-        rateLimitService.tryAcquire(key, limit, window);
-        RAtomicLong counter = redissonClient.getAtomicLong(key);
-        long firstTtl = counter.remainTimeToLive();
+        assertThat(rateLimitService.tryAcquire(key, limit, window)).isTrue();
+        assertThat(rateLimitService.tryAcquire(key, limit, window)).isTrue();
+        assertThat(rateLimitService.tryAcquire(key, limit, window)).isFalse();
+        assertThat(rateLimitService.tryAcquire(key, limit, window)).isFalse();
 
-        Thread.sleep(600);
-
-        rateLimitService.tryAcquire(key, limit, window);
-        long secondTtl = counter.remainTimeToLive();
-
-        assertThat(secondTtl).isLessThan(firstTtl);
+        assertThat(redissonClient.getScoredSortedSet(key, StringCodec.INSTANCE).size()).isEqualTo(limit);
     }
 }
