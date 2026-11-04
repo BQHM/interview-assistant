@@ -163,6 +163,7 @@
 - [x] Redis / Redisson 基础设施接入：依赖、配置、连通性测试通过（Redis 7.4.11 + Redisson 4.0.0）
 - [x] 简历详情接口接入 Redis 缓存：`StringCodec` + Jackson 明文 JSON，TTL 30 分钟，二次请求零 SQL
 - [x] 接口限流：`@RateLimit` 注解 + AOP 切面 + Lua 脚本滑动窗口（`ZSET` 存时间戳），key 按“方法 + 维度 + 客户端”生成，超限返回 8001
+- [x] 数据库迁移基线：Flyway 接管表结构变更，`V1__init_schema.sql` 记录基线结构，存量库通过 baseline 平滑接入，`ddl-auto` 改为 `validate`
 
 ### 进行中
 
@@ -202,6 +203,42 @@
 - 面试报告优先读取 `interview_answers.score`、`feedback`、`referenceAnswer` 和 `keyPointsJson`，不再按答案长度现场评分
 - 提前交卷会将状态改为 `COMPLETED`
 - 只有 `COMPLETED` 状态才允许生成报告
+
+### 数据库迁移（Flyway）
+
+表结构变更由 Flyway 管理，脚本位于 `server/src/main/resources/db/migration`，启动时按版本号自动执行并记录到 `flyway_schema_history`。
+
+核心约定：
+
+- `ddl-auto` 固定为 `validate`，Hibernate 只校验实体与表结构是否一致，不再建表或改表。
+- 改表先写脚本再改实体：新增 `V<版本号>__<英文描述>.sql`，版本号递增，描述用小写下划线。
+- 已执行过的脚本只读：Flyway 会校验 checksum，修改它会直接导致启动失败；修正错误要新增更高版本的脚本。
+- 禁止用 `psql` 直接执行迁移脚本：Flyway 无法记录执行历史，会导致账本与实际状态错位。
+- 迁移脚本默认不写数据，但“新增列后回填历史数据”这类一次性修正是合理的，应当与结构变更写在同一个脚本内。
+- 迁移脚本只负责表结构，数据安全依赖备份（`pg_dump`），两者职责不重叠。
+
+存量库接入方式：当前数据库在引入 Flyway 前已有 4 张表，因此配置了 `baseline-on-migrate: true` 与 `baseline-version: 1`。首次启动会写入一条 `type=BASELINE` 记录并跳过 `V1`，从 `V2` 开始纳管；全新空库不会触发 baseline，会正常执行 `V1` 建表。
+
+常用检查命令：
+
+```bash
+# 查看迁移历史
+docker exec pgvector psql -U postgres -d postgres -c "SELECT installed_rank, version, description, type, success FROM flyway_schema_history ORDER BY installed_rank;"
+
+# 查看当前库中的表
+docker exec pgvector psql -U postgres -d postgres -c "\dt"
+
+# 导出当前表结构（用于核对或重建 V1 素材）
+docker exec pgvector pg_dump -U postgres -d postgres --schema-only
+```
+
+新增迁移的完整流程：
+
+1. 在 `db/migration` 下新建 `V<下一个版本号>__<描述>.sql`。
+2. 在脚本中写出变更 SQL，必要时加 `IF EXISTS` 保证可重放。
+3. 同步修改实体，保持 `validate` 能通过。
+4. 启动应用，日志确认出现 `Migrating schema ... to version ...`。
+5. 查 `flyway_schema_history`，确认为新版本且 `success = t`。
 
 ## 项目结构
 
@@ -407,14 +444,13 @@ http://localhost:5173
 
 1. 为历史题目查询、摘要注入和去重补充专项单元测试与人工验收。
 2. 补强 `ResumeGradingServiceTest` 等核心测试，继续完善前端空状态、错误提示和时间展示。
-3. 引入 Flyway 数据库迁移基线（任务 17.1），把 `ddl-auto: update` 生成的表纳入版本控制。
-4. 抽象 LLM Provider 多模型注册表（任务 21.1），再进入知识库阶段。
-5. Redis 会话缓存与请求幂等。
-6. Redis Stream 异步化简历分析和面试评估。
-7. PDF 报告导出。
-8. 知识库 / RAG。
+3. 抽象 LLM Provider 多模型注册表（任务 21.1），再进入知识库阶段。
+4. Redis 会话缓存与请求幂等。
+5. Redis Stream 异步化简历分析和面试评估。
+6. PDF 报告导出。
+7. 知识库 / RAG。
 
-当前参考项目 `interview-guide` 已进一步实现历史题目摘要去重、Redis 会话缓存、请求幂等、Redis Stream 异步评估、多维原子限流、Flyway 数据库迁移和前后端 CI。当前项目先采用同步调用和 `ddl-auto: update` 作为学习阶段简化方案，按“历史题目去重 -> AI 输出稳定性 -> 测试补强 -> Redis/异步化”的顺序逐步靠齐。
+当前参考项目 `interview-guide` 已进一步实现历史题目摘要去重、Redis 会话缓存、请求幂等、Redis Stream 异步评估、多维原子限流、Flyway 数据库迁移和前后端 CI。当前项目已完成同步调用链路、Redis 缓存与滑动窗口限流、Flyway 迁移基线，后续按“测试补强 -> LLM Provider 抽象 -> Redis/异步化”的顺序逐步靠齐。
 
 ## 参考项目
 
