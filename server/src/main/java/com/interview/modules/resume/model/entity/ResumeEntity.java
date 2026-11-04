@@ -13,9 +13,7 @@ import java.time.LocalDateTime;
  * 简历实体，保存上传文件的元信息、解析文本和后续分析状态。
  */
 @Entity
-@Table(name = "resumes", indexes = {
-        @Index(name = "idx_resume_hash", columnList = "fileHash", unique = true)
-})
+@Table(name = "resumes")
 @Comment("简历表")
 @Getter
 @Setter
