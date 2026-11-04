@@ -49,3 +49,13 @@ app:
     analysis:
       system-prompt-path: classpath:prompts/resume-analysis-system.st
       user-prompt-path: classpath:prompts/resume-analysis-user.st
+  ai:
+    llm:
+      # 不指定 Provider 时使用的缺省值，必须是 providers 里的 key
+      default-provider: qwen
+      providers:
+        qwen:
+          base-url: ${AI_BASE_URL:http://47.101.159.7:29988/v1}
+          api-key: ${AI_API_KEY}
+          model: ${AI_MODEL:qwen3.8-omni-flash}
+          temperature: 0.2

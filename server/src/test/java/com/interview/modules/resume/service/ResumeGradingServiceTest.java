@@ -19,6 +19,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
 import com.interview.common.exception.BusinessException;
+import com.interview.infrastructure.ai.LlmProviderRegistry;
 import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.infrastructure.ai.StructuredOutputProperties;
 import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
@@ -200,10 +201,10 @@ class ResumeGradingServiceTest {
      * @throws IOException 当 Prompt 模板读取失败时抛出
      */
     private ResumeGradingService createService(ChatClient chatClient) throws IOException {
-        ChatClient.Builder chatClientBuilder = mock(ChatClient.Builder.class);
-        when(chatClientBuilder.build()).thenReturn(chatClient);
+        LlmProviderRegistry llmProviderRegistry = mock(LlmProviderRegistry.class);
+        when(llmProviderRegistry.getDefaultChatClient()).thenReturn(chatClient);
         return new ResumeGradingService(
-                chatClientBuilder,
+                llmProviderRegistry,
                 new ResumeAnalysisProperties(),
                 createResourceLoader(),
                 new StructuredOutputInvoker(new StructuredOutputProperties()));

@@ -24,6 +24,7 @@ import org.springframework.core.io.ResourceLoader;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
+import com.interview.infrastructure.ai.LlmProviderRegistry;
 import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.infrastructure.ai.StructuredOutputProperties;
 import com.interview.modules.interview.model.HistoricalQuestion;
@@ -391,13 +392,12 @@ class InterviewQuestionServiceTest {
             ChatClient chatClient,
             InterviewSkillService interviewSkillService
     ) throws IOException {
-        ChatClient.Builder chatClientBuilder =
-                mock(ChatClient.Builder.class);
+        LlmProviderRegistry llmProviderRegistry = mock(LlmProviderRegistry.class);
 
-        when(chatClientBuilder.build()).thenReturn(chatClient);
+        when(llmProviderRegistry.getDefaultChatClient()).thenReturn(chatClient);
 
         return new InterviewQuestionService(
-                chatClientBuilder,
+                llmProviderRegistry,
                 createResourceLoader(),
                 interviewSkillService,
                 new StructuredOutputInvoker(new StructuredOutputProperties())

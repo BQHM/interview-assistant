@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.interview.common.exception.ErrorCode;
+import com.interview.infrastructure.ai.LlmProviderRegistry;
 import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.io.ResourceLoader;
@@ -29,11 +29,8 @@ import com.interview.modules.interview.model.entity.InterviewAnswerEntity;
 @Service
 public class InterviewAnswerEvaluationService {
 
-    /**
-     * AI 聊天客户端。
-     */
-    private final ChatClient chatClient;
 
+    private final LlmProviderRegistry llmProviderRegistry;
     /**
      * 系统 Prompt 模板。
      */
@@ -60,16 +57,16 @@ public class InterviewAnswerEvaluationService {
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param chatClientBuilder AI 客户端构建器
+     * @param llmProviderRegistry AI 客户端构建器
      * @param resourceLoader 资源加载器
      * @param structuredOutputInvoker 结构化输出调用器
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
      * @date 2026-06-29
      */
-    public InterviewAnswerEvaluationService(ChatClient.Builder chatClientBuilder, ResourceLoader resourceLoader, StructuredOutputInvoker structuredOutputInvoker)
+    public InterviewAnswerEvaluationService(LlmProviderRegistry llmProviderRegistry, ResourceLoader resourceLoader, StructuredOutputInvoker structuredOutputInvoker)
             throws IOException {
-        this.chatClient = chatClientBuilder.build();
+        this.llmProviderRegistry = llmProviderRegistry;
         this.structuredOutputInvoker = structuredOutputInvoker;
         this.outputConverter = new BeanOutputConverter<>(InterviewAnswerEvaluationDTO.class);
         this.systemPromptTemplate = new PromptTemplate(
@@ -181,7 +178,7 @@ public class InterviewAnswerEvaluationService {
         // 交给统一的结构化输出调用器：失败会按配置重试；
         // 重试仍失败抛 BusinessException，由 evaluateAnswer 的 catch 降级到规则评分。
         InterviewAnswerEvaluationDTO interviewAnswerEvaluationDTO = structuredOutputInvoker.invoke(
-                chatClient, systemPromptWithFormat, userPrompt, outputConverter,
+                llmProviderRegistry.getDefaultChatClient(), systemPromptWithFormat, userPrompt, outputConverter,
                 ErrorCode.AI_STRUCTURED_OUTPUT_FAILED, "AI 答案评估结构化解析失败：", "AI 答案评估");
 
         return interviewAnswerEvaluationDTO;

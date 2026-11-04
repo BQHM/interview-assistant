@@ -1,6 +1,7 @@
 package com.interview.modules.interview.service;
 
 import com.interview.common.exception.ErrorCode;
+import com.interview.infrastructure.ai.LlmProviderRegistry;
 import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.modules.interview.model.HistoricalQuestion;
 import com.interview.modules.interview.model.dto.InterviewQuestionDTO;
@@ -9,7 +10,6 @@ import com.interview.modules.interview.skill.model.InterviewSkillCategoryDTO;
 import com.interview.modules.interview.skill.model.InterviewSkillDTO;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.io.ResourceLoader;
@@ -34,7 +34,7 @@ import java.util.Map;
 @Service
 public class InterviewQuestionService {
 
-    private final ChatClient chatClient;
+    private final LlmProviderRegistry llmProviderRegistry;
     private final PromptTemplate systemPromptTemplate;
     private final PromptTemplate userPromptTemplate;
     private final BeanOutputConverter<QuestionListDTO> outputConverter;
@@ -45,7 +45,7 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param chatClientBuilder     AI 客户端构建器
+     * @param llmProviderRegistry     AI 客户端构建器
      * @param resourceLoader        资源加载器
      * @param interviewSkillService 面试方向配置服务
      * @param structuredOutputInvoker 结构化输出调用器
@@ -54,12 +54,12 @@ public class InterviewQuestionService {
      * @date 2026-07-02
      */
     public InterviewQuestionService(
-            ChatClient.Builder chatClientBuilder,
+            LlmProviderRegistry llmProviderRegistry,
             ResourceLoader resourceLoader,
             InterviewSkillService interviewSkillService,
             StructuredOutputInvoker structuredOutputInvoker
     ) throws IOException {
-        this.chatClient = chatClientBuilder.build();
+        this.llmProviderRegistry = llmProviderRegistry;
         this.structuredOutputInvoker = structuredOutputInvoker;
         this.outputConverter = new BeanOutputConverter<>(QuestionListDTO.class);
         this.systemPromptTemplate = new PromptTemplate(
@@ -176,7 +176,7 @@ public class InterviewQuestionService {
 
         // 交给统一的结构化输出调用器：失败会按配置重试；重试仍失败抛 BusinessException，由上层 catch 降级到规则题。
         QuestionListDTO questionListDTO = structuredOutputInvoker.invoke(
-                chatClient, systemPromptWithFormat, userPrompt, outputConverter,
+                llmProviderRegistry.getDefaultChatClient(), systemPromptWithFormat, userPrompt, outputConverter,
                 ErrorCode.AI_STRUCTURED_OUTPUT_FAILED, "AI 出题结构化解析失败：", "AI 出题");
 
         // invoke 不会返回 null，这里只防御 questions 字段缺失。

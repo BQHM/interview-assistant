@@ -2,6 +2,7 @@ package com.interview.modules.resume.service;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
+import com.interview.infrastructure.ai.LlmProviderRegistry;
 import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ import java.util.Map;
 @Service
 public class ResumeGradingService {
 
-    private final ChatClient chatClient;
+    private final LlmProviderRegistry llmProviderRegistry;
     private final PromptTemplate systemPromptTemplate;
     private final PromptTemplate userPromptTemplate;
     private final BeanOutputConverter<ResumeAnalysisResultDTO> outputConverter;
@@ -41,7 +42,7 @@ public class ResumeGradingService {
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param chatClientBuilder       AI 客户端构建器
+     * @param llmProviderRegistry       AI 客户端构建器
      * @param properties              简历分析配置
      * @param resourceLoader          资源加载器
      * @param structuredOutputInvoker 结构化输出调用器
@@ -50,11 +51,11 @@ public class ResumeGradingService {
      * @date 2026-04-14
      */
     public ResumeGradingService(
-            ChatClient.Builder chatClientBuilder,
+            LlmProviderRegistry llmProviderRegistry,
             ResumeAnalysisProperties properties,
             ResourceLoader resourceLoader,
             StructuredOutputInvoker structuredOutputInvoker) throws IOException {
-        this.chatClient = chatClientBuilder.build();
+        this.llmProviderRegistry = llmProviderRegistry;
         this.structuredOutputInvoker = structuredOutputInvoker;
         this.outputConverter = new BeanOutputConverter<>(ResumeAnalysisResultDTO.class);
         this.systemPromptTemplate = new PromptTemplate(
@@ -113,7 +114,7 @@ public class ResumeGradingService {
         // 交给统一的结构化输出调用器：失败会按配置重试；
         // 重试仍失败抛 BusinessException，由 analyzeResume 的 catch 降级到规则版分析。
         ResumeAnalysisResultDTO resumeAnalysisResultDTO = structuredOutputInvoker.invoke(
-                chatClient, systemPromptWithFormat, userPrompt, outputConverter,
+                llmProviderRegistry.getDefaultChatClient(), systemPromptWithFormat, userPrompt, outputConverter,
                 ErrorCode.AI_STRUCTURED_OUTPUT_FAILED, "AI 简历分析结构化解析失败：", "AI 简历分析");
 
         return resumeAnalysisResultDTO;

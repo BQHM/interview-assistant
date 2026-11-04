@@ -14,6 +14,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
+import com.interview.infrastructure.ai.LlmProviderRegistry;
 import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.infrastructure.ai.StructuredOutputProperties;
 import com.interview.modules.interview.model.dto.InterviewAnswerEvaluationDTO;
@@ -104,10 +105,10 @@ class InterviewAnswerEvaluationServiceTest {
     }
 
     private InterviewAnswerEvaluationService createService(ChatClient chatClient) throws IOException {
-        ChatClient.Builder chatClientBuilder = mock(ChatClient.Builder.class);
-        when(chatClientBuilder.build()).thenReturn(chatClient);
+        LlmProviderRegistry llmProviderRegistry = mock(LlmProviderRegistry.class);
+        when(llmProviderRegistry.getDefaultChatClient()).thenReturn(chatClient);
         return new InterviewAnswerEvaluationService(
-                chatClientBuilder,
+                llmProviderRegistry,
                 createResourceLoader(),
                 new StructuredOutputInvoker(new StructuredOutputProperties()));
     }
