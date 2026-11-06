@@ -39,4 +39,9 @@ public class CreateInterviewRequest {
     @NotBlank(message = "面试方向编号不能为空")
     private String skillId = "java-backend";
 
+    /**
+     * 本次面试使用的 LLM Provider 标识，不填时使用配置里的默认模型。
+     */
+    @FieldMeta(name = "LLM Provider", desc = "本次面试使用的模型标识，不填则使用默认模型")
+    private String provider;
 }

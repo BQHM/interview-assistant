@@ -86,6 +86,16 @@ public class InterviewSessionService {
 
         String skillId = createInterviewRequest.getSkillId(); // 面试方向编号
 
+        // 未指定模型时用默认值；指定了就必须真实存在，否则直接报错。
+        // 不能悄悄回退到默认模型：用户以为换了模型、实际没换，会误判回答质量。
+        String providerId = createInterviewRequest.getProvider();
+        if (providerId == null || providerId.isBlank()) {
+            providerId = llmProviderRegistry.getDefaultProviderId();
+        } else if (!llmProviderRegistry.containsProvider(providerId)) {
+            throw new BusinessException(ErrorCode.LLM_PROVIDER_NOT_FOUND,
+                    "指定的模型不存在: " + providerId + "，可用模型: " + llmProviderRegistry.getAvailableProviderIds());
+        }
+
         // 第一步：同一份简历、同一面试方向只复用最近一条未完成会话。
         // 这样用户重复点击“开始面试”时，不会意外创建多场相同的未完成面试。
         List<InterviewSessionStatus> unfinishedStatuses = List.of(InterviewSessionStatus.CREATED, InterviewSessionStatus.IN_PROGRESS);
@@ -95,7 +105,13 @@ public class InterviewSessionService {
                 skillId,
                 unfinishedStatuses);
         if (optUnfinishedInterviewSessionEntity.isPresent()) {
-            String sessionId = optUnfinishedInterviewSessionEntity.get().getSessionId();
+            InterviewSessionEntity existingSession = optUnfinishedInterviewSessionEntity.get();
+            // 接入多 Provider 之前的会话没有记录模型，补一次默认值，避免报告页显示为空
+            if (existingSession.getLlmProvider() == null) {
+                existingSession.setLlmProvider(llmProviderRegistry.getDefaultProviderId());
+                interviewSessionRepository.save(existingSession);
+            }
+            String sessionId = existingSession.getSessionId();
             log.info("检测到未完成面试会话，直接复用: resumeId={}, sessionId={}", createInterviewRequest.getResumeId(), sessionId);
             return getInterviewSession(sessionId);
         }
@@ -130,7 +146,7 @@ public class InterviewSessionService {
         interviewSessionEntity.setSkillId(skillId); // 面试方向编号
         interviewSessionEntity.setTotalQuestions(interviewQuestionDTOs.size()); // 题目总数
         interviewSessionEntity.setCurrentQuestionIndex(0); // 当前题目索引
-        interviewSessionEntity.setLlmProvider(llmProviderRegistry.getDefaultProviderId()); // 本次使用的模型
+        interviewSessionEntity.setLlmProvider(providerId); // 本次使用的模型
         interviewSessionEntity.setStatus(InterviewSessionStatus.CREATED); // 会话状态
         interviewSessionEntity.setQuestionsJson(questionsJson); // 题目列表JSON
 
