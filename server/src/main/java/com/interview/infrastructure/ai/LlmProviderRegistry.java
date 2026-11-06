@@ -9,8 +9,12 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -172,9 +176,19 @@ public class LlmProviderRegistry {
     private ChatClient createChatClient(String providerId) {
         LlmProviderProperties.ProviderConfig config = requireConfig(providerId);
 
+        // 手工构建客户端不会继承 Spring Boot 的 HTTP 设置，必须显式指定超时，
+        // 否则大模型长响应会被默认的 10 秒读超时打断。
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(properties.getConnectTimeoutSeconds()))
+                .build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(Duration.ofSeconds(properties.getReadTimeoutSeconds()));
+        RestClient.Builder restClientBuilder = RestClient.builder().requestFactory(requestFactory);
+
         OpenAiApi openAiApi = OpenAiApi.builder()
                 .baseUrl(normalizeBaseUrl(providerId, config.getBaseUrl()))
                 .apiKey(config.getApiKey())
+                .restClientBuilder(restClientBuilder)
                 .build();
 
         OpenAiChatOptions.Builder optionsBuilder = OpenAiChatOptions.builder().model(config.getModel());

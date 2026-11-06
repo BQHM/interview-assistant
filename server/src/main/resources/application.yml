@@ -53,6 +53,8 @@ app:
     llm:
       # 不指定 Provider 时使用的缺省值，必须是 providers 里的 key
       default-provider: qwen
+      connect-timeout-seconds: 10
+      read-timeout-seconds: 120
       providers:
         qwen:
           base-url: ${AI_BASE_URL:http://47.101.159.7:29988/v1}

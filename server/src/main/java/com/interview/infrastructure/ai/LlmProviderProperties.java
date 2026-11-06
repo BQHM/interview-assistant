@@ -19,6 +19,12 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "app.ai.llm")
 public class LlmProviderProperties {
 
+    // 建立连接的超时时间（秒），网络不通时快速失败
+    private int connectTimeoutSeconds = 10;
+
+    // 读取响应的超时时间（秒），简历分析这类长任务需要放宽
+    private int readTimeoutSeconds = 120;
+
     // 不指定 Provider 时使用的缺省值，必须是 providers 里的某个 key
     private String defaultProvider = "qwen";
 
