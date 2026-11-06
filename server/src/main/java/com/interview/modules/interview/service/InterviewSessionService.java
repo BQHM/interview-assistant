@@ -217,6 +217,7 @@ public class InterviewSessionService {
         interviewSessionDTO.setQuestions(interviewQuestionDTOs); // 题目列表
         interviewSessionDTO.setStatus(interviewSessionEntity.getStatus()); // 会话状态
         interviewSessionDTO.setCreatedAt(interviewSessionEntity.getCreatedAt()); // 创建时间
+        interviewSessionDTO.setLlmProvider(interviewSessionEntity.getLlmProvider()); // 模型
 
         log.info("查询面试会话成功: sessionId={}", sessionId);
         return interviewSessionDTO;
