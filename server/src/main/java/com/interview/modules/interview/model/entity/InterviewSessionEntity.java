@@ -70,6 +70,12 @@ public class InterviewSessionEntity {
     private String skillId = "java-backend";
 
     /**
+     * 本次面试使用的 LLM Provider 名称，接入多 Provider 之前的历史数据为空。
+     */
+    @Column(name = "llm_provider", length = 50)
+    private String llmProvider;
+
+    /**
      * 题目总数
      * 本次面试生成的题目总数量
      */

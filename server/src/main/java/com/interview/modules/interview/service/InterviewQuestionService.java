@@ -45,7 +45,7 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param llmProviderRegistry     AI 客户端构建器
+     * @param llmProviderRegistry     LLM 客户端注册表
      * @param resourceLoader        资源加载器
      * @param interviewSkillService 面试方向配置服务
      * @param structuredOutputInvoker 结构化输出调用器

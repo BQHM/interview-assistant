@@ -57,7 +57,7 @@ public class InterviewAnswerEvaluationService {
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param llmProviderRegistry AI 客户端构建器
+     * @param llmProviderRegistry LLM 客户端注册表
      * @param resourceLoader 资源加载器
      * @param structuredOutputInvoker 结构化输出调用器
      * @throws IOException 当 Prompt 模板读取失败时抛出

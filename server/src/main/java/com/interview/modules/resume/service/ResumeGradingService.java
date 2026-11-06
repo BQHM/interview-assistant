@@ -7,7 +7,6 @@ import com.interview.infrastructure.ai.StructuredOutputInvoker;
 import com.interview.modules.resume.model.dto.ResumeAnalysisResultDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -42,7 +41,7 @@ public class ResumeGradingService {
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param llmProviderRegistry       AI 客户端构建器
+     * @param llmProviderRegistry       LLM 客户端注册表
      * @param properties              简历分析配置
      * @param resourceLoader          资源加载器
      * @param structuredOutputInvoker 结构化输出调用器

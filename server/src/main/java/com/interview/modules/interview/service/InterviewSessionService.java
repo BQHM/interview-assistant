@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.interview.infrastructure.ai.LlmProviderRegistry;
 import com.interview.modules.interview.model.HistoricalQuestion;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +56,7 @@ public class InterviewSessionService {
     private final InterviewAnswerRepository interviewAnswerRepository;
     private final InterviewAnswerEvaluationService interviewAnswerEvaluationService;
     private final InterviewQuestionService interviewQuestionService;
+    private final LlmProviderRegistry llmProviderRegistry;
     /**
      * 注入提示词的历史题目上限，避免历史越长提示词越大
      */
@@ -128,6 +130,7 @@ public class InterviewSessionService {
         interviewSessionEntity.setSkillId(skillId); // 面试方向编号
         interviewSessionEntity.setTotalQuestions(interviewQuestionDTOs.size()); // 题目总数
         interviewSessionEntity.setCurrentQuestionIndex(0); // 当前题目索引
+        interviewSessionEntity.setLlmProvider(llmProviderRegistry.getDefaultProviderId()); // 本次使用的模型
         interviewSessionEntity.setStatus(InterviewSessionStatus.CREATED); // 会话状态
         interviewSessionEntity.setQuestionsJson(questionsJson); // 题目列表JSON
 

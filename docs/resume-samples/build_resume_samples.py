@@ -73,6 +73,47 @@ BLOCKS = [
     ("bullet", "正在系统学习 Spring AI 与 RAG，希望把 AI 能力落到真实业务链路，而不只是跑通示例"),
 ]
 
+# 校招样本：没有正式工作经历，只有一段实习 + 两个项目。
+# 用来覆盖“工作经历章节缺失”时结构分下降、正文较短时内容分下降的情况。
+NEW_GRAD_BLOCKS = [
+    ("name", "林嘉禾"),
+    ("tagline", "Java 后端开发工程师（2027 届） ｜ 本科 ｜ 南京"),
+    ("contact", "手机：139-0000-0000　｜　邮箱：linjiahe@example.com　｜　GitHub：github.com/linjiahe"),
+
+    ("section", "教育经历"),
+    ("entry", "南京信息工程大学　软件工程（本科）", "2023.09 - 2027.06"),
+    ("bullet", "主修课程：数据结构、计算机网络、操作系统、数据库系统原理、软件工程"),
+    ("bullet", "GPA 3.7/4.0，专业排名前 10%；蓝桥杯省二等奖，校一等奖学金（2023-2024 学年）"),
+
+    ("section", "专业技能"),
+    ("bullet", "语言基础：Java 集合与并发基础、JVM 内存结构，了解 Python 与 JavaScript"),
+    ("bullet", "框架与工具：Spring Boot、Spring MVC、MyBatis、Maven、Git、Linux 常用命令"),
+    ("bullet", "数据与中间件：MySQL 索引与事务、Redis 常用数据结构与缓存使用场景"),
+    ("bullet", "工程习惯：能写 JUnit 单元测试，用 Git 分支管理课程项目，习惯先写接口文档"),
+
+    ("section", "实习经历"),
+    ("entry", "南京云栖信息技术有限公司　Java 开发实习生", "2026.07 - 2026.09"),
+    ("bullet", "负责内部工单系统的查询接口开发，使用 Spring Boot + MyBatis 实现分页与条件筛选"),
+    ("bullet", "为慢查询补充索引并改写关联查询，工单列表加载耗时从 1.8s 降低到 600ms"),
+    ("bullet", "编写接口文档与测试用例，配合测试同学完成 30+ 条用例回归"),
+
+    ("section", "项目经历"),
+    ("entry", "校园二手交易平台（Spring Boot + MySQL + Redis）　后端负责人", "2025.10 - 2026.02"),
+    ("bullet", "项目描述：面向校内学生的二手物品发布与交易平台，支持发布、搜索、收藏与订单"),
+    ("bullet", "负责后端接口设计与实现，独立完成商品、订单、收藏三个模块的表结构与接口开发"),
+    ("bullet", "使用 Redis 缓存商品列表，热点分类页 QPS 从 60 提升到 200，数据库压力明显下降"),
+    ("bullet", "实现基于 JWT 的登录态方案，替换原来的 Session 方案，解决多端登录状态不一致问题"),
+    ("entry", "简易 RPC 框架（Netty + 动态代理，个人学习项目）　独立开发", "2026.03 - 2026.05"),
+    ("bullet", "实现服务注册、负载均衡、序列化与超时重试，用 Netty 自定义协议编解码"),
+    ("bullet", "通过动态代理屏蔽远程调用细节，编写示例服务验证调用链路与异常分支"),
+    ("bullet", "补充压测脚本，单机 4 线程下 QPS 约 3000，作为后续优化的基线数据"),
+
+    ("section", "自我评价"),
+    ("bullet", "习惯先画表结构再写接口，遇到问题先看日志和源码，而不是直接搜索答案"),
+    ("bullet", "愿意从测试和文档做起，实习期间主动整理了组内接口文档"),
+    ("bullet", "正在补 Spring 源码与 JVM 调优，希望在秋招前把基础打扎实"),
+]
+
 # 空白模板：保留结构，把可替换内容换成占位符，方便改成自己的简历。
 TEMPLATE_BLOCKS = [
     ("name", "【姓名】"),
@@ -290,24 +331,30 @@ def rule_based_score(text):
     }
 
 
+SAMPLES = {
+    "sample-resume-java-backend": BLOCKS,
+    "sample-resume-fresh-graduate": NEW_GRAD_BLOCKS,
+}
+
+
 def main():
-    sample_docx = BASE_DIR / "sample-resume-java-backend.docx"
-    sample_txt = BASE_DIR / "sample-resume-java-backend.txt"
-    template_docx = BASE_DIR / "resume-template-blank.docx"
+    for stem, blocks in SAMPLES.items():
+        docx_path = BASE_DIR / f"{stem}.docx"
+        txt_path = BASE_DIR / f"{stem}.txt"
 
-    build_document(BLOCKS).save(sample_docx)
-    sample_txt.write_text(to_plain_text(BLOCKS), encoding="utf-8")
-    build_document(TEMPLATE_BLOCKS).save(template_docx)
+        build_document(blocks).save(docx_path)
+        txt_path.write_text(to_plain_text(blocks), encoding="utf-8")
 
-    score = rule_based_score(sample_txt.read_text(encoding="utf-8"))
-    print(f"已生成: {sample_docx.name} / {sample_txt.name} / {template_docx.name}")
-    print(f"正文长度: {score['length']} 字")
-    print(f"章节命中: {score['sections']} 个，技能关键词命中: {score['skills']} 个")
-    print(
-        "规则版预期分值: "
-        f"内容 {score['content']} + 结构 {score['structure']} + 技能 {score['skill']} + "
-        f"表达 {score['expression']} + 项目 {score['project']} = {score['total']}"
-    )
+        score = rule_based_score(txt_path.read_text(encoding="utf-8"))
+        print(f"[{stem}] 正文 {score['length']} 字，章节 {score['sections']} 个，技能关键词 {score['skills']} 个")
+        print(
+            "  规则版预期分值: "
+            f"内容 {score['content']} + 结构 {score['structure']} + 技能 {score['skill']} + "
+            f"表达 {score['expression']} + 项目 {score['project']} = {score['total']}"
+        )
+
+    build_document(TEMPLATE_BLOCKS).save(BASE_DIR / "resume-template-blank.docx")
+    print("已生成空白模板: resume-template-blank.docx")
 
 
 if __name__ == "__main__":
