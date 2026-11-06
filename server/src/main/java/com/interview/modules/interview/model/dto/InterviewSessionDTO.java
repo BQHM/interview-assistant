@@ -70,4 +70,6 @@ public class InterviewSessionDTO {
      */
     @FieldMeta(name = "面试方向编号", desc = "当前面试会话使用的 Skill 编号")
     private String skillId;
+
+    private String llmProvider;
 }

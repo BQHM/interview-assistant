@@ -65,6 +65,7 @@ public class InterviewSessionConverter {
         interviewDetailDTO.setCreatedAt(interviewSessionEntity.getCreatedAt());
         interviewDetailDTO.setQuestions(interviewQuestionDTOs);
         interviewDetailDTO.setSkillId(interviewSessionEntity.getSkillId());
+        interviewDetailDTO.setLlmProvider(interviewSessionEntity.getLlmProvider());
         return interviewDetailDTO;
     }
 }

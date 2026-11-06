@@ -30,4 +30,6 @@ public class InterviewDetailDTO {
     private List<InterviewQuestionDTO> questions;
 
     private String skillId;
+
+    private String llmProvider;
 }

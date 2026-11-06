@@ -147,6 +147,7 @@ public class InterviewSessionService {
         interviewSessionDTO.setStatus(savedInterviewSessionEntity.getStatus()); // 会话状态
         interviewSessionDTO.setCreatedAt(savedInterviewSessionEntity.getCreatedAt()); // 创建时间
         interviewSessionDTO.setSkillId(savedInterviewSessionEntity.getSkillId()); // 面试方向编号
+        interviewSessionDTO.setLlmProvider(savedInterviewSessionEntity.getLlmProvider());
 
         log.info("创建面试会话成功: sessionId={}", savedInterviewSessionEntity.getSessionId());
         return interviewSessionDTO;
