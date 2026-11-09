@@ -130,7 +130,12 @@ public class InterviewSessionService {
         Integer questionCount = createInterviewRequest.getQuestionCount(); // 题目数量
 
         // 第四步：根据简历、Skill 和历史题目生成新的面试题。
-        List<InterviewQuestionDTO> interviewQuestionDTOs = interviewQuestionService.generateQuestions(resumeText, questionCount, skillId, historicalQuestions); // 题目列表
+        List<InterviewQuestionDTO> interviewQuestionDTOs = interviewQuestionService.generateQuestions(
+                resumeText, // 简历正文
+                questionCount, // 题目数量
+                skillId, // 面试方向编号
+                historicalQuestions, // 历史题目
+                providerId); // 模型标识
 
         String questionsJson;
         try {
@@ -347,7 +352,7 @@ public class InterviewSessionService {
      */
     private void fillAnswerEvaluation(InterviewAnswerEntity interviewAnswerEntity) {
         InterviewAnswerEvaluationDTO evaluationDTO = interviewAnswerEvaluationService
-                .evaluateAnswer(interviewAnswerEntity);
+                .evaluateAnswer(interviewAnswerEntity, interviewAnswerEntity.getSession().getLlmProvider());
 
         interviewAnswerEntity.setScore(evaluationDTO.getScore());
         interviewAnswerEntity.setFeedback(evaluationDTO.getFeedback());

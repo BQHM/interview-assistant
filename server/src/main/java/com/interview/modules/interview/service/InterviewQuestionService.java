@@ -46,8 +46,8 @@ public class InterviewQuestionService {
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
      * @param llmProviderRegistry     LLM 客户端注册表
-     * @param resourceLoader        资源加载器
-     * @param interviewSkillService 面试方向配置服务
+     * @param resourceLoader          资源加载器
+     * @param interviewSkillService   面试方向配置服务
      * @param structuredOutputInvoker 结构化输出调用器
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
@@ -103,23 +103,38 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>根据面试方向和历史题目生成面试题。</p>
      *
-     * @param resumeText         简历文本
-     * @param questionCount      题目数量
-     * @param skillId            面试方向编号
+     * @param resumeText          简历文本
+     * @param questionCount       题目数量
+     * @param skillId             面试方向编号
      * @param historicalQuestions 同一简历、同一面试方向的历史题目
      * @return 面试题列表
      * @author NobuNo
      * @date 2026-07-02
      */
     public List<InterviewQuestionDTO> generateQuestions(String resumeText, Integer questionCount, String skillId, List<HistoricalQuestion> historicalQuestions) {
+        return generateQuestions(resumeText, questionCount, skillId, historicalQuestions, llmProviderRegistry.getDefaultProviderId());
+    }
 
-
+    /**
+     * 功能说明
+     * <p>按指定模型生成面试题，指定模型不存在时抛业务异常。</p>
+     *
+     * @param resumeText          简历文本
+     * @param questionCount       题目数量
+     * @param skillId             面试方向编号
+     * @param historicalQuestions 历史题目，用于避免重复出题
+     * @param providerId          本次使用的 LLM Provider 标识，为空时使用默认模型
+     * @return 面试题列表
+     * @author NobuNo
+     * @date 2026-11-06
+     */
+    public List<InterviewQuestionDTO> generateQuestions(String resumeText, Integer questionCount, String skillId, List<HistoricalQuestion> historicalQuestions, String providerId) {
         // 先读取 Skill 配置，后续的 AI 出题和规则兜底都必须使用同一个面试方向。
         InterviewSkillDTO skillDTO = interviewSkillService.getSkill(skillId);
         log.debug("开始生成面试题: skillId={}, skillName={}", skillDTO.getId(), skillDTO.getName());
         try {
             // 优先使用 AI 生成问题，便于结合简历内容产生更有针对性的题目。
-            List<InterviewQuestionDTO> aiQuestionDTOs = generateQuestionsByAi(resumeText, questionCount, skillDTO, historicalQuestions);
+            List<InterviewQuestionDTO> aiQuestionDTOs = generateQuestionsByAi(resumeText, questionCount, skillDTO, historicalQuestions, providerId);
 
             if (!aiQuestionDTOs.isEmpty()) {
                 // AI 返回的题号、类型或题目数量可能不稳定，先统一整理后再返回。
@@ -141,15 +156,16 @@ public class InterviewQuestionService {
      * 功能说明
      * <p>调用 AI 生成面试题。</p>
      *
-     * @param resumeText         简历文本
-     * @param questionCount      题目数量
-     * @param skillDTO              面试方向配置
+     * @param resumeText          简历文本
+     * @param questionCount       题目数量
+     * @param skillDTO            面试方向配置
      * @param historicalQuestions 同一简历、同一面试方向的历史题目
      * @return AI 生成的题目列表
      * @author NobuNo
      * @date 2026-07-02
      */
-    private List<InterviewQuestionDTO> generateQuestionsByAi(String resumeText, Integer questionCount, InterviewSkillDTO skillDTO, List<HistoricalQuestion> historicalQuestions) {
+    private List<InterviewQuestionDTO> generateQuestionsByAi(String resumeText, Integer questionCount, InterviewSkillDTO skillDTO,
+                                                             List<HistoricalQuestion> historicalQuestions, String providerId) {
 
         // 后端约束题目数量为正数；这里再次设置默认值，保护 Service 被其他调用方直接使用时的行为。
         Integer safeQuestionCount = (questionCount == null || questionCount <= 0) ? 3 : questionCount;
@@ -176,7 +192,7 @@ public class InterviewQuestionService {
 
         // 交给统一的结构化输出调用器：失败会按配置重试；重试仍失败抛 BusinessException，由上层 catch 降级到规则题。
         QuestionListDTO questionListDTO = structuredOutputInvoker.invoke(
-                llmProviderRegistry.getDefaultChatClient(), systemPromptWithFormat, userPrompt, outputConverter,
+                llmProviderRegistry.getChatClient(providerId), systemPromptWithFormat, userPrompt, outputConverter,
                 ErrorCode.AI_STRUCTURED_OUTPUT_FAILED, "AI 出题结构化解析失败：", "AI 出题");
 
         // invoke 不会返回 null，这里只防御 questions 字段缺失。
@@ -293,9 +309,9 @@ public class InterviewQuestionService {
      * <p>规整 AI 返回的题目列表。</p>
      *
      * @param aiQuestionDTOs AI 题目列表
-     * @param resumeText    简历文本
-     * @param questionCount 题目数量
-     * @param skillDTO         面试方向配置
+     * @param resumeText     简历文本
+     * @param questionCount  题目数量
+     * @param skillDTO       面试方向配置
      * @return 规整后的题目列表
      * @author NobuNo
      * @date 2026-07-02
@@ -369,7 +385,7 @@ public class InterviewQuestionService {
      *
      * @param resumeText    简历文本
      * @param questionCount 题目数量
-     * @param skillDTO         面试方向配置
+     * @param skillDTO      面试方向配置
      * @return 规则版题目列表
      * @author NobuNo
      * @date 2026-07-02

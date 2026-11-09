@@ -1,6 +1,7 @@
 package com.interview.modules.interview.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -44,6 +45,7 @@ class InterviewAnswerEvaluationServiceTest {
     }
 
     @Test
+    @SuppressWarnings("DataFlowIssue") // content() 被 Spring AI 标注为 @Nullable，这里桩的是确定的字符串
     void evaluateAnswer_shouldReturnScoreFeedbackReferenceAnswerAndKeyPoints() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewAnswerEvaluationService interviewAnswerEvaluationService = createService(chatClient);
@@ -76,6 +78,7 @@ class InterviewAnswerEvaluationServiceTest {
     }
 
     @Test
+    @SuppressWarnings("DataFlowIssue")
     void evaluateAnswer_shouldRetryWhenFirstAttemptReturnsInvalidJson() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewAnswerEvaluationService interviewAnswerEvaluationService = createService(chatClient);
@@ -106,7 +109,7 @@ class InterviewAnswerEvaluationServiceTest {
 
     private InterviewAnswerEvaluationService createService(ChatClient chatClient) throws IOException {
         LlmProviderRegistry llmProviderRegistry = mock(LlmProviderRegistry.class);
-        when(llmProviderRegistry.getDefaultChatClient()).thenReturn(chatClient);
+        when(llmProviderRegistry.getChatClient(any())).thenReturn(chatClient);
         return new InterviewAnswerEvaluationService(
                 llmProviderRegistry,
                 createResourceLoader(),

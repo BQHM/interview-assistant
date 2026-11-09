@@ -61,3 +61,8 @@ app:
           api-key: ${AI_API_KEY}
           model: ${AI_MODEL:qwen3.8-omni-flash}
           temperature: 0.2
+        qwen-plus:
+          base-url: ${AI_BASE_URL:http://47.101.159.7:29988/v1}
+          api-key: ${AI_API_KEY}
+          model: qwen-plus
+          temperature: 0.2

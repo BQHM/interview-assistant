@@ -57,8 +57,8 @@ public class InterviewAnswerEvaluationService {
      * 功能说明
      * <p>初始化 AI 客户端和 Prompt 模板。</p>
      *
-     * @param llmProviderRegistry LLM 客户端注册表
-     * @param resourceLoader 资源加载器
+     * @param llmProviderRegistry     LLM 客户端注册表
+     * @param resourceLoader          资源加载器
      * @param structuredOutputInvoker 结构化输出调用器
      * @throws IOException 当 Prompt 模板读取失败时抛出
      * @author NobuNo
@@ -79,14 +79,15 @@ public class InterviewAnswerEvaluationService {
 
     /**
      * 功能说明
-     * <p>评估单题答案。</p>
+     * <p>按指定模型评估单题答案，未指定时使用默认模型。</p>
      *
      * @param interviewAnswerEntity 答案实体
+     * @param providerId            本次使用的 LLM Provider 标识，为空时使用默认模型
      * @return 答案评估结果
      * @author NobuNo
-     * @date 2026-06-29
+     * @date 2026-11-09
      */
-    public InterviewAnswerEvaluationDTO evaluateAnswer(InterviewAnswerEntity interviewAnswerEntity) {
+    public InterviewAnswerEvaluationDTO evaluateAnswer(InterviewAnswerEntity interviewAnswerEntity, String providerId) {
         // 极端保护：如果调用方传入 null，就按“未作答”处理，避免空指针异常。
         if (interviewAnswerEntity == null) {
             return buildEmptyAnswerEvaluation();
@@ -105,7 +106,7 @@ public class InterviewAnswerEvaluationService {
 
         try {
             // 主链路：优先让 AI 根据题目和用户答案生成结构化评估。
-            InterviewAnswerEvaluationDTO interviewAnswerEvaluationDTO = evaluateByAi(interviewAnswerEntity);
+            InterviewAnswerEvaluationDTO interviewAnswerEvaluationDTO = evaluateByAi(interviewAnswerEntity, providerId);
 
             log.info(
                     "AI 面试答案评估成功: answerId={}, score={}",
@@ -123,6 +124,20 @@ public class InterviewAnswerEvaluationService {
 
             return buildRuleBasedEvaluation(interviewAnswerEntity);
         }
+
+    }
+
+    /**
+     * 功能说明
+     * <p>评估单题答案。</p>
+     *
+     * @param interviewAnswerEntity 答案实体
+     * @return 答案评估结果
+     * @author NobuNo
+     * @date 2026-06-29
+     */
+    public InterviewAnswerEvaluationDTO evaluateAnswer(InterviewAnswerEntity interviewAnswerEntity) {
+        return evaluateAnswer(interviewAnswerEntity, null);
     }
 
     /**
@@ -153,11 +168,12 @@ public class InterviewAnswerEvaluationService {
      * <p>调用 AI 评估答案。</p>
      *
      * @param interviewAnswerEntity 答案实体
+     * @param providerId
      * @return AI 评估结果
      * @author NobuNo
      * @date 2026-06-29
      */
-    private InterviewAnswerEvaluationDTO evaluateByAi(InterviewAnswerEntity interviewAnswerEntity) {
+    private InterviewAnswerEvaluationDTO evaluateByAi(InterviewAnswerEntity interviewAnswerEntity, String providerId) {
         // 渲染 system prompt。当前 system prompt 没有变量，所以直接 render()。
         String systemPrompt = systemPromptTemplate.render();
 
@@ -178,7 +194,7 @@ public class InterviewAnswerEvaluationService {
         // 交给统一的结构化输出调用器：失败会按配置重试；
         // 重试仍失败抛 BusinessException，由 evaluateAnswer 的 catch 降级到规则评分。
         InterviewAnswerEvaluationDTO interviewAnswerEvaluationDTO = structuredOutputInvoker.invoke(
-                llmProviderRegistry.getDefaultChatClient(), systemPromptWithFormat, userPrompt, outputConverter,
+                llmProviderRegistry.getChatClient(providerId), systemPromptWithFormat, userPrompt, outputConverter,
                 ErrorCode.AI_STRUCTURED_OUTPUT_FAILED, "AI 答案评估结构化解析失败：", "AI 答案评估");
 
         return interviewAnswerEvaluationDTO;
@@ -258,7 +274,7 @@ public class InterviewAnswerEvaluationService {
      * 功能说明
      * <p>判断文本是否包含任意关键词。</p>
      *
-     * @param text 文本内容
+     * @param text     文本内容
      * @param keywords 关键词数组
      * @return 是否包含关键词
      * @author NobuNo

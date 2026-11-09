@@ -2,6 +2,7 @@ package com.interview.modules.interview.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -103,6 +104,7 @@ class InterviewQuestionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("DataFlowIssue") // content() 被 Spring AI 标注为 @Nullable，这里桩的是确定的字符串
     void generateQuestions_shouldNormalizeUnstableAiQuestionCount() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
@@ -148,6 +150,7 @@ class InterviewQuestionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("DataFlowIssue")
     void generateQuestions_shouldPreserveTopicSummaryFromAiResponse() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
@@ -182,6 +185,7 @@ class InterviewQuestionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("DataFlowIssue")
     void generateQuestions_shouldInjectSkillPersonaAndCategoriesIntoPrompt() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
@@ -249,6 +253,7 @@ class InterviewQuestionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("DataFlowIssue")
     void generateQuestions_shouldRetryWithStricterPromptWhenAiReturnsInvalidJson() throws IOException {
         ChatClient chatClient = mock(ChatClient.class, RETURNS_DEEP_STUBS);
         InterviewQuestionService interviewQuestionService = createService(chatClient);
@@ -322,6 +327,7 @@ class InterviewQuestionServiceTest {
     }
 
     @Test
+    @SuppressWarnings("DataFlowIssue")
     void generateQuestions_shouldTruncateOnlyQuestionTextLongerThanThirtyChars() throws IOException {
         String exactlyThirty = "题".repeat(30);
         String thirtyOne = "文".repeat(31);
@@ -394,7 +400,7 @@ class InterviewQuestionServiceTest {
     ) throws IOException {
         LlmProviderRegistry llmProviderRegistry = mock(LlmProviderRegistry.class);
 
-        when(llmProviderRegistry.getDefaultChatClient()).thenReturn(chatClient);
+        when(llmProviderRegistry.getChatClient(any())).thenReturn(chatClient);
 
         return new InterviewQuestionService(
                 llmProviderRegistry,

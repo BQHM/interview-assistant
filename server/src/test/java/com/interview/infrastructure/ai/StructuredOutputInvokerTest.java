@@ -169,6 +169,7 @@ class StructuredOutputInvokerTest {
                 LOG_CONTEXT);
     }
 
+    @SuppressWarnings("DataFlowIssue") // content() 被 Spring AI 标注为 @Nullable，这里桩的是测试给定的字符串
     private void stubAiContents(String... aiContents) {
         when(callResponseSpec.content()).thenReturn(
                 aiContents[0],
