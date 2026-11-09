@@ -17,10 +17,15 @@ spring:
   ai:
     model:
       # 关闭 Spring AI 的 OpenAI 自动配置：ChatClient 统一由 LlmProviderRegistry 按配置创建。
-      # 不关闭的话，自动配置还会根据 spring.ai.openai.* 再建一套用不上的客户端，
-      # 两套并存时出问题很难定位到底用的是哪一个。
+      # 不关闭的话，自动配置会为对话、向量、图像、语音、审核各建一套用不上的客户端，
+      # 其中语音/图像等还会因为没有 api-key 直接让启动失败，两套并存时也难定位用的是哪一个。
       chat: none
       embedding: none
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
   redis:
     redisson:
       config: |
