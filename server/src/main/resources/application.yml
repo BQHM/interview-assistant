@@ -15,13 +15,12 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
   ai:
-    openai:
-      base-url: ${AI_BASE_URL:http://47.101.159.7:29988/v1}
-      api-key: ${AI_API_KEY}
-      chat:
-        options:
-          model: ${AI_MODEL:qwen3.8-omni-flash}
-          temperature: 0.2
+    model:
+      # 关闭 Spring AI 的 OpenAI 自动配置：ChatClient 统一由 LlmProviderRegistry 按配置创建。
+      # 不关闭的话，自动配置还会根据 spring.ai.openai.* 再建一套用不上的客户端，
+      # 两套并存时出问题很难定位到底用的是哪一个。
+      chat: none
+      embedding: none
   redis:
     redisson:
       config: |
@@ -64,5 +63,5 @@ app:
         qwen-plus:
           base-url: ${AI_BASE_URL:http://47.101.159.7:29988/v1}
           api-key: ${AI_API_KEY}
-          model: qwen-plus
+          model: ${AI_MODEL:qwen3.8-omni-flash}
           temperature: 0.2
