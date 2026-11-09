@@ -164,6 +164,11 @@
 - [x] 简历详情接口接入 Redis 缓存：`StringCodec` + Jackson 明文 JSON，TTL 30 分钟，二次请求零 SQL
 - [x] 接口限流：`@RateLimit` 注解 + AOP 切面 + Lua 脚本滑动窗口（`ZSET` 存时间戳），key 按“方法 + 维度 + 客户端”生成，超限返回 8001
 - [x] 数据库迁移基线：Flyway 接管表结构变更，`V1__init_schema.sql` 记录基线结构，存量库通过 baseline 平滑接入，`ddl-auto` 改为 `validate`
+- [x] LLM Provider 多模型抽象：`LlmProviderProperties` + `LlmProviderRegistry` 配置驱动，出题与单题评估按名字获取 `ChatClient`
+- [x] 创建面试支持 `provider` 参数，未知 Provider 返回 7007 并列出可用模型，不静默回退默认值
+- [x] `interview_sessions.llm_provider` 落库，创建、会话查询、历史详情三处接口回显本场使用的模型
+- [x] 单题评估使用会话记录的 Provider，避免改默认模型后同一场面试被两个模型评分
+- [x] 关闭 Spring AI OpenAI 自动配置，`ChatClient` 只由注册表创建；显式设置连接/读取超时（10s/120s）
 
 ### 进行中
 
@@ -240,6 +245,52 @@ docker exec pgvector pg_dump -U postgres -d postgres --schema-only
 4. 启动应用，日志确认出现 `Migrating schema ... to version ...`。
 5. 查 `flyway_schema_history`，确认为新版本且 `success = t`。
 
+### 多 Provider 模型配置（LLM Provider）
+
+AI 调用不再直接注入单个 `ChatClient`，而是统一经过 `LlmProviderRegistry`。出题时用请求指定的模型，单题评估时用会话里记录的模型，两者都以 `interview_sessions.llm_provider` 为准。
+
+配置位于 `application.yml` 的 `app.ai.llm`：
+
+```yaml
+app:
+  ai:
+    llm:
+      default-provider: qwen          # 不指定 Provider 时使用的缺省值，必须是 providers 里的 key
+      connect-timeout-seconds: 10
+      read-timeout-seconds: 120
+      providers:
+        qwen:
+          base-url: ${AI_BASE_URL}
+          api-key: ${AI_API_KEY}
+          model: ${AI_MODEL}
+          temperature: 0.2
+        qwen-plus:
+          base-url: ${AI_BASE_URL}
+          api-key: ${AI_API_KEY}
+          model: ${AI_MODEL}
+          temperature: 0.2
+```
+
+核心约定：
+
+- `base-url` 不要带 `/v1`：Spring AI 的 `OpenAiApi` 默认补全 `/v1/chat/completions`，注册表会额外剥掉误写的结尾 `/v1`，避免出现 `/v1/v1`。
+- 启动即校验：没有配置任何 Provider，或 `default-provider` 不在 `providers` 里，应用直接启动失败，而不是等第一次调用才暴露。
+- `ChatClient` 懒加载 + 缓存：首次按名字调用时创建，之后复用同一实例，重复创建的成本不会落在每次请求上。
+- 未知 Provider fail-fast：请求里写了不存在的名字，返回 7007 并列出可用模型，绝不静默回退默认值——静默回退会让用户拿 A 模型的结果误判 B 模型的能力。
+- 超时必须显式设置：手工构建 `OpenAiApi` 不会继承 Spring Boot 的 HTTP 设置，默认只有约 10 秒读超时，简历分析这类长响应会被打断。当前使用 JDK `HttpClient` + `JdkClientHttpRequestFactory`，连接 10 秒、读取 120 秒，均为配置项。
+- 关闭 Spring AI 自动配置：`spring.ai.model.chat` 与 `spring.ai.model.embedding` 都设为 `none`，避免框架按 `spring.ai.openai.*` 再建一套用不上的客户端。
+
+模型选择链路：
+
+```text
+创建面试 请求 provider（可选）→ 校验存在性 → 落库 llm_provider
+                                              ↓
+出题        LlmProviderRegistry.getChatClient(providerId)
+评估         LlmProviderRegistry.getChatClient(会话里的 llm_provider)
+```
+
+> 当前是配置驱动（A 期）。B 期会把 `providers` 搬到 `llm_providers` 表、API Key 加密存储并增加管理页面，届时只有 `LlmProviderProperties` 的数据来源改变，出题和评估代码不受影响。
+
 ## 项目结构
 
 ```text
@@ -302,7 +353,7 @@ interview-assistant/
 
 ### 面试模块
 
-- `POST /api/interviews`：创建面试会话；若存在未完成会话则直接返回原会话
+- `POST /api/interviews`：创建面试会话；若存在未完成会话则直接返回原会话；可选 `provider` 指定模型，不传用缺省值
 - `GET /api/interviews/{sessionId}`：查询面试会话详情
 - `GET /api/interviews/{sessionId}/question`：获取当前题目
 - `PUT /api/interviews/{sessionId}/answers`：暂存答案但不推进下一题
@@ -347,7 +398,7 @@ docker run -d --name redis -p 6379:6379 redis:7-alpine
 
 - PostgreSQL 连接信息
 - Redis 连接信息（Redisson 单机配置与连接池大小）
-- AI 模型地址和 API Key
+- AI 模型地址和 API Key（`app.ai.llm.providers` 下可声明多个，`default-provider` 指定缺省项）
 - RustFS / S3 对象存储配置
 - 简历分析 Prompt 模板路径
 
@@ -444,13 +495,14 @@ http://localhost:5173
 
 1. 为历史题目查询、摘要注入和去重补充专项单元测试与人工验收。
 2. 补强 `ResumeGradingServiceTest` 等核心测试，继续完善前端空状态、错误提示和时间展示。
-3. 抽象 LLM Provider 多模型注册表（任务 21.1），再进入知识库阶段。
-4. Redis 会话缓存与请求幂等。
-5. Redis Stream 异步化简历分析和面试评估。
-6. PDF 报告导出。
-7. 知识库 / RAG。
+3. LLM Provider B 期：`llm_providers` / `llm_global_settings` 表、API Key 加密存储、管理接口与前端配置页、缓存热更新。
+4. 降级可观测性：AI 失败降级到规则版时额外记录来源（如 `question_source`），避免 `llm_provider` 与真实生成方式不一致。
+5. Redis 会话缓存与请求幂等。
+6. Redis Stream 异步化简历分析和面试评估（同时解决“长事务里调 LLM”的问题）。
+7. PDF 报告导出。
+8. 知识库 / RAG。
 
-当前参考项目 `interview-guide` 已进一步实现历史题目摘要去重、Redis 会话缓存、请求幂等、Redis Stream 异步评估、多维原子限流、Flyway 数据库迁移和前后端 CI。当前项目已完成同步调用链路、Redis 缓存与滑动窗口限流、Flyway 迁移基线，后续按“测试补强 -> LLM Provider 抽象 -> Redis/异步化”的顺序逐步靠齐。
+当前参考项目 `interview-guide` 已进一步实现历史题目摘要去重、Redis 会话缓存、请求幂等、Redis Stream 异步评估、多维原子限流、Flyway 数据库迁移和前后端 CI。当前项目已完成同步调用链路、Redis 缓存与滑动窗口限流、Flyway 迁移基线、LLM Provider 配置驱动抽象，后续按“测试补强 -> Provider 数据库化 -> Redis/异步化”的顺序逐步靠齐。
 
 ## 参考项目
 
