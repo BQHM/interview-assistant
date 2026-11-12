@@ -169,6 +169,7 @@
 - [x] `interview_sessions.llm_provider` 落库，创建、会话查询、历史详情三处接口回显本场使用的模型
 - [x] 单题评估使用会话记录的 Provider，避免改默认模型后同一场面试被两个模型评分
 - [x] 关闭 Spring AI OpenAI 自动配置，`ChatClient` 只由注册表创建；显式设置连接/读取超时（10s/120s）
+- [x] 传输层重试收敛：替换框架默认的"重试 10 次 + 指数退避"，改为最多 2 次调用、500ms 固定间隔、115 秒决断上限，4xx 不重试，日志带 Provider 名
 
 ### 进行中
 
@@ -258,6 +259,9 @@ app:
       default-provider: qwen          # 不指定 Provider 时使用的缺省值，必须是 providers 里的 key
       connect-timeout-seconds: 10
       read-timeout-seconds: 120
+      max-retry-attempts: 1           # 传输层重试次数，总调用次数 = 1 + 该值
+      retry-backoff-millis: 500
+      retry-timeout-seconds: 115      # 必须小于 read-timeout-seconds，超时后才不会白重试一次
       providers:
         qwen:
           base-url: ${AI_BASE_URL}
@@ -278,7 +282,49 @@ app:
 - `ChatClient` 懒加载 + 缓存：首次按名字调用时创建，之后复用同一实例，重复创建的成本不会落在每次请求上。
 - 未知 Provider fail-fast：请求里写了不存在的名字，返回 7007 并列出可用模型，绝不静默回退默认值——静默回退会让用户拿 A 模型的结果误判 B 模型的能力。
 - 超时必须显式设置：手工构建 `OpenAiApi` 不会继承 Spring Boot 的 HTTP 设置，默认只有约 10 秒读超时，简历分析这类长响应会被打断。当前使用 JDK `HttpClient` + `JdkClientHttpRequestFactory`，连接 10 秒、读取 120 秒，均为配置项。
-- 关闭 Spring AI 自动配置：`spring.ai.model.chat` 与 `spring.ai.model.embedding` 都设为 `none`，避免框架按 `spring.ai.openai.*` 再建一套用不上的客户端。
+- 关闭 Spring AI 自动配置：`spring-ai-starter-model-openai` 会带来对话、向量、图像、语音合成、语音转写、审核共 6 个自动配置，全部按 `spring.ai.model.*` 开关控制且默认 `matchIfMissing=true`，所以 6 个开关都要设成 `none`。只关前两个时，语音合成会因为找不到 `spring.ai.openai.api-key` 直接让启动失败。
+
+### 超时与重试策略
+
+AI 调用链上其实有**两层重试**，职责必须分开，否则次数会相乘：
+
+| 层 | 位置 | 负责什么 | 重试理由 | 次数 |
+|---|---|---|---|---|
+| 传输层 | `LlmProviderRegistry` 构建的 `RetryTemplate` | 网络抖动、服务端 5xx、连接被重置 | 同样的请求再发一次可能就成功 | 1 次 |
+| 业务层 | `StructuredOutputInvoker` | AI 返回的 JSON 格式不对 | 能带上"上次哪里错 + 更严格的 JSON 要求"再问一遍 | 2 次 |
+
+```text
+传输层重试是"闭着眼睛再发一遍"，业务层重试是"带着错误信息再问一遍"
+后者有信息量，前者只碰运气 —— 所以前者次数要少，后者保留
+```
+
+四个参数对应四个问题：
+
+| 参数 | 回答的问题 | 当前值 |
+|---|---|---|
+| `read-timeout-seconds` | 一次请求最多等多久？ | 120 秒 |
+| `max-retry-attempts` | 失败后再来几次？总调用 = 1 + 该值 | 1 次（最多调用 2 次） |
+| `retry-backoff-millis` | 两次之间隔多久？ | 500 毫秒（固定间隔，不指数放大） |
+| `retry-timeout-seconds` | 总共折腾多久就不再发起重试？ | 115 秒 |
+
+核心约定：
+
+- **只重试能重试的**：`includes` 是白名单，只放 `TransientAiException`（5xx）和 `ResourceAccessException`（IO/超时）进来；4xx（模型名不存在、密钥无效）直接失败——重试也还是错。
+- **慢失败不重试**：`retry-timeout-seconds` 必须**小于** `read-timeout-seconds`。判断逻辑是"重试前看已耗时"，第一次读超时已经消耗 120 秒，超过 115 秒就不再发起第二次，避免白等一轮；快速失败（连接被拒 0.01 秒、5xx 1 秒）远小于 115 秒，仍然会重试一次。
+- **超时不会中断已发出的请求**：`retry-timeout-seconds` 只决定"要不要再来一次"，不是请求的硬性时限，所以最坏耗时 ≈ 2 × 读超时，而不是等于该配置值。
+- **不要用框架默认值**：Spring AI 的 `RetryUtils.DEFAULT_RETRY_TEMPLATE` 是"重试 10 次、间隔 2 秒指数放大到 3 分钟"，叠加 120 秒读超时后最坏要等近 40 分钟，交互式请求无法接受。
+- **日志带 Provider 名**：重试和重试耗尽都会打印 `provider=xxx`，多模型并存时能直接定位是哪个模型出的问题。
+
+不同失败原因的最终表现：
+
+| 失败原因 | 是否重试 | 大致耗时 |
+|---|---|---|
+| 连接被拒 / 端口不通 | 重试 1 次 | 约 1 秒 |
+| 服务端 5xx | 重试 1 次 | 约 3 秒 |
+| 4xx（模型名、密钥错误） | 不重试 | 立即失败 |
+| 读超时 | 不重试（已超过 115 秒） | 约 120 秒 |
+| 整体最坏（含业务层 2 次尝试） | — | 约 4 分钟 |
+
 
 模型选择链路：
 

@@ -59,6 +59,9 @@ app:
       default-provider: qwen
       connect-timeout-seconds: 10
       read-timeout-seconds: 120
+      max-retry-attempts: 1        # 传输层：总调用最多 2 次
+      retry-backoff-millis: 500
+      retry-timeout-seconds: 115   # 超过该耗时就不再发起重试（不中断已发出的请求），小于读超时才算得准
       providers:
         qwen:
           base-url: ${AI_BASE_URL:http://47.101.159.7:29988/v1}

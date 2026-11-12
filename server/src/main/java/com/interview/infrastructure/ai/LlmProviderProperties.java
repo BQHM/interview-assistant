@@ -28,6 +28,15 @@ public class LlmProviderProperties {
     // 读取响应的超时时间（秒），简历分析这类长任务需要放宽
     private int readTimeoutSeconds = 120;
 
+    // 传输层重试次数：只兜网络抖动和服务端 5xx，总调用次数 = 1 + 该值
+    private long maxRetryAttempts = 1;
+
+    // 传输层重试的固定间隔（毫秒），不指数放大，避免退避把等待时间拖长
+    private long retryBackoffMillis = 500;
+
+    // 超过该耗时就不再发起重试（秒）：必须小于 readTimeoutSeconds，超时这类慢失败才不会白重试一次
+    private long retryTimeoutSeconds = 115;
+
     // 模型清单：key 是 Provider 名称（如 qwen、deepseek），value 是该模型的连接配置
     private Map<String, ProviderConfig> providers = new LinkedHashMap<>();
 

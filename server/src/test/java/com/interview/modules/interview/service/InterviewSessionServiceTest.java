@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.interview.common.exception.BusinessException;
 import com.interview.common.exception.ErrorCode;
+import com.interview.infrastructure.ai.LlmProviderRegistry;
 import com.interview.modules.interview.model.HistoricalQuestion;
 import com.interview.modules.interview.model.InterviewSessionStatus;
 import com.interview.modules.interview.model.dto.InterviewAnswerEvaluationDTO;
@@ -49,6 +51,11 @@ import tools.jackson.databind.ObjectMapper;
 @ExtendWith(MockitoExtension.class)
 class InterviewSessionServiceTest {
 
+    /**
+     * 默认 Provider 名称，与测试中用于断言的值保持一致。
+     */
+    private static final String DEFAULT_PROVIDER = "qwen";
+
     @Mock
     private ResumeRepository resumeRepository;
 
@@ -64,6 +71,9 @@ class InterviewSessionServiceTest {
     @Mock
     private InterviewQuestionService interviewQuestionService;
 
+    @Mock
+    private LlmProviderRegistry llmProviderRegistry;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private InterviewSessionService interviewSessionService;
@@ -76,7 +86,8 @@ class InterviewSessionServiceTest {
                 objectMapper,
                 interviewAnswerRepository,
                 interviewAnswerEvaluationService,
-                interviewQuestionService);
+                interviewQuestionService,
+                llmProviderRegistry);
     }
 
     @Test
@@ -90,7 +101,9 @@ class InterviewSessionServiceTest {
                 eq(11L),
                 eq("java-backend"),
                 anyList())).thenReturn(Optional.empty());
-        when(interviewQuestionService.generateQuestions(eq(resumeEntity.getResumeText()), eq(3), eq("java-backend"), anyList()))
+        stubDefaultProvider();
+        when(interviewQuestionService.generateQuestions(eq(resumeEntity.getResumeText()), eq(3), eq("java-backend"),
+                anyList(), eq(DEFAULT_PROVIDER)))
                 .thenReturn(questionDTOs);
         when(interviewSessionRepository.save(any(InterviewSessionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -103,11 +116,60 @@ class InterviewSessionServiceTest {
         assertThat(sessionDTO.getTotalQuestions()).isEqualTo(3);
         assertThat(sessionDTO.getCurrentQuestionIndex()).isZero();
         assertThat(sessionDTO.getStatus()).isEqualTo(InterviewSessionStatus.CREATED);
+        assertThat(sessionDTO.getLlmProvider()).isEqualTo(DEFAULT_PROVIDER);
         assertThat(sessionDTO.getQuestions())
                 .extracting(InterviewQuestionDTO::getQuestionIndex)
                 .containsExactly(0, 1, 2);
         verify(interviewSessionRepository).save(argThat(
                 sessionEntity -> "java-backend".equals(sessionEntity.getSkillId())));
+    }
+
+    @Test
+    void createInterview_shouldUseRequestedProviderAndRecordIt() {
+        // 请求里指定的模型必须原样传给面试出题服务，并记录到会话上，不能被默认值覆盖。
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        List<InterviewQuestionDTO> questionDTOs = createQuestions(3);
+        CreateInterviewRequest request = createInterviewRequest(11L, 3);
+        request.setProvider("qwen-plus");
+
+        when(resumeRepository.findById(11L)).thenReturn(Optional.of(resumeEntity));
+        when(llmProviderRegistry.containsProvider("qwen-plus")).thenReturn(true);
+        when(interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
+                eq(11L),
+                eq("java-backend"),
+                anyList())).thenReturn(Optional.empty());
+        when(interviewQuestionService.generateQuestions(eq(resumeEntity.getResumeText()), eq(3), eq("java-backend"),
+                anyList(), eq("qwen-plus")))
+                .thenReturn(questionDTOs);
+        when(interviewSessionRepository.save(any(InterviewSessionEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        InterviewSessionDTO sessionDTO = interviewSessionService.createInterview(request);
+
+        assertThat(sessionDTO.getLlmProvider()).isEqualTo("qwen-plus");
+        verify(interviewSessionRepository).save(argThat(
+                sessionEntity -> "qwen-plus".equals(sessionEntity.getLlmProvider())));
+    }
+
+    @Test
+    void createInterview_shouldRejectUnknownProvider() {
+        // 指定不存在的模型必须直接失败，不能悄悄用默认模型继续创建会话。
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        CreateInterviewRequest request = createInterviewRequest(11L, 3);
+        request.setProvider("deepseek");
+
+        when(resumeRepository.findById(11L)).thenReturn(Optional.of(resumeEntity));
+        when(llmProviderRegistry.containsProvider("deepseek")).thenReturn(false);
+        when(llmProviderRegistry.getAvailableProviderIds()).thenReturn(Set.of(DEFAULT_PROVIDER));
+
+        BusinessException exception = catchThrowableOfType(
+                () -> interviewSessionService.createInterview(request),
+                BusinessException.class);
+
+        assertThat(exception).isNotNull();
+        assertThat(exception.getCode()).isEqualTo(ErrorCode.LLM_PROVIDER_NOT_FOUND.getCode());
+        assertThat(exception.getMessage()).contains("deepseek");
+        verify(interviewSessionRepository, never()).save(any(InterviewSessionEntity.class));
     }
 
     @Test
@@ -119,6 +181,8 @@ class InterviewSessionServiceTest {
                 InterviewSessionStatus.IN_PROGRESS,
                 1,
                 3);
+        // 已记录模型的会话复用时不能被改写，因此这里预置一个模型值。
+        existingSessionEntity.setLlmProvider(DEFAULT_PROVIDER);
         InterviewAnswerEntity answerEntity = createAnswer(
                 existingSessionEntity,
                 0,
@@ -141,10 +205,43 @@ class InterviewSessionServiceTest {
         assertThat(sessionDTO.getSkillId()).isEqualTo("java-backend");
         assertThat(sessionDTO.getStatus()).isEqualTo(InterviewSessionStatus.IN_PROGRESS);
         assertThat(sessionDTO.getCurrentQuestionIndex()).isEqualTo(1);
+        assertThat(sessionDTO.getLlmProvider()).isEqualTo(DEFAULT_PROVIDER);
         assertThat(sessionDTO.getQuestions().get(0).getUserAnswer())
                 .isEqualTo("我会从项目模块和接口设计说明。");
-        verify(interviewQuestionService, never()).generateQuestions(any(), any(), any(), anyList());
+        verify(interviewQuestionService, never()).generateQuestions(any(), any(), any(), anyList(), any());
         verify(interviewSessionRepository, never()).save(any(InterviewSessionEntity.class));
+    }
+
+    @Test
+    void createInterview_shouldBackfillProviderWhenReusingLegacySession() throws JacksonException {
+        // 多 Provider 之前创建的会话没有模型记录，复用时补默认值，避免报告页显示为空。
+        ResumeEntity resumeEntity = createResume(11L, "熟悉 Spring Boot。");
+        InterviewSessionEntity existingSessionEntity = createSession(
+                resumeEntity,
+                "session-001",
+                InterviewSessionStatus.CREATED,
+                0,
+                3);
+        InterviewAnswerEntity answerEntity = createAnswer(existingSessionEntity, 0, "历史答案");
+
+        when(resumeRepository.findById(11L)).thenReturn(Optional.of(resumeEntity));
+        stubDefaultProvider();
+        when(interviewSessionRepository.findFirstByResumeIdAndSkillIdAndStatusInOrderByCreatedAtDesc(
+                eq(11L),
+                eq("java-backend"),
+                anyList())).thenReturn(Optional.of(existingSessionEntity));
+        when(interviewSessionRepository.findBySessionId("session-001"))
+                .thenReturn(Optional.of(existingSessionEntity));
+        when(interviewAnswerRepository.findBySessionOrderByQuestionIndexAsc(existingSessionEntity))
+                .thenReturn(List.of(answerEntity));
+        when(interviewSessionRepository.save(existingSessionEntity)).thenReturn(existingSessionEntity);
+
+        InterviewSessionDTO sessionDTO = interviewSessionService.createInterview(
+                createInterviewRequest(11L, 3));
+
+        assertThat(sessionDTO.getLlmProvider()).isEqualTo(DEFAULT_PROVIDER);
+        assertThat(existingSessionEntity.getLlmProvider()).isEqualTo(DEFAULT_PROVIDER);
+        verify(interviewSessionRepository).save(existingSessionEntity);
     }
 
     @Test
@@ -167,7 +264,7 @@ class InterviewSessionServiceTest {
                 .thenReturn(Optional.empty());
         when(interviewAnswerRepository.save(any(InterviewAnswerEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        when(interviewAnswerEvaluationService.evaluateAnswer(any(InterviewAnswerEntity.class)))
+        when(interviewAnswerEvaluationService.evaluateAnswer(any(InterviewAnswerEntity.class), any()))
                 .thenReturn(createEvaluation());
         when(interviewSessionRepository.save(sessionEntity)).thenReturn(sessionEntity);
 
@@ -348,13 +445,23 @@ class InterviewSessionServiceTest {
                 anyList())).thenReturn(Optional.empty());
         when(interviewSessionRepository.findTop10ByResumeIdAndSkillIdOrderByCreatedAtDesc(11L, "java-backend"))
                 .thenReturn(historicalSessionEntities);
+        stubDefaultProvider();
         when(interviewQuestionService.generateQuestions(
                 eq(resumeEntity.getResumeText()),
                 eq(3),
                 eq("java-backend"),
-                anyList())).thenReturn(createQuestions(3));
+                anyList(),
+                eq(DEFAULT_PROVIDER))).thenReturn(createQuestions(3));
         when(interviewSessionRepository.save(any(InterviewSessionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    /**
+     * 功能说明
+     * <p>桩默认 Provider 名称，供创建面试链路使用。</p>
+     */
+    private void stubDefaultProvider() {
+        when(llmProviderRegistry.getDefaultProviderId()).thenReturn(DEFAULT_PROVIDER);
     }
 
     @SuppressWarnings("unchecked")
@@ -364,7 +471,8 @@ class InterviewSessionServiceTest {
                 anyString(),
                 anyInt(),
                 anyString(),
-                historicalCaptor.capture());
+                historicalCaptor.capture(),
+                anyString());
         return historicalCaptor.getValue();
     }
 

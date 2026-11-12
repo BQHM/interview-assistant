@@ -8,9 +8,15 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.retry.TransientAiException;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
@@ -200,11 +206,54 @@ public class LlmProviderRegistry {
         OpenAiChatModel chatModel = OpenAiChatModel.builder()
                 .openAiApi(openAiApi)
                 .defaultOptions(optionsBuilder.build())
-                .retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+                .retryTemplate(buildRetryTemplate(providerId))
                 .build();
 
         log.info("已创建 LLM ChatClient: provider={}, model={}", providerId, config.getModel());
         return ChatClient.builder(chatModel).build();
+    }
+
+    /**
+     * 功能说明
+     * <p>构建传输层重试模板，只兜网络抖动和服务端 5xx。</p>
+     *
+     * @param providerId Provider 名称，用于日志定位
+     * @return 传输层重试模板
+     * @author NobuNo
+     * @date 2026-11-04
+     */
+    private RetryTemplate buildRetryTemplate(String providerId) {
+        // 不能用 Spring AI 自带的 DEFAULT_RETRY_TEMPLATE：它会重试 10 次（总调用 11 次），
+        // 间隔从 2 秒指数放大到 3 分钟上限，叠加 120 秒读超时后最坏要等近 40 分钟。
+        // JSON 格式不对的重试由 StructuredOutputInvoker 负责（它能带上错误信息重新提问），
+        // 这里只处理网络抖动，所以次数少、间隔固定、超时上限低于读超时。
+        RetryPolicy retryPolicy = RetryPolicy.builder()
+                .maxRetries(properties.getMaxRetryAttempts())
+                // includes 是白名单：4xx（如模型名不存在、密钥无效）不在其中，直接失败不重试
+                .includes(TransientAiException.class, ResourceAccessException.class)
+                .delay(Duration.ofMillis(properties.getRetryBackoffMillis()))
+                .timeout(Duration.ofSeconds(properties.getRetryTimeoutSeconds()))
+                .build();
+
+        RetryTemplate retryTemplate = new RetryTemplate(retryPolicy);
+        retryTemplate.setRetryListener(new RetryListener() {
+
+            @Override
+            public void beforeRetry(RetryPolicy policy, Retryable<?> retryable) {
+                log.warn("LLM 调用失败，准备重试: provider={}", providerId);
+            }
+
+            @Override
+            public void onRetryPolicyExhaustion(RetryPolicy policy, Retryable<?> retryable, RetryException exception) {
+                log.error("LLM 调用重试已用尽: provider={}", providerId, exception);
+            }
+
+            @Override
+            public void onRetryPolicyTimeout(RetryPolicy policy, Retryable<?> retryable, RetryException exception) {
+                log.error("LLM 调用重试超时: provider={}", providerId, exception);
+            }
+        });
+        return retryTemplate;
     }
 
     /**
