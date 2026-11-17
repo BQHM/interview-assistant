@@ -170,6 +170,8 @@
 - [x] 单题评估使用会话记录的 Provider，避免改默认模型后同一场面试被两个模型评分
 - [x] 关闭 Spring AI OpenAI 自动配置，`ChatClient` 只由注册表创建；显式设置连接/读取超时（10s/120s）
 - [x] 传输层重试收敛：替换框架默认的"重试 10 次 + 指数退避"，改为最多 2 次调用、500ms 固定间隔、115 秒决断上限，4xx 不重试，日志带 Provider 名
+- [x] `llm_providers` 表落地对应的数据访问层：`LlmProviderEntity` 15 个字段与 DDL 严格对齐（`boolean` 用基本类型、`temperature` 保持 `String`、`@PrePersist` 补时间戳），`LlmProviderRepository` 提供 `findByProviderKey` / `existsByProviderKey` / `findAllByOrderByProviderKeyAsc` / `findByEnabledTrueOrderByProviderKeyAsc`
+- [x] API Key 落库加密：`AesGcmCipher` 采用 AES-256-GCM，每次加密新生成 12 字节 nonce、128 位认证标签，密文与 nonce 成对 Base64 存储；主密钥来自环境变量 `AI_LLM_ENCRYPTION_KEY`（Base64 的 32 字节），缺失或长度不合法直接启动失败；9 个单元测试覆盖加解密闭环、nonce 唯一性、篡改检测与密钥校验
 
 ### 进行中
 
@@ -263,23 +265,21 @@ app:
       max-retry-attempts: 1           # 传输层重试次数，总调用次数 = 1 + 该值
       retry-backoff-millis: 500
       retry-timeout-seconds: 115      # 必须小于 read-timeout-seconds，超时后才不会白重试一次
+      encryption-key: ${AI_LLM_ENCRYPTION_KEY:}   # 冒号给空默认值，缺失时由 AesGcmCipher 抛出可读的中文提示
       providers:
         qwen:
           base-url: ${AI_BASE_URL}
           api-key: ${AI_API_KEY}
           model: ${AI_MODEL}
           temperature: 0.2
-        qwen-plus:
-          base-url: ${AI_BASE_URL}
-          api-key: ${AI_API_KEY}
-          model: ${AI_MODEL}
-          temperature: 0.2
+      # B 期起 providers 只是首次启动的种子数据，真正生效的是 llm_providers 表
 ```
 
 核心约定：
 
 - `base-url` 不要带 `/v1`：Spring AI 的 `OpenAiApi` 默认补全 `/v1/chat/completions`，注册表会额外剥掉误写的结尾 `/v1`，避免出现 `/v1/v1`。
 - 启动即校验：没有配置任何 Provider，或 `default-provider` 不在 `providers` 里，应用直接启动失败，而不是等第一次调用才暴露。
+- API Key 加密主密钥 fail-fast：`AI_LLM_ENCRYPTION_KEY` 缺失、不是合法 Base64、或解码后不是 32 字节，`AesGcmCipher` 在构造时抛异常终止启动。宁可起不来，也不要带着空密钥把明文写进数据库。
 - `ChatClient` 懒加载 + 缓存：首次按名字调用时创建，之后复用同一实例，重复创建的成本不会落在每次请求上。
 - 未知 Provider fail-fast：请求里写了不存在的名字，返回 7007 并列出可用模型，绝不静默回退默认值——静默回退会让用户拿 A 模型的结果误判 B 模型的能力。
 - 超时必须显式设置：手工构建 `OpenAiApi` 不会继承 Spring Boot 的 HTTP 设置，默认只有约 10 秒读超时，简历分析这类长响应会被打断。当前使用 JDK `HttpClient` + `JdkClientHttpRequestFactory`，连接 10 秒、读取 120 秒，均为配置项。
@@ -336,7 +336,7 @@ AI 调用链上其实有**两层重试**，职责必须分开，否则次数会�
 评估         LlmProviderRegistry.getChatClient(会话里的 llm_provider)
 ```
 
-> 当前是配置驱动（A 期）。B 期会把 `providers` 搬到 `llm_providers` 表、API Key 加密存储并增加管理页面，届时只有 `LlmProviderProperties` 的数据来源改变，出题和评估代码不受影响。B 期第 1 步（`V4__create_llm_providers.sql` 建表）已完成：密钥拆成密文与 nonce 两列，`temperature` 用字符串存储并由 CHECK 约束兜住取值范围，向量模型相关字段已预留供知识库阶段使用。
+> 当前是配置驱动（A 期）。B 期会把 `providers` 搬到 `llm_providers` 表、API Key 加密存储并增加管理页面，届时只有 `LlmProviderProperties` 的数据来源改变，出题和评估代码不受影响。B 期第 1 步（`V4__create_llm_providers.sql` 建表）已完成：密钥拆成密文与 nonce 两列，`temperature` 用字符串存储并由 CHECK 约束兜住取值范围，向量模型相关字段已预留供知识库阶段使用。B 期第 2 步（实体、数据访问与 AES-GCM 加解密）已完成：`LlmProviderEntity` 与 DDL 严格对齐、`LlmProviderRepository` 提供按 key 查询与启用项列表、`AesGcmCipher` 负责密钥加解密，主密钥走环境变量 `AI_LLM_ENCRYPTION_KEY`；`providers` 从这一步开始降级为“首次启动的种子数据”，第 3 步会把它加密导入 `llm_providers` 表并把注册表的数据来源切到“缓存 + Repository”。
 
 ## 项目结构
 
@@ -446,6 +446,7 @@ docker run -d --name redis -p 6379:6379 redis:7-alpine
 - PostgreSQL 连接信息
 - Redis 连接信息（Redisson 单机配置与连接池大小）
 - AI 模型地址和 API Key（`app.ai.llm.providers` 下可声明多个，`default-provider` 指定缺省项）
+- API Key 加密主密钥（`AI_LLM_ENCRYPTION_KEY`，Base64 的 32 字节，必须通过环境变量注入）
 - RustFS / S3 对象存储配置
 - 简历分析 Prompt 模板路径
 
@@ -461,6 +462,9 @@ POSTGRES_PASSWORD=123456
 AI_BASE_URL=http://your-model-host/v1
 AI_API_KEY=your-api-key
 AI_MODEL=qwen-plus
+# API Key 加密主密钥：32 字节随机数的 Base64，生成一次后固定不变；
+# 更换会导致数据库中已有密文全部解不开，必须重新导入 Provider 配置
+AI_LLM_ENCRYPTION_KEY=your-32-byte-base64-key
 
 APP_STORAGE_ENDPOINT=http://localhost:9000
 APP_STORAGE_ACCESS_KEY=your-access-key
