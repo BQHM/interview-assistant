@@ -40,6 +40,9 @@ public class LlmProviderProperties {
     // 模型清单：key 是 Provider 名称（如 qwen、deepseek），value 是该模型的连接配置
     private Map<String, ProviderConfig> providers = new LinkedHashMap<>();
 
+    // API Key 加密主密钥（Base64 编码的 32 字节），必须通过环境变量注入，缺失时启动失败
+    private String encryptionKey;
+
     /**
      * 单个 Provider 的连接配置。
      */
