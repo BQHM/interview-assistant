@@ -163,7 +163,7 @@
 - [x] Redis / Redisson 基础设施接入：依赖、配置、连通性测试通过（Redis 7.4.11 + Redisson 4.0.0）
 - [x] 简历详情接口接入 Redis 缓存：`StringCodec` + Jackson 明文 JSON，TTL 30 分钟，二次请求零 SQL
 - [x] 接口限流：`@RateLimit` 注解 + AOP 切面 + Lua 脚本滑动窗口（`ZSET` 存时间戳），key 按“方法 + 维度 + 客户端”生成，超限返回 8001
-- [x] 数据库迁移基线：Flyway 接管表结构变更，`V1__init_schema.sql` 记录基线结构，存量库通过 baseline 平滑接入，`ddl-auto` 改为 `validate`
+- [x] 数据库迁移基线：Flyway 接管表结构变更，`V1__init_schema.sql` 记录基线结构，存量库通过 baseline 平滑接入，`ddl-auto` 改为 `validate`；增量脚本 `V2` 清理重复唯一约束、`V3` 会话表新增 `llm_provider`、`V4` 新建 `llm_providers` 配置表
 - [x] LLM Provider 多模型抽象：`LlmProviderProperties` + `LlmProviderRegistry` 配置驱动，出题与单题评估按名字获取 `ChatClient`
 - [x] 创建面试支持 `provider` 参数，未知 Provider 返回 7007 并列出可用模型，不静默回退默认值
 - [x] `interview_sessions.llm_provider` 落库，创建、会话查询、历史详情三处接口回显本场使用的模型
@@ -222,6 +222,7 @@
 - 禁止用 `psql` 直接执行迁移脚本：Flyway 无法记录执行历史，会导致账本与实际状态错位。
 - 迁移脚本默认不写数据，但“新增列后回填历史数据”这类一次性修正是合理的，应当与结构变更写在同一个脚本内。
 - 迁移脚本只负责表结构，数据安全依赖备份（`pg_dump`），两者职责不重叠。
+- 类型关键字统一写简写：`varchar(n)`、`bigint`、`integer`、`boolean`、`text`，不要混用 `character varying`。`V1` 由 `pg_dump` 导出，保留了 `character varying` 写法，属于只读脚本，不必也不允许回头统一。
 
 存量库接入方式：当前数据库在引入 Flyway 前已有 4 张表，因此配置了 `baseline-on-migrate: true` 与 `baseline-version: 1`。首次启动会写入一条 `type=BASELINE` 记录并跳过 `V1`，从 `V2` 开始纳管；全新空库不会触发 baseline，会正常执行 `V1` 建表。
 
@@ -335,7 +336,7 @@ AI 调用链上其实有**两层重试**，职责必须分开，否则次数会�
 评估         LlmProviderRegistry.getChatClient(会话里的 llm_provider)
 ```
 
-> 当前是配置驱动（A 期）。B 期会把 `providers` 搬到 `llm_providers` 表、API Key 加密存储并增加管理页面，届时只有 `LlmProviderProperties` 的数据来源改变，出题和评估代码不受影响。
+> 当前是配置驱动（A 期）。B 期会把 `providers` 搬到 `llm_providers` 表、API Key 加密存储并增加管理页面，届时只有 `LlmProviderProperties` 的数据来源改变，出题和评估代码不受影响。B 期第 1 步（`V4__create_llm_providers.sql` 建表）已完成：密钥拆成密文与 nonce 两列，`temperature` 用字符串存储并由 CHECK 约束兜住取值范围，向量模型相关字段已预留供知识库阶段使用。
 
 ## 项目结构
 
